@@ -41,7 +41,7 @@ def main(
     output_dir.mkdir(exist_ok=True)
     for alignment_file_bz2 in alignments_dir.glob("*.aln.bz2"):
         stem = alignment_file_bz2.name[:-len(".aln.bz2")]
-        target_file_zstd = output_dir / f"{stem}.fna.zstd"
+        target_file_zstd = output_dir / f"{stem}.fna.zst"
         remove_gaps_from_file(alignment_file_bz2, target_file_zstd)
 
 

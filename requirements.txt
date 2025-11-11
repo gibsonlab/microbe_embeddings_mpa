@@ -1,0 +1,13 @@
+torch==2.7.0
+psutil
+flash-attn==2.7.4.post1
+evo-model
+numpy
+pandas
+scipy
+matplotlib
+h5py
+biopython
+pyfaidx
+zstandard
+bgzip
