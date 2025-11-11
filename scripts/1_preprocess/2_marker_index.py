@@ -54,6 +54,10 @@ def main(
 
         sgb_id = f"{sgb_prefix}{sgb_number}"  # as found in MetaPhlAn4 database, e.g. "SGB1092"
         centroid_genome_id = row['SGB centroid']  # these are the IDs found in the PhyloPhlAn fasta marker files.
+        if centroid_genome_id == "-":
+            print("{} does not have any centroid genome selected.")
+            continue
+
         try:
             marker_list = phylo_marker_index.fetch_marker_names(centroid_genome_id)
             sgb_dict[sgb_id] = {
