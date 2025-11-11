@@ -64,6 +64,8 @@ def main(
             print("{} (centroid genome = {}) did not have markers in the fasta file.".format(
                 sgb_id, centroid_genome_id
             ))
+        else:
+            print("{} had {} markers.".format(sgb_id, len(marker_list)))
 
     # Save the SGB dictionary to file.
     output_json_path.parent.mkdir(exist_ok=True)
