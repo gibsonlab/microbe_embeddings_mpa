@@ -4,7 +4,6 @@ sequence entry. This recovers the amino acid sequences of the gene markers.
 """
 from pathlib import Path
 import bz2
-import zstandard as zstd
 
 from Bio import SeqIO
 from Bio.bgzf import BgzfWriter
@@ -22,7 +21,7 @@ def remove_gaps_from_file(alignment_file_bz2: Path, out_bgzf_file: BgzfWriter, g
     with bz2.open(alignment_file_bz2, "rt") as aln_f:
         for record in SeqIO.parse(aln_f, "fasta"):
             ungapped_seq = remove_gaps_from_seq(record.seq)
-            new_record = SeqRecord(ungapped_seq, id=record.id, description=gene_name)
+            new_record = SeqRecord(ungapped_seq, id=f"{gene_name}:{record.id}")
             SeqIO.write([new_record], out_bgzf_file, "fasta")
 
 
