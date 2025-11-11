@@ -26,7 +26,7 @@ class MarkerIndex:
         with open(self.fai_path, "rt") as fai_file:
             for line in fai_file:
                 record_name = line.split("\t")[0]
-                genome_id = record_name.split("__")[-1]
+                genome_id = "__".join(record_name.split("__")[1:])
                 index[genome_id].append(record_name)
         return index
 
