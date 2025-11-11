@@ -54,10 +54,16 @@ def main(
 
         sgb_id = f"{sgb_prefix}{sgb_number}"  # as found in MetaPhlAn4 database, e.g. "SGB1092"
         centroid_genome_id = row['SGB centroid']  # these are the IDs found in the PhyloPhlAn fasta marker files.
-        sgb_dict[sgb_id] = {
-            'centroid': centroid_genome_id,
-            'markers': phylo_marker_index.fetch_marker_names(centroid_genome_id)
-        }
+        try:
+            marker_list = phylo_marker_index.fetch_marker_names(centroid_genome_id)
+            sgb_dict[sgb_id] = {
+                'centroid': centroid_genome_id,
+                'markers': marker_list,
+            }
+        except KeyError:
+            print("{} (centroid genome = {}) did not have markers in the fasta file.".format(
+                sgb_id, centroid_genome_id
+            ))
 
     # Save the SGB dictionary to file.
     output_json_path.parent.mkdir(exist_ok=True)
