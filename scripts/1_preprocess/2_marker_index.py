@@ -69,7 +69,7 @@ def main(
                 sgb_id, centroid_genome_id
             ))
         else:
-            print("{} had {} markers.".format(sgb_id, len(marker_list)))
+            print("{} (centroid genome = {}) had {} markers.".format(sgb_id, centroid_genome_id, len(marker_list)))
 
     # Save the SGB dictionary to file.
     output_json_path.parent.mkdir(exist_ok=True)
