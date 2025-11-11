@@ -6,7 +6,6 @@ from typing import *
 from pathlib import Path
 from collections import defaultdict
 import json
-import pandas as pd
 import zstandard as zstd
 from pyfaidx import Fasta
 
@@ -20,66 +19,48 @@ class MarkerIndex:
 
     def preindex(self) -> Dict[str, List[str]]:
         """
-        Collect the FASTA ids, and group them by the source genome ID.
+        Collect the FASTA ids, and group them by the SGB ID.
         """
         index = defaultdict(list)
         with open(self.fai_path, "rt") as fai_file:
             for line in fai_file:
                 record_name = line.split("\t")[0]
-                genome_id = "__".join(record_name.split("__")[1:])
-                index[genome_id].append(record_name)
+
+                # Each record name is of the form {gene_name}:{sgb_id}__{genome_acc}
+                gene_and_sgb = record_name.split("__")[0]
+                tokens = gene_and_sgb.split(":")
+                assert len(tokens) == 2, f"Unexpected parse of ID: {record_name}"
+                gene_id, sgb_id = tokens
+                index[sgb_id].append(record_name)
         return index
 
-    def fetch_marker_names(self, centroid_genome_id: str) -> List[str]:
+    def fetch_marker_names(self, sgb_id: str) -> List[str]:
         """
         Answers the query for input genome ID by returning the list of constituent marker fasta record IDs.
         """
-        if centroid_genome_id not in self.dict_index:
-            raise KeyError(f"Genome ID {centroid_genome_id} not found in index.")
-        return self.dict_index[centroid_genome_id]
+        if sgb_id not in self.dict_index:
+            raise KeyError(f"SGB id {sgb_id} not found in index.")
+        return self.dict_index[sgb_id]
+
+    def items(self) -> Iterator[Tuple[str, List[str]]]:
+        yield from self.dict_index.items()
 
 
 def main(
-        metadata_csv_path: Path,
         marker_fasta_file: Path,
         output_json_path: Path,
 ):
     assert marker_fasta_file.exists(), f"Marker FASTA file {marker_fasta_file} does not exist!"
     phylo_marker_index = MarkerIndex(marker_fasta_file)
-    sgb_dict = dict()
-    sgb_metadata = pd.read_csv(metadata_csv_path, sep=",")
-    for _, row in sgb_metadata.iterrows():
-        sgb_prefix = row['Label']
-        sgb_number = row['ID']
-
-        sgb_id = f"{sgb_prefix}{sgb_number}"  # as found in MetaPhlAn4 database, e.g. "SGB1092"
-        centroid_genome_id = row['SGB centroid']  # these are the IDs found in the PhyloPhlAn fasta marker files.
-        if centroid_genome_id == "-":
-            # print("{} does not have any centroid genome selected.")
-            continue
-
-        try:
-            marker_list = phylo_marker_index.fetch_marker_names(centroid_genome_id)
-            sgb_dict[sgb_id] = {
-                'centroid': centroid_genome_id,
-                'markers': marker_list,
-            }
-        except KeyError:
-            print("{} (centroid genome = {}) did not have markers in the fasta file.".format(
-                sgb_id, centroid_genome_id
-            ))
-        else:
-            print("{} (centroid genome = {}) had {} markers.".format(sgb_id, centroid_genome_id, len(marker_list)))
 
     # Save the SGB dictionary to file.
     output_json_path.parent.mkdir(exist_ok=True)
     with zstd.open(output_json_path, "wt") as json_file:
-        json.dump(sgb_dict, json_file, indent=4)
+        json.dump(phylo_marker_index.dict_index, json_file, indent=4)
 
 
 if __name__ == "__main__":
     main(
-        metadata_csv_path=Path("/data/cctm/youn/metaphlan_dset/phylophlan_data/PhyloPhlAn_output") / "sgb_metadata.csv",
         marker_fasta_file=Path("/data/cctm/youn/metaphlan_dset/phylophlan_data/processed") / "all_markers.fna.bgz",
         output_json_path=Path("/data/cctm/youn/metaphlan_dset/phylophlan_data/processed") / "sgb_marker_index.json.zst",  # should end with ".zst" extension -- will be compressed using zstd.
     )
