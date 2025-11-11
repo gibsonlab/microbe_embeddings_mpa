@@ -16,20 +16,14 @@ def remove_gaps_from_seq(x: Seq) -> Seq:
     return Seq(str(x).replace("-", ""))
 
 
-def remove_gaps_from_file(alignment_file_bz2: Path, out_bgzf: Path, gene_name: str):
-    print("De-gapping src: {}, dest: {}".format(
-        alignment_file_bz2,
-        out_bgzf,
-    ))
+def remove_gaps_from_file(alignment_file_bz2: Path, out_bgzf_file: BgzfWriter, gene_name: str):
+    print(f"De-gapping src: {alignment_file_bz2}")
 
-    with (
-        bz2.open(alignment_file_bz2, "rt") as aln_f,
-        BgzfWriter(out_bgzf, "ab") as out_f
-    ):
+    with bz2.open(alignment_file_bz2, "rt") as aln_f:
         for record in SeqIO.parse(aln_f, "fasta"):
             ungapped_seq = remove_gaps_from_seq(record.seq)
             new_record = SeqRecord(ungapped_seq, id=record.id, description=gene_name)
-            SeqIO.write([new_record], out_f, "fasta")
+            SeqIO.write([new_record], out_bgzf_file, "fasta")
 
 
 def main(
@@ -43,13 +37,14 @@ def main(
     :return:
     """
     output_dir.mkdir(exist_ok=True)
-    all_bgzf = output_dir / "all_markers.fna.bgz"
-    if all_bgzf.exists():
-        all_bgzf.unlink()  # delete the file, possibly from a previous run.
+    all_bgzf_path = output_dir / "all_markers.fna.bgz"
+    if all_bgzf_path.exists():
+        print(f"Previous instance of {all_bgzf_path.name} found; it will be overwritten.")
 
-    for alignment_file_bz2 in alignments_dir.glob("*.aln.bz2"):
-        gene_name = alignment_file_bz2.name[:-len(".aln.bz2")]
-        remove_gaps_from_file(alignment_file_bz2, all_bgzf, gene_name)
+    with BgzfWriter(all_bgzf_path, "wb") as all_bgzf_out:
+        for alignment_file_bz2 in alignments_dir.glob("*.aln.bz2"):
+            gene_name = alignment_file_bz2.name[:-len(".aln.bz2")]
+            remove_gaps_from_file(alignment_file_bz2, all_bgzf_out, gene_name)
 
 
 if __name__ == "__main__":
