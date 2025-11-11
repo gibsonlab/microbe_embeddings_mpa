@@ -10,6 +10,8 @@
 #SBATCH --output=embed_evo_%A_%a.out
 #SBATCH --error=embed_evo_%A_%a.err
 
+# Note: this is a Slurm script, meant to be run on ErisXDL compute nodes with 8 H100s.
+
 set -e
 
 HF_TOKEN_FILE=/data/cctm/youn/metaphlan_dset/hf_token.txt
