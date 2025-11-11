@@ -66,7 +66,7 @@ def main(
 
 if __name__ == "__main__":
     main(
-        metadata_csv_path=Path("todo_dir") / "sgb_metadata.csv",
-        marker_fasta_file=Path("todo_dir") / "all_markers.fna.bgz",
-        output_json_path=Path("todo_dir") / "sgb_marker_index.json.zst",  # should end with ".zst" extension -- will be compressed using zstd.
+        metadata_csv_path=Path("/data/cctm/youn/metaphlan_dset/phylophlan_data/PhyloPhlAn_output") / "sgb_metadata.csv",
+        marker_fasta_file=Path("/data/cctm/youn/metaphlan_dset/phylophlan_data/processed") / "all_markers.fna.bgz",
+        output_json_path=Path("/data/cctm/youn/metaphlan_dset/phylophlan_data/processed") / "sgb_marker_index.json.zst",  # should end with ".zst" extension -- will be compressed using zstd.
     )
