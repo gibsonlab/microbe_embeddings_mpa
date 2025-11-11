@@ -54,6 +54,6 @@ def main(
 
 if __name__ == "__main__":
     main(
-        Path("/media/youn/data/projects/mpa_data/PhyloPhlAn_output/msas"),
-        Path("/media/youn/data/projects/mpa_data/processed")
+        Path("/data/cctm/youn/metaphlan_dset/phylophlan_data/PhyloPhlAn_output/msas"),
+        Path("/data/cctm/youn/metaphlan_dset/phylophlan_data/processed")
     )
