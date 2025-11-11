@@ -57,7 +57,7 @@ if [ $start_idx -le $M ]; then
 
       HF_HOME=$HF_HOME \
       HF_TOKEN=$HF_TOKEN \
-      python compute_metaphlan_embedding.py \
+      python compute_embeddings.py \
         --model "evo" \
         --fasta "$FASTA_FILE" \
         --sgb-list "$SGB_SUBSET_FILE" \
