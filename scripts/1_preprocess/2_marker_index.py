@@ -47,7 +47,7 @@ def main(
     assert marker_fasta_file.exists(), f"Marker FASTA file {marker_fasta_file} does not exist!"
     phylo_marker_index = MarkerIndex(marker_fasta_file)
     sgb_dict = dict()
-    sgb_metadata = pd.read_csv(metadata_csv_path, sep="\t")
+    sgb_metadata = pd.read_csv(metadata_csv_path, sep=",")
     for _, row in sgb_metadata.iterrows():
         sgb_prefix = row['Label']
         sgb_number = row['ID']
