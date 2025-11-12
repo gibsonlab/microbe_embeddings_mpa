@@ -9,7 +9,7 @@ FASTA_FILE=/data/cctm/youn/metaphlan_dset/phylophlan_data/processed/all_markers.
 HF_TOKEN=$(cat $HF_TOKEN_FILE)
 HF_HOME="/data/cctm/youn/huggingface_cache"
 
-TOTAL_SGBS=$(wc -l < $SGB_FILE)   # Total items (replace with your value)
+TOTAL_SGBS=$(wc -l < $SGB_SUBSET_FILE)   # Total items (replace with your value)
 
 # Total number of items
 M=$TOTAL_SGBS
