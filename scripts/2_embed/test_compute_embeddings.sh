@@ -53,7 +53,7 @@ if [ $start_idx -le $M ]; then
         --sgb-index-file "$SGB_INDEX_FILE" \
         --start "$start_idx" \
         --end "$end_idx" \
-        --batch-size 20 \
+        --batch-size 2 \
         --out-dir "$outdir" \
         --shard-size 50000
       echo "Done."
