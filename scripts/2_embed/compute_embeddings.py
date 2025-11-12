@@ -20,7 +20,7 @@ from gem.embeddings import GenomeEmbedding, EvoWrapper, DNABertSWrapper
 logging.basicConfig(
     level=logging.INFO,
     stream=sys.stdout,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger()
 
