@@ -49,12 +49,17 @@ def compute_embedding(
 
     fasta = Fasta(fasta_path)
     marker_ids_subset = []
+    n_skipped_sgbs = 0
     for sgb_id in sgb_subset:
         sgb_id_numeric_str = sgb_id[3:]
-        marker_ids_subset += sgb_marker_index[sgb_id_numeric_str]['markers']
+        if sgb_id_numeric_str not in sgb_marker_index:
+            print(f"Key {sgb_id_numeric_str} (derived from {sgb_id}) not found in sgb marker index. Skipping.")
+            n_skipped_sgbs += 1
+        else:
+            marker_ids_subset += sgb_marker_index[sgb_id_numeric_str]
 
     n_seqs = len(marker_ids_subset)
-    print("{} SGBs --> {} sequences.".format(len(sgb_subset), n_seqs))
+    print("{} SGBs [{} skipped] --> {} sequences.".format(len(sgb_subset), n_skipped_sgbs, n_seqs))
     print("Desired shard size is {} sequences.".format(shard_size))
 
     import math
