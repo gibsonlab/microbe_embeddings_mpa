@@ -36,7 +36,7 @@ fi
 if [ $start_idx -le $M ]; then
     echo "Job $k processing items $start_idx to $end_idx"
 
-    outdir=/data/cctm/youn/metaphlan_dset/embeddings/evo/part${k}
+    outdir=/data/cctm/youn/metaphlan_dset/embeddings/phylophlan_markers/evo/part${k}
     breadcrumb=$outdir/embed.DONE
     if [ -f "$breadcrumb" ]; then
         echo "Task array index ${k} was already finished previously."
