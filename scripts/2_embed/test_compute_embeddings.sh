@@ -1,17 +1,4 @@
 #!/bin/bash
-#SBATCH --partition=bwh_comppath
-#SBATCH --array=1-8
-#SBATCH --ntasks=1
-#SBATCH --gres=gpu:1
-#SBATCH --mem=12G
-#SBATCH --cpus-per-task=4
-#SBATCH --time=5-00:00:00
-#SBATCH --job-name=mpa_embed_evo
-#SBATCH --output=embed_evo_%A_%a.out
-#SBATCH --error=embed_evo_%A_%a.err
-
-# Note: this is a Slurm script, meant to be run on ErisXDL compute nodes with 8 A100s.
-
 set -e
 
 HF_TOKEN_FILE=/data/cctm/youn/metaphlan_dset/hf_token.txt
@@ -28,10 +15,10 @@ TOTAL_SGBS=$(wc -l < $SGB_FILE)   # Total items (replace with your value)
 M=$TOTAL_SGBS
 
 # Total number of jobs
-N=${SLURM_ARRAY_TASK_COUNT}
+N=8
 
 # Current job index (1 to N)
-k=${SLURM_ARRAY_TASK_ID}
+k=1
 
 # Calculate items per job (ceiling division)
 items_per_job=$(( (M + N - 1) / N ))

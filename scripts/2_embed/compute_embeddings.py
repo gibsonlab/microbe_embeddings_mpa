@@ -50,7 +50,8 @@ def compute_embedding(
     fasta = Fasta(fasta_path)
     marker_ids_subset = []
     for sgb_id in sgb_subset:
-        marker_ids_subset += sgb_marker_index[sgb_id]['markers']
+        sgb_id_numeric_str = sgb_id[3:]
+        marker_ids_subset += sgb_marker_index[sgb_id_numeric_str]['markers']
 
     n_seqs = len(marker_ids_subset)
     print("{} SGBs --> {} sequences.".format(len(sgb_subset), n_seqs))
@@ -171,7 +172,6 @@ def do_job(
         batch_size=batch_size,
         shard_size=shard_size
     )
-
 
 
 if __name__ == "__main__":
