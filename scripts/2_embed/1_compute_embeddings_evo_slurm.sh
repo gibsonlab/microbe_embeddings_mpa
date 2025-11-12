@@ -1,4 +1,17 @@
 #!/bin/bash
+#SBATCH --partition=bwh_comppath
+#SBATCH --array=1-8
+#SBATCH --ntasks=1
+#SBATCH --gres=gpu:1
+#SBATCH --mem=12G
+#SBATCH --cpus-per-task=4
+#SBATCH --time=5-00:00:00
+#SBATCH --job-name=mpa_embed_evo
+#SBATCH --output=embed_evo_%A_%a.out
+#SBATCH --error=embed_evo_%A_%a.err
+
+# Note: this is a Slurm script, meant to be run on ErisXDL compute nodes with 8 A100s.
+
 set -e
 
 HF_TOKEN_FILE=/data/cctm/youn/metaphlan_dset/hf_token.txt
@@ -9,16 +22,16 @@ FASTA_FILE=/data/cctm/youn/metaphlan_dset/phylophlan_data/processed/all_markers.
 HF_TOKEN=$(cat $HF_TOKEN_FILE)
 HF_HOME="/data/cctm/youn/huggingface_cache"
 
-TOTAL_SGBS=$(wc -l < $SGB_SUBSET_FILE)   # Total items (replace with your value)
+TOTAL_SGBS=$(wc -l < $SGB_FILE)   # Total items (replace with your value)
 
 # Total number of items
 M=$TOTAL_SGBS
 
 # Total number of jobs
-N=8
+N=${SLURM_ARRAY_TASK_COUNT}
 
 # Current job index (1 to N)
-k=1
+k=${SLURM_ARRAY_TASK_ID}
 
 # Calculate items per job (ceiling division)
 items_per_job=$(( (M + N - 1) / N ))
@@ -37,7 +50,7 @@ if [ $start_idx -le $M ]; then
     echo "Job $k processing items $start_idx to $end_idx"
 
     outdir=/data/cctm/youn/metaphlan_dset/embeddings/phylophlan_markers/evo/part${k}
-    breadcrumb=$outdir/embed.DONE
+    breadcrumb=$outdir/.embed.DONE
     if [ -f "$breadcrumb" ]; then
         echo "Task array index ${k} was already finished previously."
     else
@@ -53,7 +66,7 @@ if [ $start_idx -le $M ]; then
         --sgb-index-file "$SGB_INDEX_FILE" \
         --start "$start_idx" \
         --end "$end_idx" \
-        --batch-size 2 \
+        --batch-size 20 \
         --out-dir "$outdir" \
         --shard-size 50000
       echo "Done."
