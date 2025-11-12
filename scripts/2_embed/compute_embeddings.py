@@ -1,11 +1,13 @@
 """
 Script for pre-computing evo embeddings for marker genes.
 """
+import math
+import logging
+import sys
 import argparse
 from typing import *
 from pathlib import Path
 import json
-
 from tqdm import tqdm
 import h5py
 from pyfaidx import Fasta
@@ -13,6 +15,14 @@ import torch
 import zstandard as zstd
 
 from gem.embeddings import GenomeEmbedding, EvoWrapper, DNABertSWrapper
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    stream=sys.stdout,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger()
 
 
 def parse_args() -> argparse.Namespace:
@@ -53,31 +63,34 @@ def compute_embedding(
     for sgb_id in sgb_subset:
         sgb_id_numeric_str = sgb_id[3:]
         if sgb_id_numeric_str not in sgb_marker_index:
-            print(f"Key {sgb_id_numeric_str} (derived from {sgb_id}) not found in sgb marker index. Skipping.")
+            logger.warning(f"Key {sgb_id_numeric_str} (derived from {sgb_id}) not found in sgb marker index. Skipping.")
             n_skipped_sgbs += 1
         else:
             marker_ids_subset += sgb_marker_index[sgb_id_numeric_str]
 
     n_seqs = len(marker_ids_subset)
-    print("{} SGBs [{} skipped] --> {} sequences.".format(len(sgb_subset), n_skipped_sgbs, n_seqs))
-    print("Desired shard size is {} sequences.".format(shard_size))
+    logger.info("{} SGBs [{} skipped] --> {} sequences.".format(len(sgb_subset), n_skipped_sgbs, n_seqs))
+    logger.info("Desired shard size is {} sequences.".format(shard_size))
 
-    import math
-    print("Target # shards = {}".format(math.ceil(n_seqs / shard_size)))
-    pbar = tqdm(total=n_seqs)
+    example_marker_id = marker_ids_subset[0]
+    example_seq = str(fasta[example_marker_id])
+    logger.info(f"Example sequence: {example_marker_id} --> {example_seq}")
 
     # divide dataframe into shards.
     index_path = h5_output_dir / "index.tsv"
 
-    print("Loading embedding model.")
+    logger.info("Loading embedding model.")
     embedding_model = create_embed_model()
     padding_embedding = embedding_model.embed_empty_sequence().cpu().float().numpy()
-    print("Got padding embedding of shape {}".format(padding_embedding.shape))
+    logger.info("Got padding embedding of shape {}".format(padding_embedding.shape))
+
+    logger.info("Target # shards = {}".format(math.ceil(n_seqs / shard_size)))
+    pbar = tqdm(total=n_seqs)
 
     with open(index_path, "wt") as index_file:
         index_file.write("Marker\tShard\n")
         for shard_idx, shard_start in enumerate(range(0, n_seqs, shard_size)):
-            print(f"Opening shard #{shard_idx}")
+            logger.info(f"Opening shard #{shard_idx}")
             marker_id_shard_subset = marker_ids_subset[shard_start:shard_start + shard_size]
             compute_embedding_shard(
                 marker_id_shard_subset,
@@ -89,7 +102,7 @@ def compute_embedding(
                 pbar,
             )
 
-            print(f"Writing index for shard #{shard_idx}")
+            logger.info(f"Writing index for shard #{shard_idx}")
             for marker_id in marker_ids_subset:
                 index_file.write(
                     "{}\t{}\n".format(marker_id, shard_idx)
@@ -110,25 +123,20 @@ def compute_embedding_shard(
     with h5py.File(h5_output_path, 'w') as h5_file:
         # Next, embed the marker sequences in batches.
         for batch_idx, _i in enumerate(range(0, n_seqs_shard, batch_size)):
-            print("[*] batch #{}: {} --> {}".format(batch_idx, _i, _i + batch_size))
+            logger.info("Batch #{}: {} --> {}".format(batch_idx, _i, _i + batch_size))
             marker_ids_batch = marker_id_subset[_i:_i + batch_size]
             marker_seqs = [str(fasta[m_id]) for m_id in marker_ids_batch]
-            for _id, _seq in zip(marker_ids_batch, marker_seqs):  ## debug
-                print(f"{_id} -> {_seq}")        ## debug
-
             try:
                 batch_embeddings = embedding_model.embed_batch(marker_seqs, **embed_kwargs).cpu().float().numpy()  # shape (batch_len, embed_dim)
                 for marker_id, marker_embedding in zip(marker_ids_batch, batch_embeddings):  # each marker gets its own hdf5 entry.
                     h5_file.create_dataset(marker_id, data=marker_embedding, compression='lzf')
             except RuntimeError as e:
-                print("Encountered unexpected error while computing batched embedding. Reverting to unbatched mode for this batch.")
-                print("The error message was: {}".format(str(e)))
+                logger.error("Encountered unexpected error while computing batched embedding. Reverting to unbatched mode for this batch. Error message: %s", e)
                 for marker_id, marker_seq in zip(marker_ids_batch, marker_seqs):
                     try:
                         marker_embedding = embedding_model.embed_sequence(marker_seq).cpu().float().numpy()
                     except RuntimeError as e:
-                        print(f"For some reason, was unable to embed marker {marker_id} -- Skipping.")
-                        print("The error message was: {}".format(str(e)))
+                        logger.error("For some reason, was unable to embed marker {marker_id} -- Skipping. Error message: %s", e)
                     else:
                         h5_file.create_dataset(marker_id, data=marker_embedding, compression='lzf')
 
@@ -168,8 +176,8 @@ def do_job(
     with zstd.open(sgb_marker_index_file, "rt") as f:
         sgb_marker_index = json.load(f)
 
-    print(f"Subset contains {len(sgb_subset)} SGBs.")
-    print(f"Handling subset index {start_idx} through {end_idx}.")
+    logger.info(f"Subset contains {len(sgb_subset)} SGBs.")
+    logger.info(f"Handling subset index {start_idx} through {end_idx}.")
     compute_embedding(
         sgb_subset=sgb_subset[start_idx:end_idx],
         sgb_marker_index=sgb_marker_index,
@@ -184,7 +192,7 @@ def do_job(
 if __name__ == "__main__":
     args = parse_args()
 
-    print("CUDA available devices: {}".format(
+    logger.info("CUDA available devices: {}".format(
         torch.cuda.device_count()
     ))
 
