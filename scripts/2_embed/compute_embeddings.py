@@ -113,6 +113,8 @@ def compute_embedding_shard(
             print("[*] batch #{}: {} --> {}".format(batch_idx, _i, _i + batch_size))
             marker_ids_batch = marker_id_subset[_i:_i + batch_size]
             marker_seqs = [str(fasta[m_id]) for m_id in marker_ids_batch]
+            for _id, _seq in zip(marker_ids_batch, marker_seqs):  ## debug
+                print(f"{_id} -> {_seq}")        ## debug
 
             try:
                 batch_embeddings = embedding_model.embed_batch(marker_seqs, **embed_kwargs).cpu().float().numpy()  # shape (batch_len, embed_dim)
