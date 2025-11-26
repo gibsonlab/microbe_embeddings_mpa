@@ -23,6 +23,7 @@ import pandas as pd
 import h5py
 import torch
 from tensordict import TensorDict
+from tqdm import tqdm
 
 import sys
 import logging
@@ -79,7 +80,7 @@ def populate_tensordict_embeddings(embed_dir: Path, tdict: TensorDict, embed_dty
         shard = h5py.File(shard_file, "r")
         shard_size = len(shard.keys())
 
-        for marker_id in shard.keys():
+        for marker_id in tqdm(shard.keys(), total=shard_size, desc="{embed_dir.name}/{shard_file.name}"):
             marker_embedding = torch.tensor(
                 shard[marker_id],
                 dtype=embed_dtype,
