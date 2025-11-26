@@ -5,6 +5,7 @@ flash-attn==2.7.4.post1
 evo-model
 numpy
 pandas
+pyarrow
 scipy
 matplotlib
 h5py

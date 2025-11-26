@@ -113,12 +113,13 @@ def main(
         memmap_dir.mkdir(parents=True, exist_ok=True)
 
     embed_tdict = TensorDict()
-    populate_embeddings(
+    marker_df = populate_embeddings(
         embed_tdict,
         marker_embed_root_dir,
         embed_dtype=embed_dtype,
     )
 
+    # Apply memory-mapping.
     logger.info(f"Populated {len(embed_tdict)} embedding tensors total.")
     logger.info(f"Performing memory-mapping on disk. Destination = {memmap_dir}")
     memmap_dir.mkdir(exist_ok=True)
@@ -126,6 +127,11 @@ def main(
         str(memmap_dir),
         num_threads=num_memmap_threads
     )
+
+    # Save dataframe.
+    df_path = memmap_dir / "embedding_index.parquet"
+    marker_df.to_parquet(df_path)
+    logger.info(f"Saved dataframe to disk: {df_path}")
 
 
 if __name__ == "__main__":
