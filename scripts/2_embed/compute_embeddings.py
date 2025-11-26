@@ -123,7 +123,6 @@ def compute_embedding_shard(
     with h5py.File(h5_output_path, 'w') as h5_file:
         # Next, embed the marker sequences in batches.
         for batch_idx, _i in enumerate(range(0, n_seqs_shard, batch_size)):
-            logger.info("Batch #{}: {} --> {}".format(batch_idx, _i, _i + batch_size))
             marker_ids_batch = marker_id_subset[_i:_i + batch_size]
             marker_seqs = [str(fasta[m_id]) for m_id in marker_ids_batch]
             try:
