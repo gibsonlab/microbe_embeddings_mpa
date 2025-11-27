@@ -62,7 +62,7 @@ def populate_embeddings(
     df_sections = []
     for embed_dir in sorted(marker_embedding_root_dir.glob("part*")):
         logger.info(f"Reading subdirectory {embed_dir.name}")
-        assert (embed_dir / "embed.DONE").exists(), f"Embedding in ({embed_dir.name}) was not finished."
+        assert (embed_dir / ".embed.DONE").exists(), f"Embedding in ({embed_dir}) was not finished."
         populate_tensordict_embeddings(embed_dir, tdict, embed_dtype)
         df_subdir = fetch_embeddings_index(embed_dir)
 

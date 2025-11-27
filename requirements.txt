@@ -13,4 +13,3 @@ tqdm
 biopython
 pyfaidx
 zstandard
-bgzip
