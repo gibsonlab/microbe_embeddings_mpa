@@ -25,7 +25,7 @@ import torch
 from tensordict import TensorDict
 from tqdm import tqdm
 
-import sys
+import sys, os
 import logging
 logging.basicConfig(
     level=logging.INFO,
@@ -44,6 +44,14 @@ def parse_args() -> argparse.Namespace:
         required=False, default=1
     )
     return parser.parse_args()
+
+
+def format_size(bytes) -> str:
+    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+        if bytes < 1024.0:
+            return f"{bytes:.2f} {unit}"
+        bytes /= 1024.0
+    return f"{bytes:.2f} PB"
 
 
 def populate_embeddings(
@@ -76,7 +84,9 @@ def populate_embeddings(
 def populate_tensordict_embeddings(embed_dir: Path, tdict: TensorDict, embed_dtype):
     # Read each shard file, one by one.
     for shard_file in embed_dir.glob("shard-*.h5"):
-        logger.info(f"Reading shard file {shard_file}")
+        fsize = format_size(os.path.getsize(shard_file))
+
+        logger.info(f"Reading shard file {shard_file} ({fsize})")
         shard = h5py.File(shard_file, "r")
         shard_size = len(shard.keys())
 
