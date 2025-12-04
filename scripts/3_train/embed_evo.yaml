@@ -1,0 +1,10 @@
+# n_sgbs and n_markers are determined by the dataset.
+marker_embed_dim: 4096
+sgb_embed_dim: 32
+sgb_embed_latent_dim: 16
+n_layers: 2
+model_dim: 32
+num_heads: 8
+key_query_dim: 16
+latent_collection_dim: 16
+combination_latent_dim: 16

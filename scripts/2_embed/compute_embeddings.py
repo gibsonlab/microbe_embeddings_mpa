@@ -14,7 +14,7 @@ from pyfaidx import Fasta
 import torch
 import zstandard as zstd
 
-from gem.embeddings import GenomeEmbedding, EvoWrapper, DNABertSWrapper
+from gem.glms import GenomeEmbedding, EvoWrapper, DNABertSWrapper
 
 
 logging.basicConfig(
