@@ -14,7 +14,7 @@ def generate_test_profile() -> pd.DataFrame:
 
 def test_dataset():
     test_embed = MetaphlanMarkerEmbedding(
-        marker_embedding_memmap_dir=Path("/data/local/youn/metaphlan_dset/embeddings/phylophlan_markers/evo/memmap"),
+        marker_embedding_memmap_dir=Path("/data/local/youn/metaphlan_abundance_prediction/embedding_memmap"),
     )
     test_dset = MetaphlanDataset(
         generate_test_profile(),
