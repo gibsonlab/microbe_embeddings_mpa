@@ -1,4 +1,5 @@
 from pathlib import Path
+import zstandard as zstd
 import pandas as pd
 import torch
 
@@ -7,7 +8,8 @@ from gem.mpa.dataset import MetaphlanDataset
 
 
 def generate_test_profile() -> pd.DataFrame:
-    return pd.read_csv("example.tsv", sep='\t')
+    with zstd.open("example.tsv.zst", "rt") as f:
+        return pd.read_csv(f, sep='\t')
 
 
 def test_dataset():
