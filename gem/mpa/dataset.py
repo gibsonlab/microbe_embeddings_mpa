@@ -73,9 +73,11 @@ class MetaphlanDataset(Dataset):
         Note that each sample's SGB ordering is pre-determined by the input dataframe, so there is no need to return it here.
 
         :param sample: The sample instance to use.
-        :return: Tuple of (features, padding, targets)
+        :return: Tuple of (features, marker_padding, sgb_padding, targets)
+            - sgb_ids: List of the SGB ids that index the tensor.
             - features: Float Tensor of shape (max_num_sgbs, max_num_markers, embedding_dim) with SGB and their markers' embeddings
-            - marker_padding_mask: Boolean-valued Tensor of shape (max_num_sgbs, max_num_markers) indicating which SGBs and/or SGB-markers are padding placeholders (False) or actual values (True).
+            - marker_padding: Boolean-valued Tensor of shape (max_num_sgbs, max_num_markers) indicating which SGB markers are padding placeholders (False) or actual values (True).
+            - sgb_padding: Boolean-valued Tensor of shape (max_num_sgbs) indicating which SGBs are padding placeholders.
             - targets: Tensor of shape (max_num_sgbs,) with abundance values
         """
 
@@ -87,8 +89,9 @@ class MetaphlanDataset(Dataset):
             sgb_padding_mask = torch.zeros(self.max_num_sgbs, dtype=torch.bool)
 
         sgb_ids = []
+        targets = torch.zeros(self.max_num_sgbs, dtype=features.dtype)
         with timer(f"sample embedding loop over SGB: {sample.sample_id}"):
-            for sgb_id in sample.sgb_ids:
+            for sgb_id, sgb_abund in zip(sample.sgb_ids, sample.abundances):
                 try:
                     embedding, mask = self.marker_embedding.convert_sgb(sgb_id, self.max_num_markers)
                 except ValueError:
@@ -101,12 +104,8 @@ class MetaphlanDataset(Dataset):
                     features[_i] = embedding
                     marker_padding_mask[_i] = mask
                     sgb_padding_mask[_i] = True
+                    targets[_i] = sgb_abund
                     sgb_ids.append(sgb_id)
 
-        with timer(f"sample tensor creation: {sample.sample_id}"):
-            targets = torch.zeros(self.max_num_sgbs, dtype=features.dtype)
-            sample_abunds = sample.abundances
-            sample_abunds = sample_abunds / np.sum(sample_abunds)
-            targets[:len(sample.sgb_ids)] = torch.as_tensor(sample_abunds, dtype=features.dtype)
-
+        targets = targets / targets.sum()
         return sgb_ids, features, marker_padding_mask, sgb_padding_mask, targets
