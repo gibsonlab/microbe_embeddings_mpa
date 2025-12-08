@@ -47,6 +47,6 @@ if __name__ == "__main__":
     args = parse_args()
     main(
         dataset_df=pd.read_csv(args.dataset_tsv),
-        marker_embedding=MetaphlanMarkerEmbedding(marker_embedding_basedir=args.marker_embedding_basedir),
+        marker_embedding=MetaphlanMarkerEmbedding(marker_embedding_basedir=Path(args.marker_embedding_basedir)),
         memmap_dir=Path(args.memmap_dir),
     )
