@@ -2,6 +2,7 @@ from typing import *
 from pathlib import Path
 
 import h5py
+import pandas as pd
 import torch
 from torch import Tensor
 
@@ -15,7 +16,6 @@ class MetaphlanMarkerEmbedding:
         # Load cached tensors. (memory-mapped tensordict)
         assert marker_embedding_basedir.exists(), f"Specified marker embeddings {marker_embedding_basedir} does not exist!"
         self.marker_embedding_basedir = marker_embedding_basedir
-        self.sgb_to_markers = dict()  # Mapping of [SGB ID] -> [List of Marker IDs]
 
         # Print diagnostic.
         example_embedding = self.get_example_tensor()
@@ -31,7 +31,33 @@ class MetaphlanMarkerEmbedding:
         self.embedding_dim = self.padding_marker_embedding.shape[0]
 
         # Compute database mapping.
-        self.max_num_markers = max(len(x) for x in self.sgb_to_markers.values())
+        self.marker_index = self.calculate_marker_index()
+        self.max_num_markers = int(self.marker_index.groupby("SGB")['Marker'].count().max())
+        self.print_diagnostic()
+
+    def print_diagnostic(self):
+        print("Database statistics:")
+        print("# SGB = {}".format(len(pd.unique(self.marker_index.groupby("SGB")))))
+        print("# Markers = {}".format(self.marker_index.shape[0]))
+        print("Max. # markers = {}".format(self.max_num_markers))
+
+    def calculate_marker_index(self) -> pd.DataFrame:
+        """
+        :return: A mapping of [SGB ID] -> [List of Marker IDs]
+        """
+        df_parts = []
+        for part_dir in sorted(self.marker_embedding_basedir.glob("part*")):
+            assert (part_dir / "embed.DONE").exists(), f"Embedding for part ({part_dir.name}) was not finished."
+            df = pd.read_csv(part_dir / "index.tsv", sep='\t')
+
+            # Parse the Marker ID name, encoded in a previous stage (1_preprocess/1_degap_alignments.py)
+            first_split = df['Marker'].str.split(":").str
+            df['Protein'] = first_split[0]
+            second_split = first_split[1].str.split("__").str
+            df['SGB'] = "SGB{}".format(second_split[0])
+            df['Part'] = part_dir.name
+            df_parts.append(df)
+        return pd.concat(df_parts, ignore_index=True)
 
     def get_example_tensor(self) -> Tensor:
         part_dir = self.marker_embedding_basedir / "part1"
@@ -44,38 +70,14 @@ class MetaphlanMarkerEmbedding:
         """
         Load markers from pre-computed embedding file.
         """
-        n_markers_found = 0
-        for part_dir in sorted(self.marker_embedding_basedir.glob("part*")):
-            assert (part_dir / "embed.DONE").exists(), f"Embedding for part ({part_dir.name}) was not finished."
-            current_shard_idx = -1
-            current_shard_file = None
-
-            try:
-                with open(part_dir / "index.tsv", "rt") as index_file:
-                    for line in index_file:
-                        if not line.startswith(f"{sgb_id}__"):
-                            continue
-
-                        # found SGB marker token.
-                        n_markers_found += 1
-                        line_tokens = line.strip().split("\t")
-                        marker_id = line_tokens[0]
-                        marker_shard_idx = int(line_tokens[-1])
-
-                        # Ensure that we have the correct shard open.
-                        if current_shard_idx != marker_shard_idx:
-                            # close the previous file, open a new one.
-                            if current_shard_file is not None:
-                                current_shard_file.close()
-                            current_shard_file = h5py.File(part_dir / f"shard-{marker_shard_idx}.h5", "r")
-                            current_shard_idx = marker_shard_idx
-
-                        marker_embedding = torch.tensor(current_shard_file[marker_id][:], dtype=self.dtype)
-                        yield marker_id, marker_embedding
-            finally:
-                # Ensure file is closed even if exception occurs
-                if current_shard_file is not None:
-                    current_shard_file.close()
+        section = self.marker_index.loc[self.marker_index['SGB'] == sgb_id]
+        for (part_subdir, shard_idx), shard_section in section.groupby(["Part", "Shard"]):
+            # Open the appropriate shard file.
+            shard_path = self.marker_embedding_basedir / part_subdir / f"shard-{shard_idx}.h5"
+            with h5py.File(shard_path, "r") as shard:
+                for marker_id in shard_section['Marker']:
+                    marker_embedding = torch.tensor(shard[marker_id][:], dtype=self.dtype)
+                    yield marker_id, marker_embedding
 
     def convert_sgb(self, sgb_id: str, max_markers: int) -> Tuple[Tensor, Tensor]:
         """
