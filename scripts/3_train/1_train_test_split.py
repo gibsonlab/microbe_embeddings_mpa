@@ -20,6 +20,7 @@ def main(
 ):
     profiles = pd.read_csv(profile_tsv_path, sep="\t")
     profiles_indexed = profiles.set_index("clade_name").transpose()
+    profiles_indexed.index.name = "SampleID"
     metadata = pd.read_csv(metadata_tsv_path, sep="\t")
 
     metadata_subset = metadata.loc[
