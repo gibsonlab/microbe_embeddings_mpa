@@ -40,9 +40,11 @@ def allocate_sample(memmap_dir: Path, sample: MetaphlanProfile, dataset: Metaphl
 
 
 def perform_allocation(dataset: MetaphlanDataset, cache_dir: Path, num_threads: int):
-    if num_threads >= 1:
+    if num_threads <= 1:
+        print("Performing memory-mapping allocation in single-threaded mode.")
         perform_allocation_single_thread(dataset, cache_dir)
     else:
+        print("Performing memory-mapping allocation with {} threads.")
         perform_allocation_multi_thread(dataset, cache_dir, num_threads)
 
 
