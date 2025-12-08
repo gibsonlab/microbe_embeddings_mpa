@@ -5,9 +5,9 @@
 #SBATCH --mem=320G
 #SBATCH --cpus-per-task=80
 #SBATCH --time=5-00:00:00
-#SBATCH --job-name=memmap_dataset
-#SBATCH --output=logs/memmap_%A_%a.out
-#SBATCH --error=logs/memmap_%A_%a.err
+#SBATCH --job-name=memmap_train
+#SBATCH --output=logs/memmap_train_%A_%a.out
+#SBATCH --error=logs/memmap_train_%A_%a.err
 set -e
 
 
