@@ -28,8 +28,8 @@ def main(
     ]
     train_df, test_df = test_train_split_asv_separation(profiles_indexed, metadata_subset)
 
-    train_df.to_csv(train_out_path, sep="\t", index=False)
-    test_df.to_csv(test_out_path, sep="\t", index=False)
+    train_df.to_csv(train_out_path, sep="\t", index=True)
+    test_df.to_csv(test_out_path, sep="\t", index=True)
 
     print("# train samples: {}".format(train_df.shape[0]))
     print("# test samples: {}".format(test_df.shape[0]))
