@@ -26,7 +26,7 @@ class MetaphlanMarkerEmbedding:
 
         # Compute padding size.
         self.dtype = embed_dtype
-        self.padding_marker_embedding = torch.zeros_like(example_embedding)
+        self.padding_marker_embedding = torch.zeros(size=example_embedding.shape)
         assert len(self.padding_marker_embedding.shape) == 1, f"Embedding should be a vector! Got shape {self.padding_marker_embedding.shape} instead."
         self.embedding_dim = self.padding_marker_embedding.shape[0]
 
