@@ -46,7 +46,9 @@ class MetaphlanMarkerEmbedding:
         :return: A mapping of [SGB ID] -> [List of Marker IDs]
         """
         df_parts = []
+        print(f"Loading embedding metadata from {self.marker_embedding_basedir}")
         for part_dir in sorted(self.marker_embedding_basedir.glob("part*")):
+            print(f"Reading: {part_dir}")
             assert (part_dir / ".embed.DONE").exists(), f"Embedding for part ({part_dir.name}) was not finished (dir={part_dir})."
             df = pd.read_csv(part_dir / "index.tsv", sep='\t')
 
