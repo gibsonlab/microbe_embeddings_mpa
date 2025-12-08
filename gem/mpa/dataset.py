@@ -1,7 +1,5 @@
 from typing import *
 
-from pathlib import Path
-import numpy as np
 import pandas as pd
 import torch
 from torch import Tensor
@@ -12,13 +10,6 @@ from .embeddings import MetaphlanMarkerEmbedding
 from gem.util.timer import timer
 
 
-def load_dataset_dataframes(profile_tsv: Path, metadata_tsv: Path):
-    profiles = pd.read_csv(profile_tsv, sep="\t")
-    profiles_indexed = profiles.set_index("clade_name").transpose()
-    metadata = pd.read_csv(metadata_tsv, sep="\t")
-    return profiles_indexed, metadata
-
-
 class MetaphlanDataset(Dataset):
     """
     PyTorch Dataset for microbiome data with SGB embeddings and abundance values.
@@ -27,34 +18,22 @@ class MetaphlanDataset(Dataset):
     def __init__(
             self,
             dataset_df: pd.DataFrame,
-            marker_embedding: MetaphlanMarkerEmbedding,
-            max_num_sgbs: Optional[int] = None
+            marker_embedding: MetaphlanMarkerEmbedding
     ):
         """
         Initialize the microbiome dataset.
 
-        :max_num_sgbs: Specify the number of SGB slots to produce in each feature tensor.
-        Note: if max_num_sgbs is smaller than the actual maximum in the samples, then those
-        samples exceeding this many SGBs will be removed.
         :param dataset_df: A dataframe containing the profile(s) to be included. Index should be
         sample IDs, and each column should be a taxonomic ID.
+        :param marker_embedding:
         """
         self.df = dataset_df
         self.samples = list(MetaphlanProfileExtractor(dataset_df).samples())
-
-        if max_num_sgbs is not None:
-            print(f"Enforcing num_sgbs <= {max_num_sgbs}...")
-            self.samples = [s for s in self.samples if len(s.sgb_ids) <= max_num_sgbs]
-            print(f"--> Filtered out {len(self.samples)} samples out of {dataset_df.shape[0]}.")
-            self.max_num_sgbs = max_num_sgbs
-        else:
-            self.max_num_sgbs = max(len(sample.sgb_ids) for sample in self.samples)
 
         self.sample_indices = {sample.sample_id: idx for idx, sample in enumerate(self.samples)}
 
         self.max_num_markers = marker_embedding.max_num_markers
         print("Dataset statistics:")
-        print(f"\tMax. # SGBs = {self.max_num_sgbs}")
         print(f"\tMax. # SGB markers = {self.max_num_markers}")
         self.marker_embedding = marker_embedding
 
@@ -75,21 +54,21 @@ class MetaphlanDataset(Dataset):
         :param sample: The sample instance to use.
         :return: Tuple of (features, marker_padding, sgb_padding, targets)
             - sgb_ids: List of the SGB ids that index the tensor.
-            - features: Float Tensor of shape (max_num_sgbs, max_num_markers, embedding_dim) with SGB and their markers' embeddings
-            - marker_padding: Boolean-valued Tensor of shape (max_num_sgbs, max_num_markers) indicating which SGB markers are padding placeholders (False) or actual values (True).
-            - sgb_padding: Boolean-valued Tensor of shape (max_num_sgbs) indicating which SGBs are padding placeholders.
-            - targets: Tensor of shape (max_num_sgbs,) with abundance values
+            - features: Float Tensor of shape (num_sgbs, max_num_markers, embedding_dim) with SGB and their markers' embeddings
+            - marker_padding: Boolean-valued Tensor of shape (num_sgbs, max_num_markers) indicating which SGB markers are padding placeholders (False) or actual values (True).
+            - sgb_padding: Boolean-valued Tensor of shape (num_sgbs) indicating which SGBs are padding placeholders.
+            - targets: Tensor of shape (num_sgbs,) with abundance values
         """
-
+        num_sgbs = len(sample.sgb_ids)
         with timer(f"sample initialization: {sample.sample_id}"):
             # Preallocate tensors directly
-            features = torch.zeros((self.max_num_sgbs, self.max_num_markers, self.marker_embedding.embedding_dim),
+            features = torch.zeros((num_sgbs, self.max_num_markers, self.marker_embedding.embedding_dim),
                                    dtype=self.marker_embedding.dtype)
-            marker_padding_mask = torch.zeros((self.max_num_sgbs, self.max_num_markers), dtype=torch.bool)
-            sgb_padding_mask = torch.zeros(self.max_num_sgbs, dtype=torch.bool)
+            marker_padding_mask = torch.zeros((num_sgbs, self.max_num_markers), dtype=torch.bool)
+            sgb_padding_mask = torch.zeros(num_sgbs, dtype=torch.bool)
 
         sgb_ids = []
-        targets = torch.zeros(self.max_num_sgbs, dtype=features.dtype)
+        targets = torch.zeros(num_sgbs, dtype=features.dtype)
         with timer(f"sample embedding loop over SGB: {sample.sample_id}"):
             for sgb_id, sgb_abund in zip(sample.sgb_ids, sample.abundances):
                 try:

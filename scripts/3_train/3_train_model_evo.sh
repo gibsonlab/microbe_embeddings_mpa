@@ -11,7 +11,7 @@
 # Note: this is a Slurm script, meant to be run on ErisXDL compute nodes with GPUs.
 set -e
 
-embeddings_memmap=/data/cctm/youn/metaphlan_dset/embeddings/phylophlan_markers/evo/memmap
+embeddings_memmap="/data/cctm/youn/metaphlan_dset/embeddings/phylophlan_markers/evo/memmap"
 
 training_set="/data/cctm/youn/metaphlan_dset/model_training/train.tsv"
 test_set="/data/cctm/youn/metaphlan_dset/model_training/test.tsv"
