@@ -32,8 +32,9 @@ def test_dataset():
     assert t.shape[0] == test_dset.max_num_sgbs
 
     # ensure that the number of non-padded SGBs equals the number of nonzero feature vectors.
-    assert torch.sum(t != 0.0) == len(sgbs)
-
+    assert len(sgbs) == torch.sum(t != 0.0)
+    assert len(sgbs) == torch.sum(s)
+    assert len(sgbs) == (f == 0).all(dim=1).sum()
 
 if __name__ == "__main__":
     test_dataset()
