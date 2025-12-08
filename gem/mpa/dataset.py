@@ -43,7 +43,7 @@ class MetaphlanDataset(Dataset):
 
     def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
         sample = self.samples[idx]
-        with timer(f"load_sample_embeddings {sample.sample_id}"):
+        with timer(f"load_sample_embeddings {sample.sample_id}", enabled=False):
             _, features, marker_padding_mask, sgb_padding_mask, targets = self.load_sample_embeddings(sample)
         return features, marker_padding_mask, sgb_padding_mask, targets
 
@@ -61,7 +61,7 @@ class MetaphlanDataset(Dataset):
             - targets: Tensor of shape (num_sgbs,) with abundance values
         """
         num_sgbs = len(sample.sgb_ids)
-        with timer(f"sample initialization: {sample.sample_id}"):
+        with timer(f"sample initialization: {sample.sample_id}", enabled=False):
             # Preallocate tensors directly
             features = torch.zeros((num_sgbs, self.max_num_markers, self.marker_embedding.embedding_dim),
                                    dtype=self.marker_embedding.dtype)
@@ -70,7 +70,7 @@ class MetaphlanDataset(Dataset):
 
         sgb_ids = []
         targets = torch.zeros(num_sgbs, dtype=features.dtype)
-        with timer(f"sample embedding loop over SGB: {sample.sample_id}"):
+        with timer(f"sample embedding loop over SGB: {sample.sample_id}", enabled=False):
             for sgb_id, sgb_abund in zip(sample.sgb_ids, sample.abundances):
                 try:
                     embedding, mask = self.marker_embedding.convert_sgb(sgb_id, self.max_num_markers)

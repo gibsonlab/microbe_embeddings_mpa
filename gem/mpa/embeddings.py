@@ -39,7 +39,7 @@ class MetaphlanMarkerEmbedding:
         print("Database statistics:")
         print("# SGB = {}".format(len(pd.unique(self.marker_index["SGB"]))))
         print("# Markers = {}".format(self.marker_index.shape[0]))
-        print("Max. # markers = {}".format(self.max_num_markers))
+        print("Max. # markers (per SGB) = {}".format(self.max_num_markers))
 
     def calculate_marker_index(self) -> pd.DataFrame:
         """

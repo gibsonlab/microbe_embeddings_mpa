@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import *
 
 from pathlib import Path
@@ -7,6 +8,7 @@ from torch.utils.data import Dataset
 from tensordict import TensorDict
 from tqdm import tqdm
 
+from .abundance_profile import MetaphlanProfile
 from .dataset import MetaphlanDataset
 
 """
@@ -20,11 +22,66 @@ From https://docs.pytorch.org/tensordict/main/saving.html
     x = TensorDict.load_memmap("/path/to/saved/dir")
 """
 
+
+def allocate_sample(memmap_dir: Path, sample: MetaphlanProfile, dataset: MetaphlanDataset) -> bool:
+    """
+    Allocate a single sample to memory-mapped storage.
+    """
+    assert not (memmap_dir / "meta.json").exists()
+    memmap_dir.mkdir(exist_ok=True, parents=False)  # parent dir should already exist!
+    _, features, marker_padding_mask, sgb_padding_mask, targets = dataset.load_sample_embeddings(sample)
+    x = TensorDict()
+    x['features'] = features
+    x['mpadding'] = marker_padding_mask
+    x['spadding'] = sgb_padding_mask
+    x['targets'] = targets
+    x.memmap(str(memmap_dir))
+    return True
+
+
+def perform_allocation(dataset: MetaphlanDataset, cache_dir: Path, num_threads: int):
+    if num_threads >= 1:
+        perform_allocation_single_thread(dataset, cache_dir)
+    else:
+        perform_allocation_multi_thread(dataset, cache_dir, num_threads)
+
+
+def perform_allocation_single_thread(dataset: MetaphlanDataset, cache_dir: Path):
+    for sample in tqdm(dataset.samples, desc="Sample Allocation"):
+        memmap_dir = cache_dir / sample.sample_id
+        if (memmap_dir / "meta.json").exists():
+            # TensorDict is already allocated; nothing to do.
+            pass
+        else:
+            # Allocate the TensorDict.
+            allocate_sample(memmap_dir, sample, dataset)
+
+
+def perform_allocation_multi_thread(dataset: MetaphlanDataset, cache_dir: Path, num_threads: int):
+    with ThreadPoolExecutor(max_workers=num_threads) as executor:
+        # Submit all tasks
+        futures = []
+        n_tasks = 0
+        for sample in dataset.samples:
+            memmap_dir = cache_dir / sample.sample_id
+            if (memmap_dir / "meta.json").exists():
+                continue
+            futures.append(
+                executor.submit(allocate_sample, memmap_dir, sample, dataset)
+            )
+            n_tasks += 1
+
+        # Process completed tasks with progress bar
+        with tqdm(total=n_tasks, desc="Sample Allocation") as pbar:
+            for future in as_completed(futures):
+                _ = future.result()
+                pbar.update(1)
+
+
 class MetaphlanDatasetMemmapped(Dataset):
     """
     A class which pre-computes all tensors and stores into a memory-mapped tensordict.
     """
-
     def __init__(
             self,
             dataset_df: pd.DataFrame
@@ -33,23 +90,6 @@ class MetaphlanDatasetMemmapped(Dataset):
         self.df = dataset_df
         self.tensor_cache: List[TensorDict] = []
         self.loaded = False
-
-    def perform_allocation(self, dataset: MetaphlanDataset, cache_dir: Path):
-        for sample_idx, sample in enumerate(tqdm(dataset.samples, desc="Sample Allocation")):
-            memmap_dir = cache_dir / sample.sample_id
-            if (memmap_dir / "meta.json").exists():
-                # TensorDict is already allocated; nothing to do.
-                pass
-            else:
-                # Allocate the TensorDict.
-                memmap_dir.mkdir(exist_ok=True, parents=False)  # parent dir should already exist!
-                features, marker_padding_mask, sgb_padding_mask, targets = dataset.__getitem__(sample_idx)
-                x = TensorDict()
-                x['features'] = features
-                x['mpadding'] = marker_padding_mask
-                x['spadding'] = sgb_padding_mask
-                x['targets'] = targets
-                x.memmap(str(memmap_dir))
 
     def load_memmap_tensors(self, cache_dir: Path):
         print(f"Using tensor memmap directory: {cache_dir}")

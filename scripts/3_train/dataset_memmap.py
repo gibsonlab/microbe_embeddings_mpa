@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pandas as pd
 from gem.mpa import MetaphlanMarkerEmbedding
-from gem.mpa import MetaphlanDatasetMemmapped, MetaphlanDataset
+from gem.mpa import perform_allocation, MetaphlanDataset
 
 
 def parse_args():
@@ -26,6 +26,7 @@ def parse_args():
     parser.add_argument("-d", "--dataset-tsv", dest="dataset_tsv", required=True, type=str)
     parser.add_argument("-e", "--embedding-dir", dest="marker_embedding_basedir", required=True, type=str)
     parser.add_argument("-m", "--memmap-dir", dest="memmap_dir", required=True, type=str)
+    parser.add_argument("-t", "--threads", dest="num_threads", required=False, type=int, default=1)
     return parser.parse_args()
 
 
@@ -33,13 +34,14 @@ def main(
         dataset_df: pd.DataFrame,
         marker_embedding: MetaphlanMarkerEmbedding,
         memmap_dir: Path,
+        num_workers: int,
 ):
     memmap_dir.mkdir(parents=True, exist_ok=True)
-    memmapped_dset = MetaphlanDatasetMemmapped(dataset_df)
     regular_dset = MetaphlanDataset(dataset_df, marker_embedding)
-    memmapped_dset.perform_allocation(
+    perform_allocation(
         dataset=regular_dset,
         cache_dir=memmap_dir,
+        num_threads=num_workers
     )
     print("Finished memory-mapping tensors.")
 
@@ -50,4 +52,5 @@ if __name__ == "__main__":
         dataset_df=pd.read_csv(args.dataset_tsv, sep='\t', index_col="SampleID"),
         marker_embedding=MetaphlanMarkerEmbedding(marker_embedding_basedir=Path(args.marker_embedding_basedir)),
         memmap_dir=Path(args.memmap_dir),
+        num_workers=args.num_threads,
     )
