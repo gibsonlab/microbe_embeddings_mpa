@@ -10,6 +10,7 @@ class MetaphlanMarkerEmbedding:
     def __init__(
             self,
             marker_embedding_basedir: Path,
+            embed_dtype=torch.float32
     ):
         # Load cached tensors. (memory-mapped tensordict)
         assert marker_embedding_basedir.exists(), f"Specified marker embeddings {marker_embedding_basedir} does not exist!"
@@ -24,7 +25,7 @@ class MetaphlanMarkerEmbedding:
         ))
 
         # Compute padding size.
-        self.dtype = example_embedding.dtype
+        self.dtype = embed_dtype
         self.padding_marker_embedding = torch.zeros_like(example_embedding)
         assert len(self.padding_marker_embedding.shape) == 1, f"Embedding should be a vector! Got shape {self.padding_marker_embedding.shape} instead."
         self.embedding_dim = self.padding_marker_embedding.shape[0]
