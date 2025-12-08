@@ -61,6 +61,11 @@ class MetaphlanMarkerEmbedding:
             df_parts.append(df)
         return pd.concat(df_parts, ignore_index=True)
 
+    def num_markers(self, sgb_id: str) -> int:
+        return self.marker_index.loc[
+            self.marker_index['SGB'] == sgb_id
+        ].shape[0]
+
     def get_example_tensor(self) -> Tensor:
         part_dir = self.marker_embedding_basedir / "part1"
         with h5py.File(part_dir / "shard-0.h5", "r") as shard:

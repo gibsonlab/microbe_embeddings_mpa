@@ -32,10 +32,6 @@ class MetaphlanDataset(Dataset):
         self.samples = list(MetaphlanProfileExtractor(dataset_df).samples())
 
         self.sample_indices = {sample.sample_id: idx for idx, sample in enumerate(self.samples)}
-
-        self.max_num_markers = marker_embedding.max_num_markers
-        print("Dataset statistics:")
-        print(f"\tMax. # SGB markers = {self.max_num_markers}")
         self.marker_embedding = marker_embedding
 
     def __len__(self) -> int:
@@ -61,11 +57,12 @@ class MetaphlanDataset(Dataset):
             - targets: Tensor of shape (num_sgbs,) with abundance values
         """
         num_sgbs = len(sample.sgb_ids)
+        max_num_markers = max(self.marker_embedding.num_markers(sgb_id) for sgb_id in sample.sgb_ids)
         with timer(f"sample initialization: {sample.sample_id}", enabled=False):
             # Preallocate tensors directly
-            features = torch.zeros((num_sgbs, self.max_num_markers, self.marker_embedding.embedding_dim),
+            features = torch.zeros((num_sgbs, max_num_markers, self.marker_embedding.embedding_dim),
                                    dtype=self.marker_embedding.dtype)
-            marker_padding_mask = torch.zeros((num_sgbs, self.max_num_markers), dtype=torch.bool)
+            marker_padding_mask = torch.zeros((num_sgbs, max_num_markers), dtype=torch.bool)
             sgb_padding_mask = torch.zeros(num_sgbs, dtype=torch.bool)
 
         sgb_ids = []
@@ -73,7 +70,7 @@ class MetaphlanDataset(Dataset):
         with timer(f"sample embedding loop over SGB: {sample.sample_id}", enabled=False):
             for sgb_id, sgb_abund in zip(sample.sgb_ids, sample.abundances):
                 try:
-                    embedding, mask = self.marker_embedding.convert_sgb(sgb_id, self.max_num_markers)
+                    embedding, mask = self.marker_embedding.convert_sgb(sgb_id, max_num_markers)
                 except ValueError:
                     print(f"Error while trying to load {sgb_id} for sample {sample.sample_id}")
                     raise
