@@ -44,7 +44,7 @@ def perform_allocation(dataset: MetaphlanDataset, cache_dir: Path, num_threads: 
         print("Performing memory-mapping allocation in single-threaded mode.")
         perform_allocation_single_thread(dataset, cache_dir)
     else:
-        print("Performing memory-mapping allocation with {} threads.")
+        print(f"Performing memory-mapping allocation with {num_threads} threads.")
         perform_allocation_multi_thread(dataset, cache_dir, num_threads)
 
 
