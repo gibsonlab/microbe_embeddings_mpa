@@ -56,7 +56,7 @@ class MetaphlanMarkerEmbedding:
             first_split = df['Marker'].str.split(":").str
             df['Protein'] = first_split[0]
             second_split = first_split[1].str.split("__").str
-            df['SGB'] = "SGB{}".format(second_split[0])
+            df['SGB'] = "SGB" + second_split[0]
             df['Part'] = part_dir.name
             df_parts.append(df)
         return pd.concat(df_parts, ignore_index=True)
