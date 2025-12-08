@@ -32,7 +32,11 @@ class MetaphlanMarkerEmbedding:
 
         # Compute database mapping.
         self.marker_index = self.calculate_marker_index()
-        self.max_num_markers = int(self.marker_index.groupby("SGB")['Marker'].count().max())
+        self.num_markers_by_sgb = {
+            sgb_id: int(count)
+            for sgb_id, count in self.marker_index.groupby("SGB")['Marker'].count()
+        }
+        self.max_num_markers = max(self.num_markers_by_sgb.values())
         self.print_diagnostic()
 
     def print_diagnostic(self):
@@ -62,9 +66,7 @@ class MetaphlanMarkerEmbedding:
         return pd.concat(df_parts, ignore_index=True)
 
     def num_markers(self, sgb_id: str) -> int:
-        return self.marker_index.loc[
-            self.marker_index['SGB'] == sgb_id
-        ].shape[0]
+        return self.num_markers_by_sgb[sgb_id]
 
     def get_example_tensor(self) -> Tensor:
         part_dir = self.marker_embedding_basedir / "part1"
