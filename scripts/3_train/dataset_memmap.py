@@ -27,6 +27,8 @@ def parse_args():
     parser.add_argument("-e", "--embedding-dir", dest="marker_embedding_basedir", required=True, type=str)
     parser.add_argument("-m", "--memmap-dir", dest="memmap_dir", required=True, type=str)
     parser.add_argument("-t", "--threads", dest="num_threads", required=False, type=int, default=1)
+    parser.add_argument("--start", dest="start_row", required=False, type=int, default=0)  # inclusive
+    parser.add_argument("--end", dest="end_row", required=False, type=int, default=-1)  # inclusive
     return parser.parse_args()
 
 
@@ -48,8 +50,18 @@ def main(
 
 if __name__ == "__main__":
     args = parse_args()
+    dataset_df = pd.read_csv(args.dataset_tsv, sep='\t', index_col="SampleID")
+    start_idx = args.start_row - 1
+    if args.end_row == -1:
+        print(f"Executing allocation for row #{args.start_row} onwards.")
+        dataset_df = dataset_df.iloc[start_idx:]
+    else:
+        print(f"Executing allocation for row #{args.start_row} ~ #{args.end_row} (inclusive).")
+        end_idx = args.end_row
+        dataset_df = dataset_df.iloc[start_idx:end_idx]
+
     main(
-        dataset_df=pd.read_csv(args.dataset_tsv, sep='\t', index_col="SampleID"),
+        dataset_df=dataset_df,
         marker_embedding=MetaphlanMarkerEmbedding(marker_embedding_basedir=Path(args.marker_embedding_basedir)),
         memmap_dir=Path(args.memmap_dir),
         num_workers=args.num_threads,

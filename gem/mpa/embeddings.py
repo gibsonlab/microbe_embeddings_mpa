@@ -19,7 +19,7 @@ class MetaphlanMarkerEmbedding:
 
         # Print diagnostic.
         example_embedding = self.get_example_tensor()
-        print("Loaded tensor embeddings from {} (genome embedding shape = {})".format(
+        print("Tensor embeddings source: {} (genome embedding shape = {})".format(
             self.marker_embedding_basedir,
             example_embedding.shape
         ))
