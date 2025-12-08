@@ -47,7 +47,7 @@ class MetaphlanMarkerEmbedding:
         """
         df_parts = []
         for part_dir in sorted(self.marker_embedding_basedir.glob("part*")):
-            assert (part_dir / "embed.DONE").exists(), f"Embedding for part ({part_dir.name}) was not finished."
+            assert (part_dir / "embed.DONE").exists(), f"Embedding for part ({part_dir.name}) was not finished (dir={part_dir})."
             df = pd.read_csv(part_dir / "index.tsv", sep='\t')
 
             # Parse the Marker ID name, encoded in a previous stage (1_preprocess/1_degap_alignments.py)
