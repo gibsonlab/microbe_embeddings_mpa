@@ -12,7 +12,7 @@ set -e
 
 
 TSV_FILE=/data/cctm/youn/metaphlan_dset/model_training/train.tsv
-N_LINES_TSV=$(wc -l < $TSV_FIlE)   # Total items (replace with your value)
+N_LINES_TSV=$(wc -l < $TSV_FILE)   # Total items (replace with your value)
 N_SAMPLES=$((N_LINES_TSV - 1))
 
 # Total number of items
