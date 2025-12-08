@@ -2,7 +2,7 @@
 #SBATCH --partition=bwh_comppath_long
 #SBATCH --array=1-10
 #SBATCH --ntasks=1
-#SBATCH --mem=320
+#SBATCH --mem=320G
 #SBATCH --cpus-per-task=80
 #SBATCH --time=5-00:00:00
 #SBATCH --job-name=memmap_dataset
