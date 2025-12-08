@@ -36,7 +36,7 @@ class MetaphlanMarkerEmbedding:
         part_dir = self.marker_embedding_basedir / "part1"
         with h5py.File(part_dir / "shard-0.h5", "r") as shard:
             first_key = next(iter(shard.keys()))
-            example = shard[first_key]
+            example = shard[first_key][:]
             return example
 
     def get_sgb_markers_from_file(self, sgb_id: str) -> Iterator[Tuple[str, Tensor]]:
