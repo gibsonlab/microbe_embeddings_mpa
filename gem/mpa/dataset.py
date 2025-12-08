@@ -27,6 +27,7 @@ class MetaphlanDataset(Dataset):
         sample IDs, and each column should be a taxonomic ID.
         :param marker_embedding:
         """
+        super().__init__()
         self.df = dataset_df
         self.samples = list(MetaphlanProfileExtractor(dataset_df).samples())
 

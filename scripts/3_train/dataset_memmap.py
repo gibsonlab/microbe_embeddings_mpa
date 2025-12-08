@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pandas as pd
 from gem.mpa import MetaphlanMarkerEmbedding
-from gem.mpa import MetaphlanDatasetMemmapped
+from gem.mpa import MetaphlanDatasetMemmapped, MetaphlanDataset
 
 
 def parse_args():
@@ -35,9 +35,10 @@ def main(
         memmap_dir: Path,
 ):
     memmap_dir.mkdir(parents=True, exist_ok=True)
-    MetaphlanDatasetMemmapped(
-        dataset_df=dataset_df,
-        marker_embedding=marker_embedding,
+    memmapped_dset = MetaphlanDatasetMemmapped(dataset_df)
+    regular_dset = MetaphlanDataset(dataset_df, marker_embedding)
+    memmapped_dset.perform_allocation(
+        dataset=regular_dset,
         cache_dir=memmap_dir,
     )
     print("Finished memory-mapping tensors.")

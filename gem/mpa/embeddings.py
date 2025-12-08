@@ -37,7 +37,7 @@ class MetaphlanMarkerEmbedding:
 
     def print_diagnostic(self):
         print("Database statistics:")
-        print("# SGB = {}".format(len(pd.unique(self.marker_index.groupby("SGB")))))
+        print("# SGB = {}".format(len(pd.unique(self.marker_index["SGB"]))))
         print("# Markers = {}".format(self.marker_index.shape[0]))
         print("Max. # markers = {}".format(self.max_num_markers))
 
