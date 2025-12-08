@@ -56,12 +56,13 @@ class MetaphlanDataset(Dataset):
             - sgb_padding: Boolean-valued Tensor of shape (num_sgbs) indicating which SGBs are padding placeholders.
             - targets: Tensor of shape (num_sgbs,) with abundance values
         """
+        EMBED_DTYPE = torch.float32
         num_sgbs = len(sample.sgb_ids)
         max_num_markers = max(self.marker_embedding.num_markers(sgb_id) for sgb_id in sample.sgb_ids)
         with timer(f"sample initialization: {sample.sample_id}", enabled=False):
             # Preallocate tensors directly
             features = torch.zeros((num_sgbs, max_num_markers, self.marker_embedding.embedding_dim),
-                                   dtype=self.marker_embedding.dtype)
+                                   dtype=EMBED_DTYPE)
             marker_padding_mask = torch.zeros((num_sgbs, max_num_markers), dtype=torch.bool)
             sgb_padding_mask = torch.zeros(num_sgbs, dtype=torch.bool)
 
@@ -70,7 +71,10 @@ class MetaphlanDataset(Dataset):
         with timer(f"sample embedding loop over SGB: {sample.sample_id}", enabled=False):
             for sgb_id, sgb_abund in zip(sample.sgb_ids, sample.abundances):
                 try:
+                    # these are numpy arrays! need to convert to torch tensors.
                     embedding, mask = self.marker_embedding.convert_sgb(sgb_id, max_num_markers)
+                    embedding = torch.from_numpy(embedding)
+                    mask = torch.from_numpy(mask)
                 except ValueError:
                     print(f"Error while trying to load {sgb_id} for sample {sample.sample_id}")
                     raise

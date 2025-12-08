@@ -2,16 +2,18 @@ from typing import *
 from pathlib import Path
 
 import h5py
+import numpy as np
 import pandas as pd
-import torch
-from torch import Tensor
 
 
 class MetaphlanMarkerEmbedding:
+    """
+    A class which encapsulates pre-computed embeddings (step 2: 2_embed/compute_embeddings.py) which automatically
+    stores all marker embeddings in a sharded manner.
+    """
     def __init__(
             self,
-            marker_embedding_basedir: Path,
-            embed_dtype=torch.float32
+            marker_embedding_basedir: Path
     ):
         # Load cached tensors. (memory-mapped tensordict)
         assert marker_embedding_basedir.exists(), f"Specified marker embeddings {marker_embedding_basedir} does not exist!"
@@ -25,8 +27,7 @@ class MetaphlanMarkerEmbedding:
         ))
 
         # Compute padding size.
-        self.dtype = embed_dtype
-        self.padding_marker_embedding = torch.zeros(size=example_embedding.shape)
+        self.padding_marker_embedding = np.zeros(shape=example_embedding.shape)
         assert len(self.padding_marker_embedding.shape) == 1, f"Embedding should be a vector! Got shape {self.padding_marker_embedding.shape} instead."
         self.embedding_dim = self.padding_marker_embedding.shape[0]
 
@@ -68,14 +69,22 @@ class MetaphlanMarkerEmbedding:
     def num_markers(self, sgb_id: str) -> int:
         return self.num_markers_by_sgb[sgb_id]
 
-    def get_example_tensor(self) -> Tensor:
+    def get_example_tensor(self) -> np.ndarray:
         part_dir = self.marker_embedding_basedir / "part1"
         with h5py.File(part_dir / "shard-0.h5", "r") as shard:
             first_key = next(iter(shard.keys()))
             example = shard[first_key][:]
             return example
 
-    def get_sgb_markers_from_file(self, sgb_id: str) -> Iterator[Tuple[str, Tensor]]:
+    def all_markers(self) -> Iterator[Tuple[str, np.ndarray]]:
+        for part_dir in sorted(self.marker_embedding_basedir.glob("part*")):
+            for shard_file in part_dir.glob("shard-*.h5"):
+                with h5py.File(shard_file, "r") as shard:
+                    for marker_id in shard.keys():
+                        marker_embedding_numpy = shard[marker_id][:]
+                        yield marker_id, marker_embedding_numpy
+
+    def get_sgb_markers_from_file(self, sgb_id: str) -> Iterator[Tuple[str, np.ndarray]]:
         """
         Load markers from pre-computed embedding file.
         """
@@ -85,10 +94,10 @@ class MetaphlanMarkerEmbedding:
             shard_path = self.marker_embedding_basedir / part_subdir / f"shard-{shard_idx}.h5"
             with h5py.File(shard_path, "r") as shard:
                 for marker_id in shard_section['Marker']:
-                    marker_embedding = torch.tensor(shard[marker_id][:], dtype=self.dtype)
+                    marker_embedding = shard[marker_id][:]
                     yield marker_id, marker_embedding
 
-    def convert_sgb(self, sgb_id: str, max_markers: int) -> Tuple[Tensor, Tensor]:
+    def convert_sgb(self, sgb_id: str, max_markers: int) -> Tuple[np.ndarray, np.ndarray]:
         """
         Convert SGB to tensor format. Thread-safe.
         """
@@ -106,9 +115,9 @@ class MetaphlanMarkerEmbedding:
             raise ValueError(f"max_markers was {max_markers}, but SGB has {num_markers} markers!")
 
         # Create padding mask tensor. Also fill the embeddings with padding.
-        marker_padding_mask = torch.zeros(max_markers, dtype=torch.bool)
+        marker_padding_mask = np.zeros(max_markers, dtype=bool)
         marker_padding_mask[:len(marker_embeddings)] = True  # True indicates that this position is NOT empty
 
         marker_embeddings += [self.padding_marker_embedding for _ in range(max_markers - len(marker_embeddings))]
-        marker_embeddings = torch.stack(marker_embeddings, dim=0)
+        marker_embeddings = np.stack(marker_embeddings, axis=0)
         return marker_embeddings, marker_padding_mask
