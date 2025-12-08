@@ -142,8 +142,8 @@ def parse_args() -> argparse.Namespace:
 
 def main():
     args = parse_args()
-    train_df = pd.read_csv(args.train, sep='\t')
-    test_df = pd.read_csv(args.test, sep='\t')
+    train_df = pd.read_csv(args.train, sep='\t', index_col="SampleID")
+    test_df = pd.read_csv(args.test, sep='\t', index_col="SampleID")
 
     seed = args.seed
     model_cfg = load_model_config(args.model_cfg_path, rng_seed=seed + 1)

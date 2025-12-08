@@ -23,10 +23,12 @@ def main(
     profiles_indexed.index.name = "SampleID"
     metadata = pd.read_csv(metadata_tsv_path, sep="\t")
 
+    print("Number of samples (All): {}".format(metadata.shape[0]))
     metadata_subset = metadata.loc[
         (metadata['age_category'] == 'adult')
         & (metadata['disease'] == 'healthy')
     ]
+    print("Number of samples (Adult & Healthy): {}".format(metadata.shape[0]))
     train_df, test_df = test_train_split_asv_separation(profiles_indexed, metadata_subset)
 
     train_df.to_csv(train_out_path, sep="\t", index=True)

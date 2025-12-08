@@ -47,7 +47,7 @@ def main(
 if __name__ == "__main__":
     args = parse_args()
     main(
-        dataset_df=pd.read_csv(args.dataset_tsv),
+        dataset_df=pd.read_csv(args.dataset_tsv, sep='\t', index_col="SampleID"),
         marker_embedding=MetaphlanMarkerEmbedding(marker_embedding_basedir=Path(args.marker_embedding_basedir)),
         memmap_dir=Path(args.memmap_dir),
     )
