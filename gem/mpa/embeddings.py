@@ -34,7 +34,7 @@ class MetaphlanMarkerEmbedding:
         self.marker_index = self.calculate_marker_index()
         self.num_markers_by_sgb = {
             sgb_id: int(count)
-            for sgb_id, count in self.marker_index.groupby("SGB")['Marker'].count()
+            for sgb_id, count in self.marker_index.groupby("SGB")['Marker'].count().items()
         }
         self.max_num_markers = max(self.num_markers_by_sgb.values())
         self.print_diagnostic()
