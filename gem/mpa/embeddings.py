@@ -113,24 +113,16 @@ class MetaphlanMarkerEmbedding:
             return example
 
     def _all_markers_raw(self, shuffle_shard: bool = False) -> Iterator[Tuple[str, np.ndarray]]:
-        running_total = 0
         for part_dir in sorted(self.marker_embedding_basedir.glob("part*")):
-            print(part_dir)
             for shard_file in part_dir.glob("shard-*.h5"):
-                print(shard_file)
                 with h5py.File(shard_file, "r") as shard:
                     marker_ids = list(shard.keys())
-                    print("# markers = {}".format(len(marker_ids)))
                     if shuffle_shard:
                         random.shuffle(marker_ids)
 
                     for marker_id in marker_ids:
                         marker_embedding_numpy = shard[marker_id][:]
                         yield marker_id, marker_embedding_numpy
-
-                    running_total += len(marker_ids)
-                    print("Running total = {}".format(running_total))
-        print("Grand total: {}".format(running_total))
 
     def get_sgb_markers_from_file(self, sgb_id: str) -> Iterator[Tuple[str, np.ndarray]]:
         """

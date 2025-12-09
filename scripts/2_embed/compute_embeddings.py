@@ -103,7 +103,7 @@ def compute_embedding(
             )
 
             logger.info(f"Writing index for shard #{shard_idx}")
-            for marker_id in marker_ids_subset:
+            for marker_id in marker_id_shard_subset:
                 index_file.write(
                     "{}\t{}\n".format(marker_id, shard_idx)
                 )
