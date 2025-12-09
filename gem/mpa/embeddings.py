@@ -41,7 +41,7 @@ class MetaphlanMarkerEmbedding:
         self.print_diagnostic()
 
     @property
-    def num_markers(self) -> int:
+    def total_num_markers(self) -> int:
         return self.marker_index.shape[0]
 
     def print_diagnostic(self):
