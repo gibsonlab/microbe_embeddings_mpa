@@ -39,6 +39,7 @@ python dataset_memmap.py \
   --memmap-dir "/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmmap_samples" \
   --threads 6 \
   --start $start_row \
-  --end $end_row
+  --end $end_row \
+  --dimension-reduce 768
 
 echo "Done!"

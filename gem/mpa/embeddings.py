@@ -1,9 +1,24 @@
 from typing import *
 from pathlib import Path
+from itertools import islice
 
 import h5py
 import numpy as np
 import pandas as pd
+import random
+from tqdm import tqdm
+from sklearn.decomposition import IncrementalPCA
+from sklearn.preprocessing import StandardScaler
+
+
+def chunk_matrix_generator(gen, chunk_size=5000):
+    """Yields chunks of chunk_size from generator as lists."""
+    iterator = iter(gen)
+    while True:
+        chunk = list(m for _, m in islice(iterator, chunk_size))
+        if not chunk:
+            break
+        yield np.stack(chunk, axis=0)  # Shape: (chunk_size, feature_dim)
 
 
 class MetaphlanMarkerEmbedding:
@@ -13,24 +28,10 @@ class MetaphlanMarkerEmbedding:
     """
     def __init__(
             self,
-            marker_embedding_basedir: Path
+            marker_embedding_basedir: Path,
+            dimension_reduce_pca: Optional[int] = None,
+            ipca_batch_size: Optional[int] = None,
     ):
-        # Load cached tensors. (memory-mapped tensordict)
-        assert marker_embedding_basedir.exists(), f"Specified marker embeddings {marker_embedding_basedir} does not exist!"
-        self.marker_embedding_basedir = marker_embedding_basedir
-
-        # Print diagnostic.
-        example_embedding = self.get_example_tensor()
-        print("Tensor embeddings source: {} (genome embedding shape = {})".format(
-            self.marker_embedding_basedir,
-            example_embedding.shape
-        ))
-
-        # Compute padding size.
-        self.padding_marker_embedding = np.zeros(shape=example_embedding.shape)
-        assert len(self.padding_marker_embedding.shape) == 1, f"Embedding should be a vector! Got shape {self.padding_marker_embedding.shape} instead."
-        self.embedding_dim = self.padding_marker_embedding.shape[0]
-
         # Compute database mapping.
         self.marker_index = self.calculate_marker_index()
         self.num_markers_by_sgb = {
@@ -39,6 +40,37 @@ class MetaphlanMarkerEmbedding:
         }
         self.max_num_markers = max(self.num_markers_by_sgb.values())
         self.print_diagnostic()
+
+        # Load cached tensors. (memory-mapped tensordict)
+        assert marker_embedding_basedir.exists(), f"Specified marker embeddings {marker_embedding_basedir} does not exist!"
+        self.marker_embedding_basedir = marker_embedding_basedir
+
+        # Determine embedding dimension, and print diagnostic.
+        self.apply_dimension_reduction = (dimension_reduce_pca is not None)
+        if self.apply_dimension_reduction:
+            self.embedding_dim = dimension_reduce_pca
+            assert ipca_batch_size is not None, "If applying dimensionality reduction on embeddings, ipca_batch_size cannot be NoneType."
+            self.pca_model, self.standard_scaler = self.dimension_reduce_embeddings(
+                n_components=dimension_reduce_pca,
+                ipca_batch_size=ipca_batch_size
+            )
+            print("Tensor embeddings source: {} (genome embedding shape = {} --> {} after PCA)".format(
+                self.marker_embedding_basedir,
+                self.embedding_dim,
+                dimension_reduce_pca,
+            ))
+        else:
+            example_embedding = self.get_raw_example_tensor()
+            self.embedding_dim = example_embedding.shape[0]
+            self.pca_model, self.standard_scale = None, None
+            print("Tensor embeddings source: {} (genome embedding shape = {}, no PCA)".format(
+                self.marker_embedding_basedir,
+                self.embedding_dim
+            ))
+
+        # Compute padding size.
+        self.padding_marker_embedding = np.zeros(shape=(self.embedding_dim,))
+        assert len(self.padding_marker_embedding.shape) == 1, f"Embedding should be a vector! Got shape {self.padding_marker_embedding.shape} instead."
 
     @property
     def total_num_markers(self) -> int:
@@ -73,18 +105,26 @@ class MetaphlanMarkerEmbedding:
     def num_markers(self, sgb_id: str) -> int:
         return self.num_markers_by_sgb[sgb_id]
 
-    def get_example_tensor(self) -> np.ndarray:
+    def get_raw_example_tensor(self) -> np.ndarray:
+        """ Return an embedding tensor, without any dimensionality reduction. """
         part_dir = self.marker_embedding_basedir / "part1"
         with h5py.File(part_dir / "shard-0.h5", "r") as shard:
             first_key = next(iter(shard.keys()))
             example = shard[first_key][:]
             return example
 
-    def all_markers(self) -> Iterator[Tuple[str, np.ndarray]]:
+    def _all_markers_raw(self, shuffle_shard: bool = False) -> Iterator[Tuple[str, np.ndarray]]:
         for part_dir in sorted(self.marker_embedding_basedir.glob("part*")):
+            print(part_dir)
             for shard_file in part_dir.glob("shard-*.h5"):
+                print(shard_file)
                 with h5py.File(shard_file, "r") as shard:
-                    for marker_id in shard.keys():
+                    marker_ids = list(shard.keys())
+                    print("# markers = {}".format(len(marker_ids)))
+                    if shuffle_shard:
+                        random.shuffle(marker_ids)
+
+                    for marker_id in marker_ids:
                         marker_embedding_numpy = shard[marker_id][:]
                         yield marker_id, marker_embedding_numpy
 
@@ -99,7 +139,12 @@ class MetaphlanMarkerEmbedding:
             with h5py.File(shard_path, "r") as shard:
                 for marker_id in shard_section['Marker']:
                     marker_embedding = shard[marker_id][:]
-                    yield marker_id, marker_embedding
+                    if self.apply_dimension_reduction:
+                        vect = marker_embedding - self.standard_scale.mean_
+                        vect = vect / self.standard_scale.scale_
+                        yield marker_id, self.pca_model.transform(vect.reshape(1, -1))[0]
+                    else:
+                        yield marker_id, marker_embedding
 
     def convert_sgb(self, sgb_id: str, max_markers: int) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -125,3 +170,33 @@ class MetaphlanMarkerEmbedding:
         marker_embeddings += [self.padding_marker_embedding for _ in range(max_markers - len(marker_embeddings))]
         marker_embeddings = np.stack(marker_embeddings, axis=0)
         return marker_embeddings, marker_padding_mask
+
+    def dimension_reduce_embeddings(
+            self,
+            n_components: int,
+            ipca_batch_size: int,
+    ) -> Tuple[IncrementalPCA, StandardScaler]:
+        # Initialize
+        ipca = IncrementalPCA(n_components=n_components, batch_size=ipca_batch_size)
+        scaler = StandardScaler(with_mean=True, with_std=True)  # Centers + scales
+        standardization_chunk_size = ipca_batch_size * 5
+
+        # Step 1: Compute GLOBAL stats across ALL data
+        for chunk_matrix in chunk_matrix_generator(
+                gen=tqdm(self._all_markers_raw(), total=self.total_num_markers, desc="[Embedding] Standardization"),
+                chunk_size=standardization_chunk_size
+        ):  # Yield (chunk_size, 4096) arrays
+            scaler.partial_fit(chunk_matrix)  # Updates running mean/var
+
+        # Step 2: Standardize and compute PCA.
+        for chunk_matrix in chunk_matrix_generator(
+                gen=tqdm(self._all_markers_raw(), total=self.total_num_markers, desc="[Embedding] Incremental-PCA"),
+                chunk_size=standardization_chunk_size
+        ):  # Yield (chunk_size, 4096) arrays
+            # Apply GLOBAL standardization
+            chunk_centered = chunk_matrix - scaler.mean_  # Subtract global mean
+            chunk_scaled = chunk_centered / scaler.scale_  # Divide by global std
+            ipca.partial_fit(chunk_scaled)
+
+        print(f"Embedding-PCA -- Explained variance ratio: {ipca.explained_variance_ratio_.sum():.3f}")
+        return ipca, scaler

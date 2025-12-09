@@ -29,6 +29,11 @@ def parse_args():
     parser.add_argument("-t", "--threads", dest="num_threads", required=False, type=int, default=1)
     parser.add_argument("--start", dest="start_row", required=False, type=int, default=0)  # inclusive
     parser.add_argument("--end", dest="end_row", required=False, type=int, default=-1)  # inclusive
+    parser.add_argument("--dimension-reduce", dest="dimension_reduce_pca", required=False, default=None, type=int,
+                        help="If specified (an integer greater than zero), will perform incremental PCA on the entire"
+                             "set of embeddings for dimensionality reduction.")
+    parser.add_argument("--pca-batch-size", dest="ipca_batch_size", required=False, default=10000, type=int,
+                        help="Specify the batch size for incremental PCA. Default: 10000")
     return parser.parse_args()
 
 
@@ -60,9 +65,14 @@ if __name__ == "__main__":
         end_idx = args.end_row
         dataset_df = dataset_df.iloc[start_idx:end_idx]
 
+    marker_embedding = MetaphlanMarkerEmbedding(
+        marker_embedding_basedir=Path(args.marker_embedding_basedir),
+        dimension_reduce_pca=args.dimension_reduce_pca,
+        ipca_batch_size=args.ipca_batch_size,
+    )
     main(
         dataset_df=dataset_df,
-        marker_embedding=MetaphlanMarkerEmbedding(marker_embedding_basedir=Path(args.marker_embedding_basedir)),
+        marker_embedding=marker_embedding,
         memmap_dir=Path(args.memmap_dir),
         num_workers=args.num_threads,
     )
