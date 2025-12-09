@@ -61,7 +61,7 @@ class MetaphlanMarkerEmbedding:
         else:
             example_embedding = self.get_raw_example_tensor()
             self.embedding_dim = example_embedding.shape[0]
-            self.pca_model, self.standard_scale = None, None
+            self.pca_model, self.standard_scaler = None, None
             print("Tensor embeddings source: {} (genome embedding shape = {}, no PCA)".format(
                 self.marker_embedding_basedir,
                 self.embedding_dim
@@ -136,8 +136,8 @@ class MetaphlanMarkerEmbedding:
                 for marker_id in shard_section['Marker']:
                     marker_embedding = shard[marker_id][:]
                     if self.apply_dimension_reduction:
-                        vect = marker_embedding - self.standard_scale.mean_
-                        vect = vect / self.standard_scale.scale_
+                        vect = marker_embedding - self.standard_scaler.mean_
+                        vect = vect / self.standard_scaler.scale_
                         yield marker_id, self.pca_model.transform(vect.reshape(1, -1))[0]
                     else:
                         yield marker_id, marker_embedding
@@ -196,5 +196,5 @@ class MetaphlanMarkerEmbedding:
             ipca.partial_fit(chunk_scaled)
             break
 
-        print(f"Embedding-PCA -- Explained variance ratio: {ipca.explained_variance_ratio_.sum():.3f}")
+        print(f"(Embedding-PCA) Explained variance ratio: {ipca.explained_variance_ratio_.sum():.3f}")
         return ipca, scaler
