@@ -120,7 +120,7 @@ class MetaphlanMarkerEmbedding:
                 print(shard_file)
                 with h5py.File(shard_file, "r") as shard:
                     marker_ids = list(shard.keys())
-                    print("# markers = {}".format(len(marker_ids)))
+                    print("# markers = {} | running total = {}".format(len(marker_ids), running_total))
                     if shuffle_shard:
                         random.shuffle(marker_ids)
 
