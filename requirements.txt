@@ -5,6 +5,7 @@ flash-attn==2.7.4.post1
 evo-model
 numpy
 pandas
+scikit-learn
 pyarrow
 scipy
 matplotlib
@@ -13,3 +14,4 @@ tqdm
 biopython
 pyfaidx
 zstandard
+joblib

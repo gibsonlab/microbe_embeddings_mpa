@@ -2,6 +2,7 @@ from typing import *
 from pathlib import Path
 from itertools import islice
 
+import joblib
 import h5py
 import numpy as np
 import pandas as pd
@@ -19,6 +20,37 @@ def chunk_matrix_generator(gen, chunk_size=5000):
         if not chunk:
             break
         yield np.stack(chunk, axis=0)  # Shape: (chunk_size, feature_dim)
+
+
+def save_models_joblib(ipca: IncrementalPCA, scaler: StandardScaler, output_dir: Path):
+    """
+    Save IncrementalPCA and StandardScaler using joblib.
+    Note: Joblib is optimized for sklearn objects and handles numpy arrays efficiently.
+
+    Args:
+        ipca: Fitted IncrementalPCA model
+        scaler: Fitted StandardScaler model
+        output_dir: Directory to save models
+    """
+    output_dir.mkdir(exist_ok=True, parents=True)
+    joblib.dump(ipca, output_dir / 'ipca_model.joblib')
+    joblib.dump(scaler, output_dir / 'scaler_model.joblib')
+
+
+def load_models_joblib(model_dir: Path):
+    """
+    Load IncrementalPCA and StandardScaler from joblib files.
+
+    Args:
+        model_dir: Directory containing saved models
+
+    Returns:
+        ipca: Loaded IncrementalPCA model
+        scaler: Loaded StandardScaler model
+    """
+    ipca = joblib.load(model_dir / 'ipca_model.joblib')
+    scaler = joblib.load(model_dir / 'scaler_model.joblib')
+    return ipca, scaler
 
 
 class MetaphlanMarkerEmbedding:
@@ -49,10 +81,15 @@ class MetaphlanMarkerEmbedding:
         if self.apply_dimension_reduction:
             self.embedding_dim = dimension_reduce_pca
             assert ipca_batch_size is not None, "If applying dimensionality reduction on embeddings, ipca_batch_size cannot be NoneType."
-            self.pca_model, self.standard_scaler = self.dimension_reduce_embeddings(
-                n_components=dimension_reduce_pca,
-                ipca_batch_size=ipca_batch_size
-            )
+            ipca_model_dir = self.marker_embedding_basedir / "ipca_{}".format(self.embedding_dim)
+            try:
+                self.pca_model, self.standard_scaler = load_models_joblib(ipca_model_dir)
+            except FileNotFoundError:
+                self.pca_model, self.standard_scaler = self.dimension_reduce_embeddings(
+                    n_components=dimension_reduce_pca,
+                    ipca_batch_size=ipca_batch_size
+                )
+                save_models_joblib(self.pca_model, self.standard_scaler, ipca_model_dir)
             print("Tensor embeddings source: {} (genome embedding shape = {} --> {} after PCA)".format(
                 self.marker_embedding_basedir,
                 self.embedding_dim,
