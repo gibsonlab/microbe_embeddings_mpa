@@ -32,6 +32,9 @@ class MetaphlanMarkerEmbedding:
             dimension_reduce_pca: Optional[int] = None,
             ipca_batch_size: Optional[int] = None,
     ):
+        assert marker_embedding_basedir.exists(), f"Specified marker embeddings {marker_embedding_basedir} does not exist!"
+        self.marker_embedding_basedir = marker_embedding_basedir
+
         # Compute database mapping.
         self.marker_index = self.calculate_marker_index()
         self.num_markers_by_sgb = {
@@ -40,10 +43,6 @@ class MetaphlanMarkerEmbedding:
         }
         self.max_num_markers = max(self.num_markers_by_sgb.values())
         self.print_diagnostic()
-
-        # Load cached tensors. (memory-mapped tensordict)
-        assert marker_embedding_basedir.exists(), f"Specified marker embeddings {marker_embedding_basedir} does not exist!"
-        self.marker_embedding_basedir = marker_embedding_basedir
 
         # Determine embedding dimension, and print diagnostic.
         self.apply_dimension_reduction = (dimension_reduce_pca is not None)
