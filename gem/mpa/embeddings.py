@@ -143,6 +143,9 @@ class MetaphlanMarkerEmbedding:
     def num_markers(self, sgb_id: str) -> int:
         return self.num_markers_by_sgb[sgb_id]
 
+    def contains_sgb(self, sgb_id: str) -> bool:
+        return sgb_id in self.num_markers_by_sgb
+
     def get_raw_example_tensor(self) -> np.ndarray:
         """ Return an embedding tensor, without any dimensionality reduction. """
         part_dir = self.marker_embedding_basedir / "part1"

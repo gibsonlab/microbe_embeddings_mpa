@@ -58,7 +58,7 @@ class MetaphlanDataset(Dataset):
         """
         EMBED_DTYPE = torch.float32
         num_sgbs = len(sample.sgb_ids)
-        max_num_markers = max(self.marker_embedding.num_markers(sgb_id) for sgb_id in sample.sgb_ids)
+        max_num_markers = max(self.marker_embedding.num_markers(sgb_id) for sgb_id in sample.sgb_ids if sgb_id in self.marker_embedding.contains_sgb(sgb_id))
         with timer(f"sample initialization: {sample.sample_id}", enabled=False):
             # Preallocate tensors directly
             features = torch.zeros((num_sgbs, max_num_markers, self.marker_embedding.embedding_dim),
