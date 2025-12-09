@@ -85,6 +85,7 @@ class MetaphlanMarkerEmbedding:
             try:
                 self.pca_model, self.standard_scaler = load_models_joblib(ipca_model_dir)
             except FileNotFoundError:
+                print(f"Pre-computed embedding PCA models not found ({ipca_model_dir}). Fitting models using current embeddings.")
                 self.pca_model, self.standard_scaler = self.dimension_reduce_embeddings(
                     n_components=dimension_reduce_pca,
                     ipca_batch_size=ipca_batch_size
