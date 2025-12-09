@@ -181,20 +181,18 @@ class MetaphlanMarkerEmbedding:
         for chunk_matrix in chunk_matrix_generator(
                 gen=tqdm(self._all_markers_raw(), total=self.total_num_markers, desc="[Embedding] Standardization"),
                 chunk_size=standardization_chunk_size
-        ):  # Yield (chunk_size, 4096) arrays
+        ):  # Yield (chunk_size, raw_embed_dim) arrays
             scaler.partial_fit(chunk_matrix)  # Updates running mean/var
-            break
 
         # Step 2: Standardize and compute PCA.
         for chunk_matrix in chunk_matrix_generator(
                 gen=tqdm(self._all_markers_raw(), total=self.total_num_markers, desc="[Embedding] Incremental-PCA"),
                 chunk_size=standardization_chunk_size
-        ):  # Yield (chunk_size, 4096) arrays
+        ):  # Yield (chunk_size, raw_embed_dim) arrays
             # Apply GLOBAL standardization
             chunk_centered = chunk_matrix - scaler.mean_  # Subtract global mean
             chunk_scaled = chunk_centered / scaler.scale_  # Divide by global std
             ipca.partial_fit(chunk_scaled)
-            break
 
         print(f"(Embedding-PCA) Explained variance ratio: {ipca.explained_variance_ratio_.sum():.3f}")
         return ipca, scaler
