@@ -91,9 +91,10 @@ class MetaphlanMarkerEmbedding:
                     ipca_batch_size=ipca_batch_size
                 )
                 save_models_joblib(self.pca_model, self.standard_scaler, ipca_model_dir)
+            example_embedding = self.get_raw_example_tensor()
             print("Tensor embeddings source: {} (genome embedding shape = {} --> {} after PCA)".format(
                 self.marker_embedding_basedir,
-                self.embedding_dim,
+                example_embedding.shape[0],
                 dimension_reduce_pca,
             ))
         else:
