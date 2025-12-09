@@ -120,7 +120,7 @@ class MetaphlanMarkerEmbedding:
                 print(shard_file)
                 with h5py.File(shard_file, "r") as shard:
                     marker_ids = list(shard.keys())
-                    print("# markers = {} | running total = {}".format(len(marker_ids), running_total))
+                    print("# markers = {}".format(len(marker_ids)))
                     if shuffle_shard:
                         random.shuffle(marker_ids)
 
@@ -129,6 +129,7 @@ class MetaphlanMarkerEmbedding:
                         yield marker_id, marker_embedding_numpy
 
                     running_total += len(marker_ids)
+                    print("Running total = {}".format(running_total))
         print("Grand total: {}".format(running_total))
 
     def get_sgb_markers_from_file(self, sgb_id: str) -> Iterator[Tuple[str, np.ndarray]]:
