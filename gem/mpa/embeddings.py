@@ -40,6 +40,10 @@ class MetaphlanMarkerEmbedding:
         self.max_num_markers = max(self.num_markers_by_sgb.values())
         self.print_diagnostic()
 
+    @property
+    def num_markers(self) -> int:
+        return self.marker_index.shape[0]
+
     def print_diagnostic(self):
         print("Database statistics:")
         print("# SGB = {}".format(len(pd.unique(self.marker_index["SGB"]))))
