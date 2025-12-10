@@ -105,10 +105,10 @@ class MetaphlanDataset(AbstractMetaphlanDataset):
             marker_padding_mask = torch.zeros((num_sgbs, max_num_markers), dtype=torch.bool)
             sgb_padding_mask = torch.zeros(num_sgbs, dtype=torch.bool)
 
-        sgb_ids = []
+        sgb_ids = sample.sgb_ids
         targets = torch.zeros(num_sgbs, dtype=features.dtype)
         with timer(f"sample embedding loop over SGB: {sample.sample_id}", enabled=False):
-            for sgb_id, sgb_abund in zip(sample.sgb_ids, sample.abundances):
+            for i, (sgb_id, sgb_abund) in enumerate(zip(sample.sgb_ids, sample.abundances)):
                 try:
                     # these are numpy arrays! need to convert to torch tensors.
                     embedding, mask = self.marker_embedding.convert_sgb(sgb_id, max_num_markers)
@@ -120,12 +120,10 @@ class MetaphlanDataset(AbstractMetaphlanDataset):
                 except KeyError:
                     continue
                 else:
-                    _i = len(sgb_ids)
-                    features[_i] = embedding
-                    marker_padding_mask[_i] = mask
-                    sgb_padding_mask[_i] = True
-                    targets[_i] = sgb_abund
-                    sgb_ids.append(sgb_id)
+                    features[i] = embedding
+                    marker_padding_mask[i] = mask
+                    sgb_padding_mask[i] = True
+                    targets[i] = sgb_abund
 
         targets = targets / targets.sum()
         return sgb_ids, features, marker_padding_mask, sgb_padding_mask, targets
