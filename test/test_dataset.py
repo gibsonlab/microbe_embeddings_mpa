@@ -11,7 +11,7 @@ from gem.ml.dataloader.collate import BufferedCollator
 def generate_test_profile() -> pd.DataFrame:
     with zstd.open("example.tsv.zst", "rt") as f:
         df = pd.read_csv(f, sep='\t', index_col='SampleID')
-        df['t__SGBFAKETEST'] = 1.0
+        df['t__SGBFAKETEST'] = 100.0
         return df
 
 
@@ -88,6 +88,9 @@ def test_collator():
         for s_mask, s_feats in zip(s_col[i], f_col[i]):
             if s_mask:
                 assert (s_feats != 0).any().item()
+        assert torch.isclose(torch.sum(s_col[i] * t_col[i]), torch.tensor(1.0)), "Expected abundances to approx. sum to 1. Sample = {}, got: {}".format(
+            i, torch.sum(s_col[i] * t_col[i])
+        )
     
 
 if __name__ == "__main__":
