@@ -171,6 +171,10 @@ class MetaphlanMarkerEmbedding:
         Load markers from pre-computed embedding file.
         """
         section = self.marker_index.loc[self.marker_index['SGB'] == sgb_id]
+        if section.shape[0] == 0:
+            raise KeyError("SGB {} not found in marker index {}".format(
+                sgb_id, self.marker_embedding_basedir
+            ))
         for (part_subdir, shard_idx), shard_section in section.groupby(["Part", "Shard"]):
             # Open the appropriate shard file.
             shard_path = self.marker_embedding_basedir / part_subdir / f"shard-{shard_idx}.h5"
