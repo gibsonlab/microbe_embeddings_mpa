@@ -34,7 +34,7 @@ def test_dataset():
     # ensure that the number of non-padded SGBs equals the number of nonzero feature vectors.
     assert len(sgbs) == torch.sum(t != 0.0)
     assert len(sgbs) == torch.sum(s)
-    assert len(sgbs) == (f == 0).any(dim=1).sum()
+    assert len(sgbs) == f.shape[0] - (f == 0).all(dim=1).sum()
 
 def test_collator():
     test_embed = MetaphlanMarkerEmbedding(
