@@ -61,6 +61,7 @@ def test_collator():
     assert m.shape[2] == test_dset.max_num_markers()
     assert s.shape[1] == test_dset.max_num_sgbs()
     assert t.shape[1] == test_dset.max_num_sgbs()
+    assert f_col[0, f.shape[0]:, f.shape[1]:, f.shape[2]:].equal(f)
 
 
 if __name__ == "__main__":

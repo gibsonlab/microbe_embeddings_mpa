@@ -61,9 +61,9 @@ class BufferedCollator:
 
         for i, (features, marker_mask, sgb_mask, targets) in enumerate(batch):
             feat_buf[i, :features.shape[0], :features.shape[1], :] = features
-            marker_mask_buf[i, :marker_mask_buf.shape[0], :marker_mask_buf.shape[1]] = marker_mask
-            sgb_mask_buf[i, :sgb_mask_buf.shape[0]] = sgb_mask
-            target_buf[i, :target_buf.shape[0]] = targets
+            marker_mask_buf[i, :marker_mask.shape[0], :marker_mask.shape[1]] = marker_mask
+            sgb_mask_buf[i, :sgb_mask.shape[0]] = sgb_mask
+            target_buf[i, :targets.shape[0]] = targets
 
         # Return a slice/copy of the buffer for this batch
         return feat_buf[:len(batch)], marker_mask_buf[:len(batch)], sgb_mask_buf[:len(batch)], target_buf[:len(batch)]
