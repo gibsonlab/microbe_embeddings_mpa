@@ -140,24 +140,20 @@ class MetaphlanDatasetMemmapped(AbstractMetaphlanDataset):
     def __len__(self) -> int:
         return len(self.tensor_cache)
 
-    @property
     def embedding_dtype(self) -> torch.dtype:
         return self.tensor_cache[0]['features'].dtype
 
-    @property
     def max_num_sgbs(self) -> int:
         return max(
             tdict['spadding'].sum().item()
             for tdict in self.tensor_cache
         )
 
-    @property
     def max_num_markers(self) -> int:
         return max(  # max across all samples
             tdict['mpadding'].sum(dim=-1).max().item()  # max. # of markers among SGBs in sample
             for tdict in self.tensor_cache
         )
 
-    @property
     def embed_feature_dim(self) -> int:
         return self.tensor_cache[0]['features'].shape[-1]

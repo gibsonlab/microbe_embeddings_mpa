@@ -24,22 +24,18 @@ class AbstractMetaphlanDataset(Dataset, ABC):
         pass
 
     @abstractmethod
-    @property
     def embedding_dtype(self) -> torch.dtype:
         pass
 
     @abstractmethod
-    @property
     def max_num_sgbs(self) -> int:
         pass
 
     @abstractmethod
-    @property
     def max_num_markers(self) -> int:
         pass
 
     @abstractmethod
-    @property
     def embed_feature_dim(self) -> int:
         pass
 
@@ -134,18 +130,14 @@ class MetaphlanDataset(AbstractMetaphlanDataset):
         targets = targets / targets.sum()
         return sgb_ids, features, marker_padding_mask, sgb_padding_mask, targets
 
-    @property
     def embedding_dtype(self) -> torch.dtype:
         return self.EMBED_DTYPE
 
-    @property
     def max_num_sgbs(self) -> int:
         return max(len(sample.sgb_ids) for sample in self.samples)
 
-    @property
     def max_num_markers(self) -> int:
         return self.global_max_num_markers
 
-    @property
     def embed_feature_dim(self) -> int:
         return self.marker_embedding.embedding_dim

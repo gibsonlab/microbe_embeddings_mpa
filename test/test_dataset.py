@@ -46,10 +46,10 @@ def test_collator():
     )
     collator = BufferedCollator(
         batch_size=1,
-        max_markers=test_dset.max_num_markers,
-        max_num_sgbs=test_dset.max_num_sgbs,
-        embed_feature_dim=test_dset.embed_feature_dim,
-        dtype=test_dset.embedding_dtype
+        max_markers=test_dset.max_num_markers(),
+        max_num_sgbs=test_dset.max_num_sgbs(),
+        embed_feature_dim=test_dset.embed_feature_dim(),
+        dtype=test_dset.embedding_dtype()
     )
 
     sgbs, f, m, s, t = test_dset.load_sample_embeddings(test_dset.samples[0])

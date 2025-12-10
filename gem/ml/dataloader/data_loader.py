@@ -26,10 +26,10 @@ class MetaphlanDataLoader(DataLoader):
         """
         self.collator = BufferedCollator(
             batch_size=batch_size,
-            max_num_sgbs=dataset.max_num_sgbs,
-            max_markers=dataset.max_num_markers,
-            embed_feature_dim=dataset.embed_feature_dim,
-            dtype=dataset.embedding_dtype
+            max_num_sgbs=dataset.max_num_sgbs(),
+            max_markers=dataset.max_num_markers(),
+            embed_feature_dim=dataset.embed_feature_dim(),
+            dtype=dataset.embedding_dtype()
         )
         super().__init__(
             dataset=dataset,
