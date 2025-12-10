@@ -54,14 +54,14 @@ def test_collator():
 
     sgbs, f, m, s, t = test_dset.load_sample_embeddings(test_dset.samples[0])
     f_col, m_col, s_col, t_col = collator(batch=[test_dset[0]])
-    assert f_col.shape[1] == test_dset.max_num_sgbs()
-    assert f.shape[2] == test_dset.max_num_markers()
-    assert f.shape[3] == 4096
-    assert m.shape[1] == test_dset.max_num_sgbs()
-    assert m.shape[2] == test_dset.max_num_markers()
-    assert s.shape[1] == test_dset.max_num_sgbs()
-    assert t.shape[1] == test_dset.max_num_sgbs()
     assert f_col[0, f.shape[0]:, f.shape[1]:, f.shape[2]:].equal(f)
+    assert f_col.shape[1] == test_dset.max_num_sgbs()
+    assert f_col.shape[2] == test_dset.max_num_markers()
+    assert f_col.shape[3] == 4096
+    assert m_col.shape[1] == test_dset.max_num_sgbs()
+    assert m_col.shape[2] == test_dset.max_num_markers()
+    assert s_col.shape[1] == test_dset.max_num_sgbs()
+    assert t_col.shape[1] == test_dset.max_num_sgbs()
 
 
 if __name__ == "__main__":
