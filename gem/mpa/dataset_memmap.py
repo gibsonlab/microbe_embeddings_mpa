@@ -3,13 +3,13 @@ from typing import *
 
 from pathlib import Path
 import pandas as pd
+import torch
 from torch import Tensor
-from torch.utils.data import Dataset
 from tensordict import TensorDict
 from tqdm import tqdm
 
 from .abundance_profile import MetaphlanProfile
-from .dataset import MetaphlanDataset
+from .dataset import MetaphlanDataset, AbstractMetaphlanDataset
 
 """
 From https://docs.pytorch.org/tensordict/main/saving.html
@@ -63,27 +63,49 @@ def perform_allocation_multi_thread(dataset: MetaphlanDataset, cache_dir: Path, 
     with ThreadPoolExecutor(max_workers=num_threads) as executor:
         # Submit all tasks
         futures = []
+        futures_sample_id = dict()
+
         n_tasks = 0
         for sample in dataset.samples:
             memmap_dir = cache_dir / sample.sample_id
             if (memmap_dir / "meta.json").exists():
                 continue
-            futures.append(
-                executor.submit(allocate_sample, memmap_dir, sample, dataset)
-            )
+
+            future = executor.submit(allocate_sample, memmap_dir, sample, dataset)
+            futures.append(future)
+            futures_sample_id[future] = sample.sample_id
             n_tasks += 1
 
         # Process completed tasks with progress bar
+        finished_states = dict()
         with tqdm(total=n_tasks, desc="Sample Allocation") as pbar:
             for future in as_completed(futures):
-                _ = future.result()
+                try:
+                    _ = future.result()
+                    finished_states[futures_sample_id[future]] = (True, None)
+                except Exception as e:
+                    finished_states[futures_sample_id[future]] = (False, str(e))
                 pbar.update(1)
 
+    n_success = 0
+    n_failed = 0
+    for sample_id, (was_success, error_msg) in finished_states.items():
+        if was_success:
+            n_success += 1
+        else:
+            n_failed += 1
+            print(f"Sample {sample_id} failed with error: {error_msg}")
 
-class MetaphlanDatasetMemmapped(Dataset):
+    print("{} of {} allocation tasks successfully completed.".format(
+        n_success, n_success + n_failed
+    ))
+
+
+class MetaphlanDatasetMemmapped(AbstractMetaphlanDataset):
     """
     A class which pre-computes all tensors and stores into a memory-mapped tensordict.
     """
+
     def __init__(
             self,
             dataset_df: pd.DataFrame
@@ -113,4 +135,29 @@ class MetaphlanDatasetMemmapped(Dataset):
         if not self.loaded:
             raise RuntimeError("Method load_memmap_tensors() must be run once prior to data access.")
         x = self.tensor_cache[idx]
-        return x['targets'], x['mpadding'], x['spadding'], x['targets']
+        return x['features'], x['mpadding'], x['spadding'], x['targets']
+
+    def __len__(self) -> int:
+        return len(self.tensor_cache)
+
+    @property
+    def embedding_dtype(self) -> torch.dtype:
+        return self.tensor_cache[0]['features'].dtype
+
+    @property
+    def max_num_sgbs(self) -> int:
+        return max(
+            tdict['spadding'].sum().item()
+            for tdict in self.tensor_cache
+        )
+
+    @property
+    def max_num_markers(self) -> int:
+        return max(  # max across all samples
+            tdict['mpadding'].sum(dim=-1).max().item()  # max. # of markers among SGBs in sample
+            for tdict in self.tensor_cache
+        )
+
+    @property
+    def embed_feature_dim(self) -> int:
+        return self.tensor_cache[0]['features'].shape[-1]

@@ -9,17 +9,17 @@ import matplotlib.pyplot as plt
 import torch
 from torch import nn, GradScaler, autocast
 
-from gem.mpa import MetaphlanDataset
+from gem.mpa import AbstractMetaphlanDataset
 from gem.util.timer import timer
-from .mpa_loader import MetaphlanDataLoader
+from gem.ml.dataloader.data_loader import MetaphlanDataLoader
 
 
 def main_training_loop(
         model: nn.Module,
         optimizer: torch.optim.Optimizer,
         lr_scheduler: torch.optim.lr_scheduler._LRScheduler,
-        train_dset: MetaphlanDataset,
-        test_dset: MetaphlanDataset,
+        train_dset: AbstractMetaphlanDataset,
+        test_dset: AbstractMetaphlanDataset,
         loss_fn: nn.Module,
         num_workers: Optional[int] = 0,
         batch_size: int = 5,
@@ -75,7 +75,7 @@ def main_training_loop(
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(rng_seed + 1)
 
-    print(f"Training dataset size: {len(train_dloader.dataset)}")
+    print(f"Training dataset size: {len(train_dset)}")
     print(f"Number of training batches: {len(train_dloader)}")
 
     test_dloader = MetaphlanDataLoader(
@@ -83,7 +83,7 @@ def main_training_loop(
         batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True,
         generator=train_rng, worker_init_fn=_seed_worker, drop_last=True,
     )
-    print(f"Test dataset size: {len(test_dloader.dataset)}")
+    print(f"Test dataset size: {len(test_dset)}")
     print(f"Number of test batches: {len(test_dloader)}")
 
     """ Training loop -- Optimize using batches. """
@@ -112,7 +112,7 @@ def main_training_loop(
 
                 # clear some space for next batch.
                 del test_y_hat
-        return total_test_loss / len(test_dloader.dataset)  # divide by total dataset size.
+        return total_test_loss / len(test_dset)  # divide by total dataset size.
 
     test_dset.track_runtime = True
     print(f"Initial Test Loss: {_compute_test_loss()}")

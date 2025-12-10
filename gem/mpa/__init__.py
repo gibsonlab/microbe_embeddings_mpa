@@ -1,4 +1,4 @@
 from .abundance_profile import MetaphlanProfile, MetaphlanProfileExtractor
 from .embeddings import MetaphlanMarkerEmbedding
-from .dataset import MetaphlanDataset
+from .dataset import AbstractMetaphlanDataset, MetaphlanDataset
 from .dataset_memmap import MetaphlanDatasetMemmapped, perform_allocation

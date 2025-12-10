@@ -1,3 +1,4 @@
+from abc import abstractmethod, ABC
 from typing import *
 
 import pandas as pd
@@ -10,11 +11,43 @@ from .embeddings import MetaphlanMarkerEmbedding
 from gem.util.timer import timer
 
 
-class MetaphlanDataset(Dataset):
+class AbstractMetaphlanDataset(Dataset, ABC):
+    @abstractmethod
+    def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+        """
+        Load from pre-computed tensordict.
+        """
+        pass
+
+    @abstractmethod
+    def __len__(self) -> int:
+        pass
+
+    @abstractmethod
+    @property
+    def embedding_dtype(self) -> torch.dtype:
+        pass
+
+    @abstractmethod
+    @property
+    def max_num_sgbs(self) -> int:
+        pass
+
+    @abstractmethod
+    @property
+    def max_num_markers(self) -> int:
+        pass
+
+    @abstractmethod
+    @property
+    def embed_feature_dim(self) -> int:
+        pass
+
+
+class MetaphlanDataset(AbstractMetaphlanDataset):
     """
     PyTorch Dataset for microbiome data with SGB embeddings and abundance values.
     """
-
     def __init__(
             self,
             dataset_df: pd.DataFrame,
@@ -33,6 +66,13 @@ class MetaphlanDataset(Dataset):
 
         self.sample_indices = {sample.sample_id: idx for idx, sample in enumerate(self.samples)}
         self.marker_embedding = marker_embedding
+        self.EMBED_DTYPE = torch.float32
+        self.global_max_num_markers = max(
+            self.marker_embedding.num_markers(sgb_id)
+            for sample in self.samples
+            for sgb_id in sample.sgb_ids
+            if self.marker_embedding.contains_sgb(sgb_id)
+        )
 
     def __len__(self) -> int:
         return len(self.samples)
@@ -56,7 +96,6 @@ class MetaphlanDataset(Dataset):
             - sgb_padding: Boolean-valued Tensor of shape (num_sgbs) indicating which SGBs are padding placeholders.
             - targets: Tensor of shape (num_sgbs,) with abundance values
         """
-        EMBED_DTYPE = torch.float32
         num_sgbs = len(sample.sgb_ids)
         max_num_markers = max(
             self.marker_embedding.num_markers(sgb_id)
@@ -66,7 +105,7 @@ class MetaphlanDataset(Dataset):
         with timer(f"sample initialization: {sample.sample_id}", enabled=False):
             # Preallocate tensors directly
             features = torch.zeros((num_sgbs, max_num_markers, self.marker_embedding.embedding_dim),
-                                   dtype=EMBED_DTYPE)
+                                   dtype=self.EMBED_DTYPE)
             marker_padding_mask = torch.zeros((num_sgbs, max_num_markers), dtype=torch.bool)
             sgb_padding_mask = torch.zeros(num_sgbs, dtype=torch.bool)
 
@@ -94,3 +133,19 @@ class MetaphlanDataset(Dataset):
 
         targets = targets / targets.sum()
         return sgb_ids, features, marker_padding_mask, sgb_padding_mask, targets
+
+    @property
+    def embedding_dtype(self) -> torch.dtype:
+        return self.EMBED_DTYPE
+
+    @property
+    def max_num_sgbs(self) -> int:
+        return max(len(sample.sgb_ids) for sample in self.samples)
+
+    @property
+    def max_num_markers(self) -> int:
+        return self.global_max_num_markers
+
+    @property
+    def embed_feature_dim(self) -> int:
+        return self.marker_embedding.embedding_dim

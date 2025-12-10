@@ -8,7 +8,7 @@ import pandas as pd
 import torch
 from torch import nn, optim
 
-from gem.mpa import MetaphlanMarkerEmbedding, MetaphlanDataset
+from gem.mpa import AbstractMetaphlanDataset, MetaphlanDatasetMemmapped
 from gem.ml import safe_kl_div_loss, main_training_loop, SGBAbundancePredictionModel
 
 import sys
@@ -33,10 +33,9 @@ def load_model_config(config_file: Path, rng_seed: int) -> Dict:
 def train_and_save_model(
         model_cfg: Dict,
         model_save_dir: Path,
-        marker_embedding_memmap_dir: Path,
         loss_fn: nn.Module,
-        train_df: pd.DataFrame,
-        test_df: pd.DataFrame,
+        train_dset: AbstractMetaphlanDataset,
+        test_dset: AbstractMetaphlanDataset,
         n_epochs: int,
         lr: float = 0.0001,
         print_every: int = 5,
@@ -49,10 +48,9 @@ def train_and_save_model(
     """
     :param model_cfg:
     :param model_save_dir:
-    :param marker_embedding_memmap_dir:
     :param loss_fn:
-    :param train_df:
-    :param test_df:
+    :param train_dset:
+    :param test_dset:
     :param n_epochs:
     :param lr:
     :param print_every:
@@ -61,14 +59,6 @@ def train_and_save_model(
     :param num_workers:
     :param auto_mixed_precision:
     """
-
-    """ Create datasets. """
-    marker_embedding = MetaphlanMarkerEmbedding(
-        marker_embedding_memmap_dir=marker_embedding_memmap_dir,
-    )
-
-    train_dset = MetaphlanDataset(train_df, marker_embedding)
-    test_dset = MetaphlanDataset(test_df, marker_embedding)
 
     """ Create model. """
     ## ======== Model & Optimizer instantiation. ========
@@ -125,8 +115,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("-o", "--out-dir", dest="model_save_dir", required=True, type=str)
     parser.add_argument("-loss", "--loss", dest="loss_name", required=True, type=str,
                         help="Name of loss function. Either 'kl' or 'mse'")
-    parser.add_argument("-e", "--embed-dir", dest="marker_embedding_memmap_dir", required=True, type=str,
-                        help="The output of the previous step, where the memmapped tensordict is stored.")
+    parser.add_argument(
+        "-mt", "--memmap-tensor-dir", dest="memmap_tensor_sample_dir", required=True, type=str,
+        help="The output of the previous step (3_memmap_test.sh, 3_memmap_train.sh), where the "
+             "memmapped samples' tensordicts are stored."
+    )
 
     parser.add_argument("-epochs", "--epochs", dest="n_epochs", type=int, required=True)
     parser.add_argument("-lr", "--learning-rate", dest="lr", type=float, required=True)
@@ -135,8 +128,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("-p", "--print-every", dest="print_every", type=int, default=5)
     parser.add_argument("-w", "--workers", dest="num_workers", type=int, default=1)
     parser.add_argument("-s", "--seed", dest="seed", required=False, type=int, default=314159)
-    parser.add_argument("-amp", "--use-auto-mixed-precision", dest="use_auto_mixed_precision",
-                        action="store_true", default=False, type=bool)
+    parser.add_argument(
+        "-amp", "--use-auto-mixed-precision", dest="use_auto_mixed_precision",
+        action="store_true", default=False, type=bool
+    )
     return parser.parse_args()
 
 
@@ -149,7 +144,6 @@ def main():
     model_cfg = load_model_config(args.model_cfg_path, rng_seed=seed + 1)
     model_save_dir = Path(args.model_save_dir)
     model_save_dir.mkdir(exist_ok=True, parents=True)
-    marker_embedding_memmap_dir = Path(args.marker_embedding_memmap_dir)
 
     """ loss function """
     if args.loss_name == 'kl':
@@ -159,13 +153,20 @@ def main():
     else:
         raise ValueError(f"Unsupported loss name '{args.loss_name}'")
 
+    """ Create datasets. """
+    memmap_tensor_sample_dir = Path(args.memmap_tensor_sample_dir)
+    train_dset = MetaphlanDatasetMemmapped(train_df)
+    test_dset = MetaphlanDatasetMemmapped(test_df)
+
+    train_dset.load_memmap_tensors(memmap_tensor_sample_dir)
+    test_dset.load_memmap_tensors(memmap_tensor_sample_dir)
+
     train_and_save_model(
         model_cfg=model_cfg,
         model_save_dir=model_save_dir,
-        marker_embedding_memmap_dir=marker_embedding_memmap_dir,
         loss_fn=loss_fn,
-        train_df=train_df,
-        test_df=test_df,
+        train_dset=train_dset,
+        test_dset=test_dset,
         n_epochs=args.n_epochs,
         lr=args.lr,
         print_every=args.print_every,
