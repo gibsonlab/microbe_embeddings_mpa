@@ -23,13 +23,13 @@ def test_dataset():
     )
     assert len(test_dset) == 1
     sgbs, f, m, s, t = test_dset.load_sample_embeddings(test_dset.samples[0])
-    assert f.shape[0] == test_dset.max_num_sgbs
-    assert f.shape[1] == test_dset.max_num_markers
+    assert f.shape[0] == test_dset.max_num_sgbs(), "f.shape[0] = {}, max_num_sgbs = {}".format(f.shape[0], test_dset.max_num_sgbs())
+    assert f.shape[1] == test_dset.max_num_markers()
     assert f.shape[2] == 4096
-    assert m.shape[0] == test_dset.max_num_sgbs
-    assert m.shape[1] == test_dset.max_num_markers
-    assert s.shape[0] == test_dset.max_num_sgbs
-    assert t.shape[0] == test_dset.max_num_sgbs
+    assert m.shape[0] == test_dset.max_num_sgbs()
+    assert m.shape[1] == test_dset.max_num_markers()
+    assert s.shape[0] == test_dset.max_num_sgbs()
+    assert t.shape[0] == test_dset.max_num_sgbs()
 
     # ensure that the number of non-padded SGBs equals the number of nonzero feature vectors.
     assert len(sgbs) == torch.sum(t != 0.0)
@@ -54,14 +54,15 @@ def test_collator():
 
     sgbs, f, m, s, t = test_dset.load_sample_embeddings(test_dset.samples[0])
     f_col, m_col, s_col, t_col = collator(batch=[test_dset[0]])
-    assert f_col.shape[1] == test_dset.max_num_sgbs
-    assert f.shape[2] == test_dset.max_num_markers
+    assert f_col.shape[1] == test_dset.max_num_sgbs()
+    assert f.shape[2] == test_dset.max_num_markers()
     assert f.shape[3] == 4096
-    assert m.shape[1] == test_dset.max_num_sgbs
-    assert m.shape[2] == test_dset.max_num_markers
-    assert s.shape[1] == test_dset.max_num_sgbs
-    assert t.shape[1] == test_dset.max_num_sgbs
+    assert m.shape[1] == test_dset.max_num_sgbs()
+    assert m.shape[2] == test_dset.max_num_markers()
+    assert s.shape[1] == test_dset.max_num_sgbs()
+    assert t.shape[1] == test_dset.max_num_sgbs()
 
 
 if __name__ == "__main__":
     test_dataset()
+    test_collator()
