@@ -15,7 +15,7 @@ embeddings_memmap="/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/mem
 
 training_set="/data/cctm/youn/metaphlan_dset/model_training/train.tsv"
 test_set="/data/cctm/youn/metaphlan_dset/model_training/test.tsv"
-model_config="./model_depth_2.yaml"
+model_config="./model.yaml"
 n_epochs=100
 learning_rate=0.0001
 batch_size=20
@@ -45,6 +45,7 @@ python train_model.py \
   --print-every 5 \
   --workers 8 \
   --seed "$seed" \
-  --use-auto-mixed-precision
+  --use-auto-mixed-precision \
+  --cuda-device "cuda:0"
 
 echo "Done."

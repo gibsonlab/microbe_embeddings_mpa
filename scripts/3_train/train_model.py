@@ -47,6 +47,7 @@ def train_and_save_model(
         train_rng_seed: int = 314159,
         num_workers: int = 4,
         auto_mixed_precision: bool = False,
+        cuda_device_name: str = "cuda",
         # specify whether to store sample-specific SGB embeddings to disk (not RAM).
 ):
     """
@@ -62,11 +63,12 @@ def train_and_save_model(
     :param train_rng_seed:
     :param num_workers:
     :param auto_mixed_precision:
+    :param cuda_device_name:
     """
 
     """ Create model. """
     ## ======== Model & Optimizer instantiation. ========
-    torch_embedding_model = SGBAbundancePredictionModel(**model_cfg).to("cuda")
+    torch_embedding_model = SGBAbundancePredictionModel(**model_cfg).to(cuda_device_name)
     torch_embedding_model = torch.compile(
         torch_embedding_model)  # Invoke compile() to get some optimization. Uses up-front compilation cost.
     print(
@@ -136,6 +138,10 @@ def parse_args() -> argparse.Namespace:
         "-amp", "--use-auto-mixed-precision", dest="use_auto_mixed_precision",
         action="store_true", default=False
     )
+    parser.add_argument(
+        "-cd", "--cuda-device", dest="cuda_device_name", type=str, default="cuda",
+        help="Specify which CUDA device name to use. (Example: cuda, cuda:0, cuda:1)",
+    )
     return parser.parse_args()
 
 
@@ -186,6 +192,7 @@ def main():
         train_rng_seed=seed + 2,
         num_workers=args.num_workers,
         auto_mixed_precision=args.use_auto_mixed_precision,
+        cuda_device_name=args.cuda_device_name,
     )
 
 if __name__ == "__main__":

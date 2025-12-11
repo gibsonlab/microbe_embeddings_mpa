@@ -84,7 +84,7 @@ def main_training_loop(
         total_test_loss = 0.0
         model.eval()
         with torch.no_grad():
-            for batch_idx, (test_batch_features, test_marker_mask, test_sgb_mask, test_y) in enumerate(test_dloader):
+            for batch_idx, (test_sample_ids, test_batch_features, test_marker_mask, test_sgb_mask, test_y) in enumerate(test_dloader):
                 with autocast(device_type='cuda', enabled=auto_mixed_precision):
                     test_y_hat = model(
                         test_batch_features.cuda(non_blocking=True),
@@ -111,8 +111,7 @@ def main_training_loop(
     current_lr = "n/a"
     for epoch in tqdm(range(num_epochs)):
         epoch_training_loss = 0.0
-        for batch_idx, (training_batch_features, training_marker_mask, training_sgb_mask, training_y) in enumerate(
-                train_dloader):
+        for batch_idx, (training_sample_ids, training_batch_features, training_marker_mask, training_sgb_mask, training_y) in enumerate(train_dloader):
             model.train()
             optimizer.zero_grad()
 
