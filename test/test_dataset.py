@@ -103,11 +103,13 @@ def test_dataloader():
         test_embed,
     )
 
+    batch_sz = 1
+    n_workers = 2
     test_dloader = MetaphlanDataLoader(
         dataset=test_dset,
-        batch_size=2,
+        batch_size=batch_sz,
         shuffle=True,
-        num_workers=1,
+        num_workers=n_workers,
         pin_memory=True,
         worker_rng_seed=314159
     )
@@ -116,7 +118,7 @@ def test_dataloader():
     m_dim = test_dset.max_num_markers()
     e_dim = 4096
     for batch_idx, (f_batch, m_batch, s_batch, t_batch) in enumerate(test_dloader):
-        assert f_batch.shape == (2, s_dim, m_dim, e_dim)
+        assert f_batch.shape == (batch_sz, s_dim, m_dim, e_dim)
     
 
 if __name__ == "__main__":
