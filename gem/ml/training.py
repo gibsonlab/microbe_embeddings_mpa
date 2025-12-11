@@ -112,6 +112,7 @@ def main_training_loop(
                             print("y_hat_i (before log_softmax):", test_y_hat[i])
                             print("y_hat_i:", y_hat_i)
                             print("yi:", yi)
+                            print("Features -- any nan?", torch.any(torch.isnan(feat_i)))
                             raise Exception("ASDF")
                     # debug
 
