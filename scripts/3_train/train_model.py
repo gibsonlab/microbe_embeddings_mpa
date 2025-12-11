@@ -151,7 +151,7 @@ def main():
     test_df = pd.read_csv(args.test, sep='\t', index_col="SampleID")
 
     train_df = train_df.head(1)  # debug
-    test_df = test_df.loc["SAMEA7041172"]
+    test_df = test_df.loc[test_df.index == "SAMEA7041172"]
     print(test_df)
 
     """ Create datasets. """
