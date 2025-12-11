@@ -81,7 +81,7 @@ def test_collator(marker_embedding_basedir: Path):
     for i in range(len(test_dset.samples)):
         sample = test_dset.samples[i]
         sgbs = sample.sgb_ids
-        f, m, s, t = test_batch[i]
+        _, f, m, s, t = test_batch[i]
 
         assert f_col[i, :f.shape[0], :f.shape[1], :f.shape[2]].equal(f)
         n_fake = 1
