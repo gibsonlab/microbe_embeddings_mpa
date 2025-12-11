@@ -10,7 +10,6 @@ import torch
 from torch import nn, GradScaler, autocast
 
 from gem.mpa import AbstractMetaphlanDataset
-from gem.util.timer import timer
 from gem.ml.dataloader.data_loader import MetaphlanDataLoader
 
 
@@ -57,18 +56,12 @@ def main_training_loop(
     scaler = GradScaler("cuda", enabled=auto_mixed_precision)
 
     """ Initialize dataset objects. """
-
-    def _seed_worker(worker_id):
-        worker_seed = worker_id + rng_seed
-        np.random.seed(worker_seed)
-        random.seed(worker_seed)
-
     train_rng = torch.Generator()
     train_rng.manual_seed(rng_seed)
     train_dloader = MetaphlanDataLoader(
         dataset=train_dset,
         batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True,
-        generator=train_rng, worker_init_fn=_seed_worker, drop_last=True,
+        generator=train_rng, drop_last=True,
     )
     # also set RNG seed for dropout reproducibility.
     torch.manual_seed(rng_seed + 1)
@@ -81,7 +74,7 @@ def main_training_loop(
     test_dloader = MetaphlanDataLoader(
         dataset=test_dset,
         batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True,
-        generator=train_rng, worker_init_fn=_seed_worker, drop_last=True,
+        generator=train_rng, drop_last=True,
     )
     print(f"Test dataset size: {len(test_dset)}")
     print(f"Number of test batches: {len(test_dloader)}")
@@ -94,19 +87,17 @@ def main_training_loop(
         with torch.no_grad():
             for batch_idx, (test_batch_features, test_marker_mask, test_sgb_mask, test_y) in enumerate(test_dloader):
                 with autocast(device_type='cuda', enabled=auto_mixed_precision):
-                    with timer("[Model]"):
-                        test_y_hat = model(
-                            test_batch_features.cuda(non_blocking=True),
-                            test_marker_mask.cuda(non_blocking=True),
-                            test_sgb_mask.cuda(non_blocking=True),
-                        )
+                    test_y_hat = model(
+                        test_batch_features.cuda(non_blocking=True),
+                        test_marker_mask.cuda(non_blocking=True),
+                        test_sgb_mask.cuda(non_blocking=True),
+                    )
 
-                    with timer("[Loss Eval]"):
-                        # assert test_y_hat.shape == test_y.shape, f"Neural Network output and ground truth have different shapes: {test_y_hat.shape} (NN) vs {test_y.shape} (truth)"
-                        batch_loss = loss_fn(
-                            nn.functional.log_softmax(test_y_hat, dim=-1),  # log pred probabilities
-                            torch.log(test_y.cuda(non_blocking=True))  # log target probabilities
-                        )
+                    # assert test_y_hat.shape == test_y.shape, f"Neural Network output and ground truth have different shapes: {test_y_hat.shape} (NN) vs {test_y.shape} (truth)"
+                    batch_loss = loss_fn(
+                        nn.functional.log_softmax(test_y_hat, dim=-1),  # log pred probabilities
+                        torch.log(test_y.cuda(non_blocking=True))  # log target probabilities
+                    )
 
                 total_test_loss += scaler.scale(batch_loss).item() * test_y.shape[0]
 

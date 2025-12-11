@@ -4,6 +4,15 @@ from gem.mpa import AbstractMetaphlanDataset
 from .collate import BufferedCollator
 
 
+def worker_init_fn(worker_id: int, base_rng_seed: int):
+    """ Set random seed """
+    import random, torch, numpy as np
+    worker_seed = base_rng_seed + worker_id
+    np.random.seed(worker_seed)
+    random.seed(worker_seed)
+    torch.manual_seed(worker_seed)
+
+
 class MetaphlanDataLoader(DataLoader):
     def __init__(
             self,
@@ -12,6 +21,7 @@ class MetaphlanDataLoader(DataLoader):
             shuffle: bool = True,
             num_workers: int = 0,
             pin_memory: bool = False,
+            worker_rng_seed: int = 31415,
             **dataloader_kwargs
     ):
         """
@@ -38,5 +48,6 @@ class MetaphlanDataLoader(DataLoader):
             num_workers=num_workers,
             pin_memory=pin_memory,
             collate_fn=self.collator,
+            worker_init_fn=lambda wid: worker_init_fn(wid, worker_rng_seed),
             **dataloader_kwargs
         )

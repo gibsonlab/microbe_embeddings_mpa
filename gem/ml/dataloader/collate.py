@@ -26,19 +26,25 @@ class BufferedCollator:
     def _init_buffer(self):
         """Initialize buffer for this worker process."""
         if len(self.buffers) == 0:
-            # Pre-allocate pinned memory buffer
             self.buffers['features'] = torch.empty(
                 (self.batch_size, self.max_num_sgbs, self.max_markers, self.embed_feature_dim),
                 dtype=self.dtype,
+                device='cpu',
             )
             self.buffers['marker_masks'] = torch.empty(
-                (self.batch_size, self.max_num_sgbs, self.max_markers), dtype=torch.bool
+                (self.batch_size, self.max_num_sgbs, self.max_markers),
+                dtype=torch.bool,
+                device='cpu',
             )
             self.buffers['sgb_masks'] = torch.empty(
-                (self.batch_size, self.max_num_sgbs), dtype=torch.bool
+                (self.batch_size, self.max_num_sgbs),
+                dtype=torch.bool,
+                device='cpu',
             )
             self.buffers['targets'] = torch.empty(
-                (self.batch_size, self.max_num_sgbs), dtype=self.dtype
+                (self.batch_size, self.max_num_sgbs),
+                dtype=self.dtype,
+                device='cpu',
             )
 
     def __call__(

@@ -3,6 +3,7 @@ import zstandard as zstd
 import pandas as pd
 import torch
 
+from gem.ml import MetaphlanDataLoader
 from gem.mpa.embeddings import MetaphlanMarkerEmbedding
 from gem.mpa.dataset import MetaphlanDataset
 from gem.ml.dataloader.collate import BufferedCollator
@@ -82,7 +83,7 @@ def test_collator():
 
         assert f_col[i, :f.shape[0], :f.shape[1], :f.shape[2]].equal(f)
         n_fake = 1
-        n_true = len(sample.sgb_ids) - n_fake
+        n_true = len(sgbs) - n_fake
         assert n_true == torch.sum(s_col[i]).item()
         assert n_true == m_col[i].any(dim=-1).sum().item()
         for s_mask, s_feats in zip(s_col[i], f_col[i]):
@@ -91,6 +92,31 @@ def test_collator():
         assert torch.isclose(torch.sum(s_col[i] * t_col[i]), torch.tensor(1.0)), "Expected abundances to approx. sum to 1. Sample = {}, got: {}".format(
             i, torch.sum(s_col[i] * t_col[i])
         )
+
+
+def test_dataloader():
+    test_embed = MetaphlanMarkerEmbedding(
+        marker_embedding_basedir=Path("/data/local/youn/metaphlan_abundance_prediction/embedding/evo"),
+    )
+    test_dset = MetaphlanDataset(
+        generate_test_profile(),
+        test_embed,
+    )
+
+    test_dloader = MetaphlanDataLoader(
+        dataset=test_dset,
+        batch_size=2,
+        shuffle=True,
+        num_workers=1,
+        pin_memory=True,
+        worker_rng_seed=314159
+    )
+
+    s_dim = test_dset.max_num_sgbs()
+    m_dim = test_dset.max_num_markers()
+    e_dim = 4096
+    for batch_idx, (f_batch, m_batch, s_batch, t_batch) in enumerate(test_dloader):
+        assert f_batch.shape == (2, s_dim, m_dim, e_dim)
     
 
 if __name__ == "__main__":
