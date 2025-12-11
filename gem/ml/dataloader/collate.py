@@ -82,6 +82,7 @@ class BufferedCollator:
             sgb_mask_buf[i, :sgb_mask.shape[0]] = sgb_mask
             target_buf[i, :targets.shape[0]] = targets
 
+            assert features.shape[0] == len(targets), f"Sample {i}: features.shape[0] = {features.shape[0]}, len(targets) = {len(targets)}"
             max_num_sgb = max(max_num_sgb, features.shape[0])
             max_num_markers = max(max_num_markers, marker_mask.shape[1])
             sample_ids.append(sample_id)
