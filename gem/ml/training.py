@@ -97,6 +97,7 @@ def main_training_loop(
                         sample_id = test_sample_ids[i]
                         feat_i = test_batch_features[i]
                         sgb_mask_i = test_sgb_mask[i]
+                        marker_mask_i = test_marker_mask[i]
                         y_hat_i = nn.functional.log_softmax(test_y_hat[i], dim=-1)
                         yi = torch.log(test_y[i].cuda(non_blocking=True))
                         loss_i = loss_fn(
@@ -104,9 +105,10 @@ def main_training_loop(
                             torch.unsqueeze(yi, dim=0)
                         )
                         if torch.any(torch.isnan(loss_i)):
-                            print("Found NaN loss (sample = {}".format(sample_id))
+                            print("Found NaN loss (sample = {})".format(sample_id))
                             print("feat:", feat_i)
                             print("sgb mask:", sgb_mask_i)
+                            print("marker mask:", marker_mask_i)
                             print("y_hat_i (before log_softmax):", test_y_hat[i])
                             print("y_hat_i:", y_hat_i)
                             print("yi:", yi)
