@@ -57,6 +57,8 @@ class BufferedCollator:
         # Lazy initialization ensures each worker gets its own buffer
         self._init_buffer()
 
+        assert len(batch) <= self.batch_size, f"Got batch size {len(batch)} > buffer batch size {self.batch_size}"
+
         # Copy data into pre-allocated buffer.
         # Note: each sample (the i-th element in the batch) may have: n_sgbs <= self.max_num_sgbs, n_markers <= self.max_num_markers.
         feat_buf = self.buffers['features']
@@ -72,12 +74,15 @@ class BufferedCollator:
         max_num_markers = 0
         sample_ids = []
         for i, (sample_id, features, marker_mask, sgb_mask, targets) in enumerate(batch):
+            assert features.shape[0] <= self.max_num_sgbs, f"Sample {i}: sgbs={features.shape[0]}"
+            assert features.shape[1] <= self.max_markers, f"Sample {i}: markers={features.shape[1]}"
+
             feat_buf[i, :features.shape[0], :features.shape[1], :] = features
             marker_mask_buf[i, :marker_mask.shape[0], :marker_mask.shape[1]] = marker_mask
             sgb_mask_buf[i, :sgb_mask.shape[0]] = sgb_mask
             target_buf[i, :targets.shape[0]] = targets
 
-            max_num_sgb = max(max_num_sgb, len(targets))
+            max_num_sgb = max(max_num_sgb, features.shape[0])
             max_num_markers = max(max_num_markers, marker_mask.shape[1])
             sample_ids.append(sample_id)
 
