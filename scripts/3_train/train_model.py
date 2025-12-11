@@ -150,6 +150,10 @@ def main():
     train_df = pd.read_csv(args.train, sep='\t', index_col="SampleID")
     test_df = pd.read_csv(args.test, sep='\t', index_col="SampleID")
 
+    train_df = train_df.head(1)  # debug
+    test_df = test_df.loc["SAMEA7041172"]
+    print(test_df)
+
     """ Create datasets. """
     print(f"Train: {args.train} ({len(train_df)} samples)")
     print(f"Test: {args.test} ({len(test_df)} samples)")
