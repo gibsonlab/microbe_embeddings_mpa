@@ -96,7 +96,7 @@ def main_training_loop(
                     print(test_y_hat[0])
                     print(test_y[0])
                     print(loss_fn(
-                        nn.functional.log_softmax(torch.unsqueeze(test_y_hta[0], dim=0), dim=-1),
+                        nn.functional.log_softmax(torch.unsqueeze(test_y_hat[0], dim=0), dim=-1),
                         torch.log(torch.unsqueeze(test_y[0], dim=0).cuda(non_blocking=True))
                     ))
                     raise Exception("ASDF")
