@@ -122,6 +122,6 @@ def test_dataloader():
     
 
 if __name__ == "__main__":
-    test_dataset()
-    test_collator()
+    #test_dataset()
+    #test_collator()
     test_dataloader()
