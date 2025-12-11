@@ -11,7 +11,7 @@
 # Note: this is a Slurm script, meant to be run on ErisXDL compute nodes with GPUs.
 set -e
 
-embeddings_memmap="/data/cctm/youn/metaphlan_dset/embeddings/phylophlan_markers/evo/memmap"
+embeddings_memmap="/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmmap_samples"
 
 training_set="/data/cctm/youn/metaphlan_dset/model_training/train.tsv"
 test_set="/data/cctm/youn/metaphlan_dset/model_training/test.tsv"
@@ -36,7 +36,7 @@ python train_model.py \
   --model-config "$model_config" \
   --out-dir "$outdir" \
   --loss "kl" \
-  --embed-dir "$embeddings_memmap" \
+  --memmap-tensor-dir "$embeddings_memmap" \
   --epochs "$n_epochs" \
   --learning-rate "$learning_rate" \
   --batch-size "$batch_size" \
