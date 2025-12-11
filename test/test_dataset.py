@@ -69,6 +69,7 @@ def test_collator(marker_embedding_basedir: Path):
         test_embed.num_markers(sgb)
         for sample in test_dset.samples
         for sgb in sample.sgb_ids
+        if test_embed.contains_sgb(sgb)
     ])
     e_dim = 4096
     assert f_col.shape == (len(test_batch), s_dim, m_dim, e_dim)
