@@ -1,3 +1,4 @@
+import os
 from torch.utils.data import DataLoader
 
 from gem.mpa import AbstractMetaphlanDataset
@@ -7,6 +8,7 @@ from .collate import BufferedCollator
 def worker_init_fn(worker_id: int, base_rng_seed: int):
     """ Set random seed """
     import random, torch, numpy as np
+    print(f"Initializing DataLoader worker ID {worker_id} (pid {os.getpid()})")  # debug
     worker_seed = base_rng_seed + worker_id
     np.random.seed(worker_seed)
     random.seed(worker_seed)
