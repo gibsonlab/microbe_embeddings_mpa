@@ -62,7 +62,8 @@ def test_collator(marker_embedding_basedir: Path):
         dtype=test_dset.embedding_dtype()
     )
 
-    f_col, m_col, s_col, t_col = collator(batch=test_batch)
+    sample_ids_col, f_col, m_col, s_col, t_col = collator(batch=test_batch)
+
     # expected answers
     s_dim = max([len(x.sgb_ids) for x in test_dset.samples])
     m_dim = max([
