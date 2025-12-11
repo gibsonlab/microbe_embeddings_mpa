@@ -134,7 +134,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("-s", "--seed", dest="seed", required=False, type=int, default=314159)
     parser.add_argument(
         "-amp", "--use-auto-mixed-precision", dest="use_auto_mixed_precision",
-        action="store_true", default=False, type=bool
+        action="store_true", default=False
     )
     return parser.parse_args()
 
