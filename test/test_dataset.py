@@ -64,8 +64,12 @@ def test_collator(marker_embedding_basedir: Path):
 
     f_col, m_col, s_col, t_col = collator(batch=test_batch)
     # expected answers
-    s_dim = test_dset.max_num_sgbs()
-    m_dim = test_dset.max_num_markers()
+    s_dim = max([len(x.sgb_ids) for x in test_dset.samples])
+    m_dim = max([
+        test_embed.num_markers(sgb)
+        for sample in test_dset.samples
+        for sgb in sample.sgb_ids
+    ])
     e_dim = 4096
     assert f_col.shape == (len(test_batch), s_dim, m_dim, e_dim)
     assert m_col.shape == (len(test_batch), s_dim, m_dim)
@@ -119,5 +123,5 @@ if __name__ == "__main__":
     # marker_embedding_dir = Path("/data/local/youn/metaphlan_abundance_prediction/embedding/evo")
     marker_embedding_dir = Path("/data/cctm/youn/metaphlan_dset/embeddings/phylophlan_markers/evo")
     #test_dataset(marker_embedding_dir)
-    #test_collator(marker_embedding_dir)
+    test_collator(marker_embedding_dir)
     test_dataloader(marker_embedding_dir)
