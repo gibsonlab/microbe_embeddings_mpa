@@ -94,6 +94,8 @@ def main_training_loop(
 
                     # debug
                     for i in range(0, len(test_sample_ids)):
+                        feat_i = test_batch_features[i]
+                        sgb_mask_i = test_sgb_mask[i]
                         y_hat_i = nn.functional.log_softmax(test_y_hat[i], dim=-1)
                         yi = torch.log(test_y[i].cuda(non_blocking=True))
                         loss_i = loss_fn(
@@ -102,8 +104,10 @@ def main_training_loop(
                         )
                         if torch.any(torch.isnan(loss_i)):
                             print("Found NaN loss")
-                            print(y_hat_i)
-                            print(yi)
+                            print("feat:", feat_i)
+                            print("sgb mask:", sgb_mask_i)
+                            print("y_hat_i:", y_hat_i)
+                            print("yi:", yi)
                             raise Exception("ASDF")
                     # debug
 
