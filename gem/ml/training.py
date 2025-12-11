@@ -106,6 +106,7 @@ def main_training_loop(
                             print("Found NaN loss")
                             print("feat:", feat_i)
                             print("sgb mask:", sgb_mask_i)
+                            print("y_hat_i (before log_softmax):", test_y_hat[i])
                             print("y_hat_i:", y_hat_i)
                             print("yi:", yi)
                             raise Exception("ASDF")
