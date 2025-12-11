@@ -105,7 +105,7 @@ def main_training_loop(
                             torch.unsqueeze(yi, dim=0)
                         )
                         if torch.any(torch.isnan(loss_i)):
-                            print("Found NaN loss (sample = {})".format(sample_id))
+                            print("Found NaN loss (i = {}, sample = {})".format(i, sample_id))
                             print("feat:", feat_i)
                             print("sgb mask:", sgb_mask_i)
                             print("marker mask:", marker_mask_i)
