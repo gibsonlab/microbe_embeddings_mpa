@@ -145,9 +145,13 @@ def main():
     test_df = pd.read_csv(args.test, sep='\t', index_col="SampleID")
 
     """ Create datasets. """
-    memmap_tensor_sample_dir = Path(args.memmap_tensor_sample_dir)
+    print(f"Train: {args.train} ({len(train_df)} samples)")
+    print(f"Test: {args.test} ({len(test_df)} samples)")
     train_dset = MetaphlanDatasetMemmapped(train_df)
     test_dset = MetaphlanDatasetMemmapped(test_df)
+
+    memmap_tensor_sample_dir = Path(args.memmap_tensor_sample_dir)
+    print(f"Loading memmapped sample tensors from {memmap_tensor_sample_dir}")
     train_dset.load_memmap_tensors(memmap_tensor_sample_dir)
     test_dset.load_memmap_tensors(memmap_tensor_sample_dir)
 
