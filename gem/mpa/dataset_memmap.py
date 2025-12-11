@@ -113,6 +113,7 @@ class MetaphlanDatasetMemmapped(AbstractMetaphlanDataset):
         super().__init__()
         self.df = dataset_df
         self.tensor_cache: List[TensorDict] = []
+        self.sample_ids: List[str] = []
         self.loaded = False
 
     def load_memmap_tensors(self, cache_dir: Path):
@@ -126,16 +127,18 @@ class MetaphlanDatasetMemmapped(AbstractMetaphlanDataset):
             else:
                 raise FileNotFoundError(f"Memory-mapped tensordict not found for sample: {sample_id}. Run perform_allocation() prior to load_memmap_tensors().")
             self.tensor_cache.append(x)
+            self.sample_ids.append(str(sample_id))
         self.loaded = True
 
-    def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+    def __getitem__(self, idx: int) -> Tuple[str, Tensor, Tensor, Tensor, Tensor]:
         """
         Load from pre-computed tensordict.
         """
         if not self.loaded:
             raise RuntimeError("Method load_memmap_tensors() must be run once prior to data access.")
         x = self.tensor_cache[idx]
-        return x['features'], x['mpadding'], x['spadding'], x['targets']
+        sample_id = self.df.index[idx]
+        return sample_id, x['features'], x['mpadding'], x['spadding'], x['targets']
 
     def __len__(self) -> int:
         return len(self.tensor_cache)

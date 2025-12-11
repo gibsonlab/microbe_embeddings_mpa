@@ -113,10 +113,18 @@ def test_dataloader(marker_embedding_basedir: Path):
         worker_rng_seed=314159
     )
 
-    s_dim = test_dset.max_num_sgbs()
-    m_dim = test_dset.max_num_markers()
+    samples_by_name = {sample.sample_id: sample for sample in test_dset.samples}
+
     e_dim = 4096
-    for batch_idx, (f_batch, m_batch, s_batch, t_batch) in enumerate(test_dloader):
+    for (sample_ids, f_batch, m_batch, s_batch, t_batch) in test_dloader:
+        batch_samples = [samples_by_name[sid] for sid in sample_ids]
+        s_dim = max(len(sample.sgb_ids) for sample in batch_samples)
+        m_dim = max(
+            test_embed.num_markers(sgb_id)
+            for sample in batch_samples
+            for sgb_id in sample.sgb_ids
+            if test_embed.contains_sgb(sgb_id)
+        )
         assert f_batch.shape == (batch_sz, s_dim, m_dim, e_dim)
     
 

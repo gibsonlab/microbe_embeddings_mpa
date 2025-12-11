@@ -13,7 +13,7 @@ from gem.util.timer import timer
 
 class AbstractMetaphlanDataset(Dataset, ABC):
     @abstractmethod
-    def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+    def __getitem__(self, idx: int) -> Tuple[str, Tensor, Tensor, Tensor, Tensor]:
         """
         Load from pre-computed tensordict.
         """
@@ -73,11 +73,11 @@ class MetaphlanDataset(AbstractMetaphlanDataset):
     def __len__(self) -> int:
         return len(self.samples)
 
-    def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+    def __getitem__(self, idx: int) -> Tuple[str, Tensor, Tensor, Tensor, Tensor]:
         sample = self.samples[idx]
         with timer(f"load_sample_embeddings {sample.sample_id}", enabled=False):
             _, features, marker_padding_mask, sgb_padding_mask, targets = self.load_sample_embeddings(sample)
-        return features, marker_padding_mask, sgb_padding_mask, targets
+        return sample.sample_id, features, marker_padding_mask, sgb_padding_mask, targets
 
     def load_sample_embeddings(self, sample: MetaphlanProfile) -> Tuple[List[str], Tensor, Tensor, Tensor, Tensor]:
         """

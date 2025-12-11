@@ -2,8 +2,6 @@ from typing import *
 from pathlib import Path
 
 from tqdm import tqdm
-import random
-import numpy as np
 import matplotlib.pyplot as plt
 
 import torch
@@ -28,6 +26,7 @@ def main_training_loop(
         loss_plot_path: Path = Optional[None],
         auto_mixed_precision: bool = False,
         rng_seed: int = 314159,
+        cuda_device_name: str = "cuda",
 ):
     """
     Train an input model on the given dataset. Uses torch.optim.Adam by default.
@@ -53,7 +52,7 @@ def main_training_loop(
     epoch_history = []
     training_loss_history = []
     test_loss_history = []
-    scaler = GradScaler("cuda", enabled=auto_mixed_precision)
+    scaler = GradScaler(cuda_device_name, enabled=auto_mixed_precision)
 
     """ Initialize dataset objects. """
     train_rng = torch.Generator()

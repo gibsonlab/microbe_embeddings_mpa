@@ -49,8 +49,8 @@ class BufferedCollator:
 
     def __call__(
             self,
-            batch: List[Tuple[Tensor, Tensor, Tensor, Tensor]]
-    ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+            batch: List[Tuple[str, Tensor, Tensor, Tensor, Tensor]]
+    ) -> Tuple[List[str], Tensor, Tensor, Tensor, Tensor]:
         # Lazy initialization ensures each worker gets its own buffer
         self._init_buffer()
 
@@ -67,7 +67,8 @@ class BufferedCollator:
 
         max_num_sgb = 0
         max_num_markers = 0
-        for i, (features, marker_mask, sgb_mask, targets) in enumerate(batch):
+        sample_ids = []
+        for i, (sample_id, features, marker_mask, sgb_mask, targets) in enumerate(batch):
             feat_buf[i, :features.shape[0], :features.shape[1], :] = features
             marker_mask_buf[i, :marker_mask.shape[0], :marker_mask.shape[1]] = marker_mask
             sgb_mask_buf[i, :sgb_mask.shape[0]] = sgb_mask
@@ -75,9 +76,11 @@ class BufferedCollator:
 
             max_num_sgb = max(max_num_sgb, len(targets))
             max_num_markers = max(max_num_markers, marker_mask.shape[1])
+            sample_ids.append(sample_id)
 
         # Return a slice/copy of the buffer for this batch
         return (
+            sample_ids,
             feat_buf[:len(batch), :max_num_sgb, :max_num_markers, :],
             marker_mask_buf[:len(batch), :max_num_sgb, :max_num_markers],
             sgb_mask_buf[:len(batch), :max_num_sgb],
