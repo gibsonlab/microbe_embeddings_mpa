@@ -121,6 +121,17 @@ def main_training_loop(
                     training_marker_mask.cuda(non_blocking=True),
                     training_sgb_mask.cuda(non_blocking=True),
                 )
+
+                # debug
+                print(training_y_hat[0])
+                print(training_y[0])
+                print(loss_fn(
+                    nn.functional.log_softmax(torch.unsqueeze(training_y_hat[0], dim=0), dim=-1),
+                    torch.log(torch.unsqueeze(training_y[0], dim=0).cuda(non_blocking=True))
+                ))
+                raise Exception("ASDF")
+                # debug
+
                 # assert training_y_hat.shape == training_y.shape, f"Neural Network output and ground truth have different shapes: {training_y_hat.shape} (NN) vs {training_y.shape} (truth)"
                 training_loss = loss_fn(
                     nn.functional.log_softmax(training_y_hat, dim=-1),  # log pred probabilities
