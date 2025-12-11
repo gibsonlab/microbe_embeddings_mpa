@@ -21,12 +21,16 @@ logging.basicConfig(
 logger = logging.getLogger()
 
 
-def load_model_config(config_file: Path, rng_seed: int) -> Dict:
+def load_model_config(config_file: Path, marker_embed_dim: int, rng_seed: int) -> Dict:
     with open(config_file, "r") as f:
         config_dict = yaml.safe_load(f)
         model_rng = torch.Generator()
         model_rng.manual_seed(rng_seed)
         config_dict['init_rng'] = model_rng
+        config_dict['marker_embed_dim'] = marker_embed_dim
+        print("Initializing model {} with marker embedding dimension = {}".format(
+            config_file.resolve(), marker_embed_dim
+        ))
         return config_dict
 
 
@@ -140,8 +144,20 @@ def main():
     train_df = pd.read_csv(args.train, sep='\t', index_col="SampleID")
     test_df = pd.read_csv(args.test, sep='\t', index_col="SampleID")
 
+    """ Create datasets. """
+    memmap_tensor_sample_dir = Path(args.memmap_tensor_sample_dir)
+    train_dset = MetaphlanDatasetMemmapped(train_df)
+    test_dset = MetaphlanDatasetMemmapped(test_df)
+    train_dset.load_memmap_tensors(memmap_tensor_sample_dir)
+    test_dset.load_memmap_tensors(memmap_tensor_sample_dir)
+
+    """ Create model configuration. """
     seed = args.seed
-    model_cfg = load_model_config(args.model_cfg_path, rng_seed=seed + 1)
+    model_cfg = load_model_config(
+        config_file=Path(args.model_cfg_path),
+        rng_seed=seed + 1,
+        marker_embed_dim=train_dset.embed_feature_dim(),
+    )
     model_save_dir = Path(args.model_save_dir)
     model_save_dir.mkdir(exist_ok=True, parents=True)
 
@@ -152,14 +168,6 @@ def main():
         loss_fn = nn.MSELoss(reduction='mean')
     else:
         raise ValueError(f"Unsupported loss name '{args.loss_name}'")
-
-    """ Create datasets. """
-    memmap_tensor_sample_dir = Path(args.memmap_tensor_sample_dir)
-    train_dset = MetaphlanDatasetMemmapped(train_df)
-    test_dset = MetaphlanDatasetMemmapped(test_df)
-
-    train_dset.load_memmap_tensors(memmap_tensor_sample_dir)
-    test_dset.load_memmap_tensors(memmap_tensor_sample_dir)
 
     train_and_save_model(
         model_cfg=model_cfg,

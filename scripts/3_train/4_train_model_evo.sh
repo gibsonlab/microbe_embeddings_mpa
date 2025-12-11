@@ -21,14 +21,16 @@ learning_rate=0.0001
 batch_size=20
 seed=12345
 
-outdir="/data/cctm/youn/metaphlan_dset/model_training/evo"
+outdir="/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/trained_model/evo"
 mkdir -p ${outdir}
 
 metadata="$outdir/metadata.txt"
+echo "====== Params ======"
 echo "epochs=${n_epochs}" | tee $metadata
 echo "LR=${learning_rate}" | tee -a $metadata
 echo "batch_size=${batch_size}" | tee -a $metadata
 echo "seed=${seed}" | tee -a $metadata
+echo "===================="
 
 python train_model.py \
   --train "$training_set" \
