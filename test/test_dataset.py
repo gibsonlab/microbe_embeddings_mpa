@@ -16,10 +16,8 @@ def generate_test_profile() -> pd.DataFrame:
         return df
 
 
-def test_dataset():
-    test_embed = MetaphlanMarkerEmbedding(
-        marker_embedding_basedir=Path("/data/local/youn/metaphlan_abundance_prediction/embedding/evo"),
-    )
+def test_dataset(marker_embedding_basedir: Path):
+    test_embed = MetaphlanMarkerEmbedding(marker_embedding_basedir=marker_embedding_basedir)
     test_dset = MetaphlanDataset(
         generate_test_profile(),
         test_embed,
@@ -48,10 +46,8 @@ def test_dataset():
         assert n_fake == (f == 0).all(dim=[1, 2]).sum().item()
 
         
-def test_collator():
-    test_embed = MetaphlanMarkerEmbedding(
-        marker_embedding_basedir=Path("/data/local/youn/metaphlan_abundance_prediction/embedding/evo"),
-    )
+def test_collator(marker_embedding_basedir: Path):
+    test_embed = MetaphlanMarkerEmbedding(marker_embedding_basedir=marker_embedding_basedir)
     test_dset = MetaphlanDataset(
         generate_test_profile(),
         test_embed,
@@ -94,10 +90,8 @@ def test_collator():
         )
 
 
-def test_dataloader():
-    test_embed = MetaphlanMarkerEmbedding(
-        marker_embedding_basedir=Path("/data/local/youn/metaphlan_abundance_prediction/embedding/evo"),
-    )
+def test_dataloader(marker_embedding_basedir: Path):
+    test_embed = MetaphlanMarkerEmbedding(marker_embedding_basedir=marker_embedding_basedir)
     test_dset = MetaphlanDataset(
         generate_test_profile(),
         test_embed,
@@ -122,6 +116,8 @@ def test_dataloader():
     
 
 if __name__ == "__main__":
-    #test_dataset()
-    #test_collator()
-    test_dataloader()
+    # marker_embedding_dir = Path("/data/local/youn/metaphlan_abundance_prediction/embedding/evo")
+    marker_embedding_dir = Path("/data/cctm/youn/metaphlan_dset/embeddings/phylophlan_markers/evo")
+    #test_dataset(marker_embedding_dir)
+    #test_collator(marker_embedding_dir)
+    test_dataloader(marker_embedding_dir)
