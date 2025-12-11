@@ -90,8 +90,8 @@ class BufferedCollator:
         # Return a slice/copy of the buffer for this batch
         return (
             sample_ids,
-            feat_buf[:len(batch), :max_num_sgb, :max_num_markers, :],
-            marker_mask_buf[:len(batch), :max_num_sgb, :max_num_markers],
-            sgb_mask_buf[:len(batch), :max_num_sgb],
-            target_buf[:len(batch), :max_num_sgb]
+            feat_buf[:len(batch), :max_num_sgb, :max_num_markers, :].clone(),
+            marker_mask_buf[:len(batch), :max_num_sgb, :max_num_markers].clone(),
+            sgb_mask_buf[:len(batch), :max_num_sgb].clone(),
+            target_buf[:len(batch), :max_num_sgb].clone()
         )

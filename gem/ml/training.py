@@ -93,13 +93,18 @@ def main_training_loop(
                     )
 
                     # debug
-                    print(test_y_hat[0])
-                    print(test_y[0])
-                    print(loss_fn(
-                        nn.functional.log_softmax(torch.unsqueeze(test_y_hat[0], dim=0), dim=-1),
-                        torch.log(torch.unsqueeze(test_y[0], dim=0).cuda(non_blocking=True))
-                    ))
-                    raise Exception("ASDF")
+                    for i in range(0, len(test_sample_ids)):
+                        y_hat_i = nn.functional.log_softmax(test_y_hat[i], dim=-1)
+                        yi = torch.log(test_y[i].cuda(non_blocking=True))
+                        loss_i = loss_fn(
+                            torch.unsqueeze(y_hat_i, dim=0),
+                            torch.unsqueeze(yi, dim=0)
+                        )
+                        if torch.any(torch.isnan(loss_i)):
+                            print("Found NaN loss")
+                            print(y_hat_i)
+                            print(yi)
+                            raise Exception("ASDF")
                     # debug
 
                     # assert test_y_hat.shape == test_y.shape, f"Neural Network output and ground truth have different shapes: {test_y_hat.shape} (NN) vs {test_y.shape} (truth)"
