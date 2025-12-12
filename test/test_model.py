@@ -25,7 +25,7 @@ def create_test_config() -> Dict:
     return config_dict
 
 
-def test_model_memmap_input(marker_embedding_basedir: Path):
+def test_model_memmap_input(memmap_tensor_sample_dir: Path):
     """
     Test the model with pre-computed memmap tensor input (3_train/3_memmap_*.sh)
     """
@@ -49,8 +49,8 @@ def test_model_memmap_input(marker_embedding_basedir: Path):
     )
 
     test_sample_ids, test_batch_features, test_marker_mask, test_sgb_mask, test_y = next(iter(test_dloader))
-    print(test_sample_ids)
-    print(test_batch_features.shape[0])
+    test_y = test_model(test_batch_features.to("cuda"))
+    print(test_y)
 
 
 if __name__ == "__main__":
