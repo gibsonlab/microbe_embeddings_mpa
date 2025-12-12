@@ -114,6 +114,10 @@ def train_and_save_model(
     logger.info(f"Wrote model parameters to {model_save_path}")
 
     with open(model_config_path, "wt") as out_f:
+        rng = model_cfg['init_rng']
+        model_init_seed = rng.initial_seed()
+        model_cfg['init_rng_seed'] = model_init_seed
+        del model_cfg['init_rng']
         json.dump(model_cfg, out_f, indent=4)
         logger.info(f"Wrote model config to {model_config_path}")
 
