@@ -131,9 +131,6 @@ def main_training_loop(
 
                 # divide by total dataset size, to contribute to the overall average estimate.
                 total_test_loss += scaler.scale(batch_loss).item() * test_y.shape[0] / len(test_dset)
-
-                # clear some space for next batch.
-                del test_y_hat
         return total_test_loss
 
     test_dset.track_runtime = True
@@ -168,12 +165,7 @@ def main_training_loop(
             current_lr = lr_scheduler.get_last_lr()[0]
 
             # print("cleaning up.")
-            epoch_training_loss += training_loss.item() * training_y.shape[0]
-
-            # clear some space for next batch.
-            del training_y_hat
-            del training_loss
-        epoch_training_loss /= len(train_dloader.dataset)
+            epoch_training_loss += training_loss.item() * training_y.shape[0] / len(train_dloader.dataset)
 
         # option implementation
         if epoch % print_every == 0:
