@@ -146,7 +146,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("-p", "--print-every", dest="print_every", type=int, default=5)
     parser.add_argument("-w", "--workers", dest="num_workers", type=int, default=1)
     parser.add_argument("-s", "--seed", dest="seed", required=False, type=int, default=314159)
-    parser.add_argument("-pf", "--prefetch-factor", dest="batch_prefetch_factor", required=False, type=int, defualt=2)
+    parser.add_argument("-pf", "--prefetch-factor", dest="batch_prefetch_factor", required=False, type=int, default=2)
     parser.add_argument(
         "-amp", "--use-auto-mixed-precision", dest="use_auto_mixed_precision",
         action="store_true", default=False
