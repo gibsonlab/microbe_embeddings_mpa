@@ -49,6 +49,7 @@ def train_and_save_model(
         num_workers: int = 4,
         auto_mixed_precision: bool = False,
         cuda_device_name: str = "cuda",
+        timer_profile: bool = False,
         # specify whether to store sample-specific SGB embeddings to disk (not RAM).
 ):
     """
@@ -110,6 +111,7 @@ def train_and_save_model(
         rng_seed=train_rng_seed,
         cuda_device_name=cuda_device_name,
         prefetch_factor=batch_prefetch_factor,
+        timer_profile=timer_profile,
     )
 
     """ save model to file. """
@@ -207,6 +209,7 @@ def main():
         num_workers=args.num_workers,
         auto_mixed_precision=args.use_auto_mixed_precision,
         cuda_device_name=args.cuda_device_name,
+        timer_profile=False,
     )
 
 if __name__ == "__main__":

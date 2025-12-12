@@ -29,6 +29,7 @@ def main_training_loop(
         auto_mixed_precision: bool = False,
         rng_seed: int = 314159,
         cuda_device_name: str = "cuda",
+        timer_profile: bool = False
 ):
     """
     Train an input model on the given dataset. Uses torch.optim.Adam by default.
@@ -148,7 +149,7 @@ def main_training_loop(
             optimizer.zero_grad()
 
             with autocast(device_type='cuda', enabled=auto_mixed_precision, dtype=torch.bfloat16):
-                with timer("Model-With-Grad ({}/{})".format(batch_idx+1, len(train_dloader))):
+                with timer("Model-With-Grad ({}/{})".format(batch_idx+1, len(train_dloader)), enabled=timer_profile):
                     training_y_hat = model(
                         training_batch_features.cuda(non_blocking=True),
                         training_marker_mask.cuda(non_blocking=True),
@@ -156,18 +157,18 @@ def main_training_loop(
                     )
 
                 # assert training_y_hat.shape == training_y.shape, f"Neural Network output and ground truth have different shapes: {training_y_hat.shape} (NN) vs {training_y.shape} (truth)"
-                with timer("Loss-With-Grad ({}/{})".format(batch_idx+1, len(train_dloader))):
+                with timer("Loss-With-Grad ({}/{})".format(batch_idx+1, len(train_dloader)), enabled=timer_profile):
                     training_loss = loss_fn(
                         nn.functional.log_softmax(training_y_hat, dim=-1),  # log pred probabilities
                         torch.log(training_y.cuda(non_blocking=True))  # log target probabilities
                     )
 
-            with timer("Backward-Update"):
+            with timer("Backward-Update", enabled=timer_profile):
                 scaler.scale(training_loss).backward()
                 scaler.step(optimizer)
                 scaler.update()
 
-            with timer("LR-Step"):
+            with timer("LR-Step", enabled=timer_profile):
                 lr_scheduler.step()
                 current_lr = lr_scheduler.get_last_lr()[0]
 
