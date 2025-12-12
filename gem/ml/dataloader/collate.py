@@ -57,7 +57,8 @@ class BufferedCollator:
         # Lazy initialization ensures each worker gets its own buffer
         self._init_buffer()
 
-        assert len(batch) <= self.batch_size, f"Got batch size {len(batch)} > buffer batch size {self.batch_size}"
+        batch_len = len(batch)
+        assert batch_len <= self.batch_size, f"Got batch size {batch_len} > buffer batch size {self.batch_size}"
 
         # Copy data into pre-allocated buffer.
         # Note: each sample (the i-th element in the batch) may have: n_sgbs <= self.max_num_sgbs, n_markers <= self.max_num_markers.
@@ -66,9 +67,9 @@ class BufferedCollator:
         sgb_mask_buf = self.buffers['sgb_masks']
         target_buf = self.buffers['targets']
 
-        marker_mask_buf.zero_()
-        sgb_mask_buf.zero_()
-        target_buf.zero_()
+        marker_mask_buf[:batch_len].zero_()
+        sgb_mask_buf[:batch_len].zero_()
+        target_buf[:batch_len].zero_()
 
         max_num_sgb = 0
         max_num_markers = 0
@@ -90,8 +91,43 @@ class BufferedCollator:
         # Return a slice/copy of the buffer for this batch
         return (
             sample_ids,
-            feat_buf[:len(batch), :max_num_sgb, :max_num_markers, :].clone(),
-            marker_mask_buf[:len(batch), :max_num_sgb, :max_num_markers].clone(),
-            sgb_mask_buf[:len(batch), :max_num_sgb].clone(),
-            target_buf[:len(batch), :max_num_sgb].clone()
+            feat_buf[:batch_len, :max_num_sgb, :max_num_markers, :].clone(),
+            marker_mask_buf[:batch_len, :max_num_sgb, :max_num_markers].clone(),
+            sgb_mask_buf[:batch_len, :max_num_sgb].clone(),
+            target_buf[:batch_len, :max_num_sgb].clone()
         )
+
+
+def collate_fn_dynamic_alloc(
+        batch: List[Tuple[str, Tensor, Tensor, Tensor, Tensor]]
+):
+    """Minimizes allocations while being multiprocessing-safe"""
+    batch_size = len(batch)
+
+    # Find max dimensions
+    S_max = max(f.shape[0] for _, f, _, _, _ in batch)
+    M_max = max(f.shape[1] for _, f, _, _, _ in batch)
+    embed_dim = batch[0][1].shape[-1]
+
+    # Get device and dtype from first sample
+    device = batch[0][1].device
+    f_dtype = batch[0][1].dtype
+    t_dtype = batch[0][4].dtype
+
+    # Single allocation with torch.empty (faster than zeros if you fill everything)
+    sample_ids = []
+    f_batch = torch.zeros(batch_size, S_max, M_max, embed_dim, dtype=f_dtype, device=device)
+    m_batch = torch.zeros(batch_size, S_max, M_max, dtype=torch.bool, device=device)
+    s_batch = torch.zeros(batch_size, S_max, dtype=torch.bool, device=device)
+    t_batch = torch.zeros(batch_size, S_max, dtype=t_dtype, device=device)
+
+    # In-place copy
+    for i, (sample_id, f, m, s, t) in enumerate(batch):
+        sample_ids.append(sample_id)
+        S_i, M_i = f.shape[0], f.shape[1]
+        f_batch[i, :S_i, :M_i, :] = f
+        m_batch[i, :S_i, :M_i] = m
+        s_batch[i, :S_i] = s
+        t_batch[i, :S_i] = t
+
+    return sample_ids, f_batch, m_batch, s_batch, t_batch

@@ -1,13 +1,13 @@
-import os
 from torch.utils.data import DataLoader
 
 from gem.mpa import AbstractMetaphlanDataset
-from .collate import BufferedCollator
+from .collate import BufferedCollator, collate_fn_dynamic_alloc
 
 
 def worker_init_fn(worker_id: int, base_rng_seed: int):
     """ Set random seed """
     import random, torch, numpy as np
+    # import os  # debug
     # print(f"Initializing DataLoader worker ID {worker_id} (pid {os.getpid()})")  # debug
     worker_seed = base_rng_seed + worker_id
     np.random.seed(worker_seed)
@@ -36,20 +36,20 @@ class MetaphlanDataLoader(DataLoader):
         :param pin_memory: Whether to pin memory
         :param dataloader_kwargs: Additional DataLoader arguments
         """
-        self.collator = BufferedCollator(
-            batch_size=batch_size,
-            max_num_sgbs=dataset.max_num_sgbs(),
-            max_markers=dataset.max_num_markers(),
-            embed_feature_dim=dataset.embed_feature_dim(),
-            dtype=dataset.embedding_dtype()
-        )
+        # self.collator = BufferedCollator(
+        #     batch_size=batch_size,
+        #     max_num_sgbs=dataset.max_num_sgbs(),
+        #     max_markers=dataset.max_num_markers(),
+        #     embed_feature_dim=dataset.embed_feature_dim(),
+        #     dtype=dataset.embedding_dtype()
+        # )
         super().__init__(
             dataset=dataset,
             batch_size=batch_size,
             shuffle=shuffle,
             num_workers=num_workers,
             pin_memory=pin_memory,
-            collate_fn=self.collator,
+            collate_fn=collate_fn_dynamic_alloc,
             worker_init_fn=lambda wid: worker_init_fn(wid, worker_rng_seed),
             **dataloader_kwargs
         )
