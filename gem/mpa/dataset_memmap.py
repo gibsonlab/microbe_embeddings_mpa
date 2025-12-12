@@ -108,18 +108,17 @@ class MetaphlanDatasetMemmapped(AbstractMetaphlanDataset):
 
     def __init__(
             self,
-            dataset_df: pd.DataFrame
+            sample_ids: List[str]
     ):
         super().__init__()
-        self.df = dataset_df
         self.tensor_cache: List[TensorDict] = []
-        self.sample_ids: List[str] = []
+        self.sample_ids: List[str] = sample_ids
         self.loaded = False
 
     def load_memmap_tensors(self, cache_dir: Path):
         print(f"Using tensor memmap directory: {cache_dir}")
 
-        for sample_id, row in tqdm(self.df.iterrows(), total=self.df.shape[0]):
+        for sample_id in self.sample_ids:
             memmap_dir = cache_dir / str(sample_id)
             if (memmap_dir / "meta.json").exists():
                 # TensorDict is already allocated; load it from disk.
@@ -137,7 +136,7 @@ class MetaphlanDatasetMemmapped(AbstractMetaphlanDataset):
         if not self.loaded:
             raise RuntimeError("Method load_memmap_tensors() must be run once prior to data access.")
         x = self.tensor_cache[idx]
-        sample_id = self.df.index[idx]
+        sample_id = self.sample_ids[idx]
         return sample_id, x['features'], x['mpadding'], x['spadding'], x['targets']
 
     def __len__(self) -> int:

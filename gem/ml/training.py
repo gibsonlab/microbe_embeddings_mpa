@@ -18,8 +18,9 @@ def main_training_loop(
         train_dset: AbstractMetaphlanDataset,
         test_dset: AbstractMetaphlanDataset,
         loss_fn: nn.Module,
-        num_workers: Optional[int] = 0,
         batch_size: int = 5,
+        num_workers: Optional[int] = 0,
+        prefetch_factor: int = 2,
         num_epochs: int = 5000,
         print_progress: bool = True,
         print_every: int = 50,
@@ -38,7 +39,8 @@ def main_training_loop(
     :param train_dset: The object that specifies the training dataset.
     :param test_dset: The object that specifies the test dataset.
     :param loss_fn: The loss function to use for optimization.
-    :param num_workers: Specify the number of workers to load data in parallel. Note that a separate dataloader is created for train/test; so if both are provided the actual # of workers is 2 times the specified value.
+    :param num_workers: Pass-through for prefetch_factors for torch.utils.data.DataLoader. Specify the number of workers to load data in parallel. Note that a separate dataloader is created for train/test.
+    :param prefetch_factor: Pass-through for prefetch_factors for torch.utils.data.DataLoader.
     :param batch_size: The size of each batch.
     :param num_epochs: The total number of epochs to train. (1 epoch is a full pass on the entire training dataset, after batching.)
     :param print_progress: Indicate whether to print loss values periodically to stdout. Specify `print_every` to change how often this occurs.
@@ -60,7 +62,7 @@ def main_training_loop(
     train_dloader = MetaphlanDataLoader(
         dataset=train_dset,
         batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True,
-        generator=train_rng, drop_last=True,
+        generator=train_rng, drop_last=False, prefetch_factor=prefetch_factor,
     )
     # also set RNG seed for dropout reproducibility.
     torch.manual_seed(rng_seed + 1)
@@ -73,7 +75,7 @@ def main_training_loop(
     test_dloader = MetaphlanDataLoader(
         dataset=test_dset,
         batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True,
-        generator=train_rng, drop_last=True,
+        generator=train_rng, drop_last=False, prefetch_factor=prefetch_factor,
     )
     print(f"Test dataset size: {len(test_dset)}")
     print(f"Number of test batches: {len(test_dloader)}")

@@ -70,9 +70,11 @@ def train_and_save_model(
     ## ======== Model & Optimizer instantiation. ========
     torch_embedding_model = SGBAbundancePredictionModel(**model_cfg).to(cuda_device_name)
     torch_embedding_model = torch.compile(
-        torch_embedding_model)  # Invoke compile() to get some optimization. Uses up-front compilation cost.
+        torch_embedding_model
+    )  # Invoke compile() to get some optimization. Uses up-front compilation cost.
     print(
-        f"Number of trainable parameters: {sum(p.numel() for p in torch_embedding_model.parameters() if p.requires_grad)}")
+        f"Number of trainable parameters: {sum(p.numel() for p in torch_embedding_model.parameters() if p.requires_grad)}"
+    )
     optimizer = optim.Adam(torch_embedding_model.parameters(), lr=lr,
                            weight_decay=0.1)  # Note: weight_decay is L2 regularization.
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
@@ -150,15 +152,11 @@ def main():
     train_df = pd.read_csv(args.train, sep='\t', index_col="SampleID")
     test_df = pd.read_csv(args.test, sep='\t', index_col="SampleID")
 
-    train_df = train_df.head(1)  # debug
-    # test_df = test_df.loc[test_df.index == "SAMEA7041172"]
-    print(test_df)
-
     """ Create datasets. """
     print(f"Train: {args.train} ({len(train_df)} samples)")
     print(f"Test: {args.test} ({len(test_df)} samples)")
-    train_dset = MetaphlanDatasetMemmapped(train_df)
-    test_dset = MetaphlanDatasetMemmapped(test_df)
+    train_dset = MetaphlanDatasetMemmapped(train_df.index.tolist())
+    test_dset = MetaphlanDatasetMemmapped(test_df.index.tolist())
 
     memmap_tensor_sample_dir = Path(args.memmap_tensor_sample_dir)
     print(f"Loading memmapped sample tensors from {memmap_tensor_sample_dir}")
