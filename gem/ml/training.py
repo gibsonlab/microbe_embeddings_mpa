@@ -129,11 +129,12 @@ def main_training_loop(
                                 print("Features -- any nan?", torch.any(torch.isnan(feat_i)))
                                 raise Exception("NaN error!")
 
-                total_test_loss += scaler.scale(batch_loss).item() * test_y.shape[0]
+                # divide by total dataset size, to contribute to the overall average estimate.
+                total_test_loss += scaler.scale(batch_loss).item() * test_y.shape[0] / len(test_dset)
 
                 # clear some space for next batch.
                 del test_y_hat
-        return total_test_loss / len(test_dset)  # divide by total dataset size.
+        return total_test_loss
 
     test_dset.track_runtime = True
     print(f"Initial Test Loss: {_compute_test_loss(show_pbar=True)}")
