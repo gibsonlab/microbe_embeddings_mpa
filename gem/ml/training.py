@@ -82,11 +82,15 @@ def main_training_loop(
 
     """ Training loop -- Optimize using batches. """
 
-    def _compute_test_loss() -> float:
+    def _compute_test_loss(show_pbar: bool = False) -> float:
         total_test_loss = 0.0
         model.eval()
         with torch.no_grad():
-            for batch_idx, (test_sample_ids, test_batch_features, test_marker_mask, test_sgb_mask, test_y) in enumerate(test_dloader):
+            if show_pbar:
+                collection = tqdm(test_dloader, total=len(test_dloader), desc="Training Loss Eval", unit="batch")
+            else:
+                collection = test_dloader
+            for batch_idx, (test_sample_ids, test_batch_features, test_marker_mask, test_sgb_mask, test_y) in enumerate(collection):
                 with autocast(device_type='cuda', enabled=auto_mixed_precision):
                     test_y_hat = model(
                         test_batch_features.cuda(non_blocking=True),
@@ -133,7 +137,7 @@ def main_training_loop(
         return total_test_loss / len(test_dset)  # divide by total dataset size.
 
     test_dset.track_runtime = True
-    print(f"Initial Test Loss: {_compute_test_loss()}")
+    print(f"Initial Test Loss: {_compute_test_loss(show_pbar=True)}")
     test_dset.track_runtime = False
 
     current_lr = "n/a"
