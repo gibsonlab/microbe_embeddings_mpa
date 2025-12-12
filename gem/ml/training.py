@@ -94,6 +94,7 @@ def main_training_loop(
 
                     # debug
                     for i in range(0, len(test_sample_ids)):
+                        print(f"Batch {batch_idx}, sample {i}: id {test_sample_ids[i]}")
                         sample_id = test_sample_ids[i]
                         feat_i = test_batch_features[i]
                         sgb_mask_i = test_sgb_mask[i]
