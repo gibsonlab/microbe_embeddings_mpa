@@ -81,7 +81,7 @@ def main_training_loop(
     print(f"Number of test batches: {len(test_dloader)}")
 
     """ Training loop -- Optimize using batches. """
-
+    print("NOTE: the first iteration of model evaluation may take considerably longer, due to compilation overhead.")
     def _compute_test_loss(show_pbar: bool = False) -> float:
         total_test_loss = 0.0
         model.eval()
@@ -91,44 +91,43 @@ def main_training_loop(
             else:
                 collection = test_dloader
             for batch_idx, (test_sample_ids, test_batch_features, test_marker_mask, test_sgb_mask, test_y) in enumerate(collection):
-                with autocast(device_type='cuda', enabled=auto_mixed_precision):
+                with autocast(device_type='cuda', enabled=auto_mixed_precision, dtype=torch.bfloat16):
+                    # note: bfloat16 historically has had better numerical stability, causing fewer NaN issues.
                     test_y_hat = model(
                         test_batch_features.cuda(non_blocking=True),
                         test_marker_mask.cuda(non_blocking=True),
                         test_sgb_mask.cuda(non_blocking=True),
                     )
 
-                    # # debug
-                    # for i in range(0, len(test_sample_ids)):
-                    #     print(f"Batch {batch_idx}, sample {i}: id {test_sample_ids[i]}")
-                    #     sample_id = test_sample_ids[i]
-                    #     feat_i = test_batch_features[i]
-                    #     sgb_mask_i = test_sgb_mask[i]
-                    #     marker_mask_i = test_marker_mask[i]
-                    #     y_hat_i = nn.functional.log_softmax(test_y_hat[i], dim=-1)
-                    #     yi = torch.log(test_y[i].cuda(non_blocking=True))
-                    #     loss_i = loss_fn(
-                    #         torch.unsqueeze(y_hat_i, dim=0),
-                    #         torch.unsqueeze(yi, dim=0)
-                    #     )
-                    #     if torch.any(torch.isnan(loss_i)):
-                    #         print("Found NaN loss (i = {}, sample = {})".format(i, sample_id))
-                    #         print("feat:", feat_i)
-                    #         print("sgb mask:", sgb_mask_i)
-                    #         print("marker mask:", marker_mask_i)
-                    #         print("y_hat_i (before log_softmax):", test_y_hat[i])
-                    #         print("y_hat_i:", y_hat_i)
-                    #         print("yi:", yi)
-                    #         print("Features -- any nan?", torch.any(torch.isnan(feat_i)))
-                    #         raise Exception("ASDF")
-                    # # debug
-
                     # assert test_y_hat.shape == test_y.shape, f"Neural Network output and ground truth have different shapes: {test_y_hat.shape} (NN) vs {test_y.shape} (truth)"
                     batch_loss = loss_fn(
                         nn.functional.log_softmax(test_y_hat, dim=-1),  # log pred probabilities
                         torch.log(test_y.cuda(non_blocking=True))  # log target probabilities
                     )
-                    # print(batch_loss)  # debug
+                    if torch.isnan(batch_loss).item():
+                        # ========== Found NaN batch loss. Try to report current status and terminate training loop.
+                        for i in range(0, len(test_sample_ids)):
+                            print(f"Batch {batch_idx}, sample {i}: id {test_sample_ids[i]}")
+                            sample_id = test_sample_ids[i]
+                            feat_i = test_batch_features[i]
+                            sgb_mask_i = test_sgb_mask[i]
+                            marker_mask_i = test_marker_mask[i]
+                            y_hat_i = nn.functional.log_softmax(test_y_hat[i], dim=-1)
+                            yi = torch.log(test_y[i].cuda(non_blocking=True))
+                            loss_i = loss_fn(
+                                torch.unsqueeze(y_hat_i, dim=0),
+                                torch.unsqueeze(yi, dim=0)
+                            )
+                            if torch.any(torch.isnan(loss_i)):
+                                print("Found NaN loss (i = {}, sample = {})".format(i, sample_id))
+                                print("feat:", feat_i)
+                                print("sgb mask:", sgb_mask_i)
+                                print("marker mask:", marker_mask_i)
+                                print("y_hat_i (before log_softmax):", test_y_hat[i])
+                                print("y_hat_i:", y_hat_i)
+                                print("yi:", yi)
+                                print("Features -- any nan?", torch.any(torch.isnan(feat_i)))
+                                raise Exception("NaN error!")
 
                 total_test_loss += scaler.scale(batch_loss).item() * test_y.shape[0]
 

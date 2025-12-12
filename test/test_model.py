@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import *
 
 import torch
-from torch import nn
+from torch import autocast
 from gem.ml import MetaphlanDataLoader, SGBAbundancePredictionModel
 from gem.mpa import MetaphlanDatasetMemmapped
 
@@ -36,7 +36,7 @@ def test_model_memmap_input(memmap_tensor_sample_dir: Path):
     model_cfg = create_test_config()
     print("Creating test model from configuration: {}".format(model_cfg))
     test_model = SGBAbundancePredictionModel(**model_cfg).to("cuda")
-    test_model = torch.compile(test_model)
+    test_model: SGBAbundancePredictionModel = torch.compile(test_model)
 
     batch_sz = 2
     test_dloader = MetaphlanDataLoader(
@@ -49,8 +49,9 @@ def test_model_memmap_input(memmap_tensor_sample_dir: Path):
     )
 
     test_sample_ids, test_batch_features, test_marker_mask, test_sgb_mask, test_y = next(iter(test_dloader))
-    test_y = test_model(test_batch_features.to("cuda"), test_marker_mask.to("cuda"), test_sgb_mask.to("cuda"))
-    print(test_y)
+    with autocast(device_type='cuda', enabled=True, dtype=torch.bfloat16):
+        test_y = test_model(test_batch_features.to("cuda"), test_marker_mask.to("cuda"), test_sgb_mask.to("cuda"))
+        print(test_y)
 
 
 if __name__ == "__main__":
