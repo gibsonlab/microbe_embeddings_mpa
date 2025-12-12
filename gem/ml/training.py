@@ -87,7 +87,7 @@ def main_training_loop(
         model.eval()
         with torch.no_grad():
             if show_pbar:
-                collection = tqdm(test_dloader, total=len(test_dloader), desc="Training Loss Eval", unit="batch")
+                collection = tqdm(test_dloader, total=len(test_dloader), desc="Test Loss Eval", unit="batch")
             else:
                 collection = test_dloader
             for batch_idx, (test_sample_ids, test_batch_features, test_marker_mask, test_sgb_mask, test_y) in enumerate(collection):
