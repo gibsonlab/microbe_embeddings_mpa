@@ -44,6 +44,7 @@ def train_and_save_model(
         lr: float = 0.0001,
         print_every: int = 5,
         batch_size: int = 10,
+        batch_prefetch_factor: int = 2,
         train_rng_seed: int = 314159,
         num_workers: int = 4,
         auto_mixed_precision: bool = False,
@@ -60,6 +61,7 @@ def train_and_save_model(
     :param lr:
     :param print_every:
     :param batch_size:
+    :param batch_prefetch_factor:
     :param train_rng_seed:
     :param num_workers:
     :param auto_mixed_precision:
@@ -107,6 +109,7 @@ def train_and_save_model(
         auto_mixed_precision=auto_mixed_precision,
         rng_seed=train_rng_seed,
         cuda_device_name=cuda_device_name,
+        prefetch_factor=batch_prefetch_factor,
     )
 
     """ save model to file. """
@@ -143,6 +146,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("-p", "--print-every", dest="print_every", type=int, default=5)
     parser.add_argument("-w", "--workers", dest="num_workers", type=int, default=1)
     parser.add_argument("-s", "--seed", dest="seed", required=False, type=int, default=314159)
+    parser.add_argument("-pf", "--prefetch-factor", dest="batch_prefetch_factor", required=False, type=int, defualt=2)
     parser.add_argument(
         "-amp", "--use-auto-mixed-precision", dest="use_auto_mixed_precision",
         action="store_true", default=False
@@ -198,6 +202,7 @@ def main():
         lr=args.lr,
         print_every=args.print_every,
         batch_size=args.batch_size,
+        batch_prefetch_factor=args.batch_prefetch_factor,
         train_rng_seed=seed + 2,
         num_workers=args.num_workers,
         auto_mixed_precision=args.use_auto_mixed_precision,
