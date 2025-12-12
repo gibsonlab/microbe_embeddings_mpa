@@ -105,6 +105,7 @@ def train_and_save_model(
         loss_plot_path=loss_plot_path,
         auto_mixed_precision=auto_mixed_precision,
         rng_seed=train_rng_seed,
+        cuda_device_name=cuda_device_name,
     )
 
     """ save model to file. """
