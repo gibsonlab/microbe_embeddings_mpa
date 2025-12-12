@@ -43,10 +43,10 @@ python train_model.py \
   --learning-rate "$learning_rate" \
   --batch-size "$batch_size" \
   --print-every 5 \
-  --workers 6 \
+  --workers 4 \
   --seed "$seed" \
   --use-auto-mixed-precision \
-  --prefetch-factor 1 \
+  --prefetch-factor 2 \
   --cuda-device "cuda:0"
 
 echo "Done."
