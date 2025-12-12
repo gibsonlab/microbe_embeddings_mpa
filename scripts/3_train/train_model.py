@@ -82,6 +82,7 @@ def train_and_save_model(
         T_max=n_epochs,
         eta_min=1e-6  # Very small final LR
     )
+    torch.set_float32_matmul_precision('high')
 
     """ output files -- preparation """
     loss_plot_path = model_save_dir / "loss_history.pdf"

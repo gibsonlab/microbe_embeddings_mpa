@@ -51,8 +51,8 @@ class BufferedCollator:
             self,
             batch: List[Tuple[str, Tensor, Tensor, Tensor, Tensor]]
     ) -> Tuple[List[str], Tensor, Tensor, Tensor, Tensor]:
-        import os, traceback  # debug
-        print(f"Worker PID {os.getpid()} got batch of {len(batch)} samples")  # debug
+        # import os  # debug
+        # print(f"Worker PID {os.getpid()} got batch of {len(batch)} samples")  # debug
 
         # Lazy initialization ensures each worker gets its own buffer
         self._init_buffer()
