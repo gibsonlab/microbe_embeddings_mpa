@@ -118,7 +118,7 @@ class MetaphlanDatasetMemmapped(AbstractMetaphlanDataset):
     def load_memmap_tensors(self, cache_dir: Path):
         print(f"Using tensor memmap directory: {cache_dir}")
 
-        for sample_id in self.sample_ids:
+        for sample_id in tqdm(self.sample_ids):
             memmap_dir = cache_dir / str(sample_id)
             if (memmap_dir / "meta.json").exists():
                 # TensorDict is already allocated; load it from disk.
