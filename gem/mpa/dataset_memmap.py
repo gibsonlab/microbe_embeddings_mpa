@@ -126,7 +126,6 @@ class MetaphlanDatasetMemmapped(AbstractMetaphlanDataset):
             else:
                 raise FileNotFoundError(f"Memory-mapped tensordict not found for sample: {sample_id}. Run perform_allocation() prior to load_memmap_tensors().")
             self.tensor_cache.append(x)
-            self.sample_ids.append(str(sample_id))
         print("Finished loading memmapped tensors.")
         self.loaded = True
 
