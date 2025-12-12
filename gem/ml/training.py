@@ -9,6 +9,7 @@ from torch import nn, GradScaler, autocast
 
 from gem.mpa import AbstractMetaphlanDataset
 from gem.ml.dataloader.data_loader import MetaphlanDataLoader
+from gem.util import timer
 
 
 def main_training_loop(
@@ -142,29 +143,33 @@ def main_training_loop(
     current_lr = torch.nan
     for epoch in tqdm(range(num_epochs)):
         epoch_training_loss = 0.0
+        model.train()
         for batch_idx, (training_sample_ids, training_batch_features, training_marker_mask, training_sgb_mask, training_y) in enumerate(train_dloader):
-            model.train()
             optimizer.zero_grad()
 
             with autocast(device_type='cuda', enabled=auto_mixed_precision, dtype=torch.bfloat16):
-                training_y_hat = model(
-                    training_batch_features.cuda(non_blocking=True),
-                    training_marker_mask.cuda(non_blocking=True),
-                    training_sgb_mask.cuda(non_blocking=True),
-                )
+                with timer("Model-With-Grad ({}/{})".format(batch_idx+1, len(train_dloader))):
+                    training_y_hat = model(
+                        training_batch_features.cuda(non_blocking=True),
+                        training_marker_mask.cuda(non_blocking=True),
+                        training_sgb_mask.cuda(non_blocking=True),
+                    )
 
                 # assert training_y_hat.shape == training_y.shape, f"Neural Network output and ground truth have different shapes: {training_y_hat.shape} (NN) vs {training_y.shape} (truth)"
-                training_loss = loss_fn(
-                    nn.functional.log_softmax(training_y_hat, dim=-1),  # log pred probabilities
-                    torch.log(training_y.cuda(non_blocking=True))  # log target probabilities
-                )
+                with timer("Loss-With-Grad ({}/{})".format(batch_idx+1, len(train_dloader))):
+                    training_loss = loss_fn(
+                        nn.functional.log_softmax(training_y_hat, dim=-1),  # log pred probabilities
+                        torch.log(training_y.cuda(non_blocking=True))  # log target probabilities
+                    )
 
-            scaler.scale(training_loss).backward()
-            scaler.step(optimizer)
-            scaler.update()
+            with timer("Backward-Update"):
+                scaler.scale(training_loss).backward()
+                scaler.step(optimizer)
+                scaler.update()
 
-            lr_scheduler.step()
-            current_lr = lr_scheduler.get_last_lr()[0]
+            with timer("LR-Step"):
+                lr_scheduler.step()
+                current_lr = lr_scheduler.get_last_lr()[0]
 
             # print("cleaning up.")
             epoch_training_loss += training_loss.item() * training_y.shape[0] / len(train_dloader.dataset)
