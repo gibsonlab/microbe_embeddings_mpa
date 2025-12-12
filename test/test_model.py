@@ -25,7 +25,7 @@ def create_test_config() -> Dict:
     return config_dict
 
 
-def test_model_memmap_input(model: nn.Module, marker_embedding_basedir: Path):
+def test_model_memmap_input(marker_embedding_basedir: Path):
     """
     Test the model with pre-computed memmap tensor input (3_train/3_memmap_*.sh)
     """
@@ -34,8 +34,9 @@ def test_model_memmap_input(model: nn.Module, marker_embedding_basedir: Path):
     test_dset.load_memmap_tensors(memmap_tensor_sample_dir)
 
     model_cfg = create_test_config()
-    torch_embedding_model = SGBAbundancePredictionModel(**model_cfg).to("cuda")
-    torch_embedding_model = torch.compile(torch_embedding_model)
+    print("Creating test model from configuration: {}".format(model_cfg))
+    test_model = SGBAbundancePredictionModel(**model_cfg).to("cuda")
+    test_model = torch.compile(test_model)
 
     batch_sz = 2
     test_dloader = MetaphlanDataLoader(
@@ -54,4 +55,4 @@ def test_model_memmap_input(model: nn.Module, marker_embedding_basedir: Path):
 
 if __name__ == "__main__":
     memmap_tensor_sample_dir = Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmmap_samples")
-    test_model_memmap_input(None, memmap_tensor_sample_dir)
+    test_model_memmap_input(memmap_tensor_sample_dir)
