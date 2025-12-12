@@ -134,7 +134,7 @@ def main_training_loop(
                                 raise Exception("NaN error!")
 
                 # divide by total dataset size, to contribute to the overall average estimate.
-                total_test_loss += scaler.scale(batch_loss).item() * test_y.shape[0] / len(test_dset)
+                total_test_loss += batch_loss.item() * test_y.shape[0] / len(test_dloader.dataset)
         return total_test_loss
 
     test_dset.track_runtime = True
