@@ -124,6 +124,7 @@ def main_training_loop(
                         nn.functional.log_softmax(test_y_hat, dim=-1),  # log pred probabilities
                         torch.log(test_y.cuda(non_blocking=True))  # log target probabilities
                     )
+                    print(batch_loss)
 
                 total_test_loss += scaler.scale(batch_loss).item() * test_y.shape[0]
 
