@@ -49,7 +49,7 @@ def test_model_memmap_input(memmap_tensor_sample_dir: Path):
     )
 
     test_sample_ids, test_batch_features, test_marker_mask, test_sgb_mask, test_y = next(iter(test_dloader))
-    test_y = test_model(test_batch_features.to("cuda"))
+    test_y = test_model(test_batch_features.to("cuda"), test_marker_mask, test_sgb_mask)
     print(test_y)
 
 
