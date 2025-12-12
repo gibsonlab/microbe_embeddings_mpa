@@ -45,6 +45,7 @@ python train_model.py \
   --print-every 5 \
   --workers 2 \
   --seed "$seed" \
+  --use-auto-mixed-precision \
   --cuda-device "cuda:0"
 
 echo "Done."

@@ -139,14 +139,14 @@ def main_training_loop(
     print(f"Initial Test Loss: {_compute_test_loss(show_pbar=True)}")
     test_dset.track_runtime = False
 
-    current_lr = "n/a"
+    current_lr = torch.nan
     for epoch in tqdm(range(num_epochs)):
         epoch_training_loss = 0.0
         for batch_idx, (training_sample_ids, training_batch_features, training_marker_mask, training_sgb_mask, training_y) in enumerate(train_dloader):
             model.train()
             optimizer.zero_grad()
 
-            with autocast(device_type='cuda', enabled=auto_mixed_precision):
+            with autocast(device_type='cuda', enabled=auto_mixed_precision, dtype=torch.bfloat16):
                 training_y_hat = model(
                     training_batch_features.cuda(non_blocking=True),
                     training_marker_mask.cuda(non_blocking=True),
