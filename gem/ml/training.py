@@ -63,6 +63,7 @@ def main_training_loop(
         dataset=train_dset,
         batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True,
         generator=train_rng, drop_last=False, prefetch_factor=prefetch_factor,
+        persistent_workers=True,
     )
     # also set RNG seed for dropout reproducibility.
     torch.manual_seed(rng_seed + 1)
@@ -76,6 +77,7 @@ def main_training_loop(
         dataset=test_dset,
         batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True,
         generator=train_rng, drop_last=False, prefetch_factor=prefetch_factor,
+        persistent_workers=True,
     )
     print(f"Test dataset size: {len(test_dset)}")
     print(f"Number of test batches: {len(test_dloader)}")
