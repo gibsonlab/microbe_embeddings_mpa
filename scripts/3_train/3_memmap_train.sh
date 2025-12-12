@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --partition=bwh_comppath_long
-#SBATCH --array=1-10
+#SBATCH --array=1-15
 #SBATCH --ntasks=1
 #SBATCH --mem=320G
 #SBATCH --cpus-per-task=80
