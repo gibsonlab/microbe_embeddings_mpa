@@ -68,6 +68,7 @@ def train_and_save_model(
 
     """ Create model. """
     ## ======== Model & Optimizer instantiation. ========
+    print("Using target cuda device: {}".format(cuda_device_name))
     torch_embedding_model = SGBAbundancePredictionModel(**model_cfg).to(cuda_device_name)
     torch_embedding_model = torch.compile(
         torch_embedding_model
