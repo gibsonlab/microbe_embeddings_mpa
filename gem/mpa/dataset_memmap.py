@@ -159,3 +159,7 @@ class MetaphlanDatasetMemmapped(AbstractMetaphlanDataset):
 
     def embed_feature_dim(self) -> int:
         return self.tensor_cache[0]['features'].shape[-1]
+
+    def true_abundance_profile(self, idx: int) -> Tensor:
+        _, _, _, _, abunds = self.__getitem__(idx)
+        return abunds

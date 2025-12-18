@@ -1,6 +1,7 @@
 from abc import abstractmethod, ABC
 from typing import *
 
+import numpy as np
 import pandas as pd
 import torch
 from torch import Tensor
@@ -37,6 +38,10 @@ class AbstractMetaphlanDataset(Dataset, ABC):
 
     @abstractmethod
     def embed_feature_dim(self) -> int:
+        pass
+
+    @abstractmethod
+    def true_abundance_profile(self, idx: int) -> Tensor:
         pass
 
 
@@ -139,3 +144,8 @@ class MetaphlanDataset(AbstractMetaphlanDataset):
 
     def embed_feature_dim(self) -> int:
         return self.marker_embedding.embedding_dim
+
+    def true_abundance_profile(self, idx: int) -> Tensor:
+        abunds = self.samples[idx].abundances
+        abunds = abunds / np.sum(abunds)
+        return torch.from_numpy(abunds)
