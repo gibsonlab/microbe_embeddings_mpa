@@ -140,6 +140,8 @@ class MetaphlanDatasetMemmapped(AbstractMetaphlanDataset):
         return sample_id, x['features'], x['mpadding'], x['spadding'], x['targets']
 
     def __len__(self) -> int:
+        if not self.loaded:
+            raise RuntimeError("Method load_memmap_tensors() must be run once prior to data access.")
         return len(self.tensor_cache)
 
     def embedding_dtype(self) -> torch.dtype:
