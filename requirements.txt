@@ -9,6 +9,8 @@ scikit-learn
 pyarrow
 scipy
 matplotlib
+seaborn
+statsmodels
 h5py
 tqdm
 biopython

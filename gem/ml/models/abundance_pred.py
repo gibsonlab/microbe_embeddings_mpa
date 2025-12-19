@@ -37,16 +37,16 @@ class SGBEmbedding(LinearInitializedModule):
     def forward(self, x: Tensor, marker_padding_mask: Tensor) -> Tensor:
         """
         :param x: A float tensor of shape (*, S, M, E).
-        :param marker_padding_mask: a boolean mask tensor of shape (*, S, M). Value [*, i, j] is "true" if marker j of SGB i is a padding/empty marker.
+        :param marker_padding_mask: a boolean mask tensor of shape (*, S, M). Value [*, i, j] is "false" if marker j of SGB i is a padding/empty marker.
         :return: Tensor of shape (*, S, H, d).
         """
-        y = self.linear(x)  # shape (*, M, h); per-marker operation.
-        y = self.activation1(y)  # shape (*, M, h); element-by-element symmetric operation
-        y = self.linear2(y)  # shape (*, M, d); per-marker operation.
-        y = self.activation2(y)  # shape (*, M, d); element-by-element symmetric operation
-        y = self.symmetric_dropout(y)  # per-genome operation (using special dropout class)
+        y = self.linear(x)  # shape (*, S, M, h); per-marker operation.
+        y = self.activation1(y)  # shape (*, S, M, h); element-by-element symmetric operation
+        y = self.linear2(y)  # shape (*, S, M, d); per-marker operation.
+        y = self.activation2(y)  # shape (*, S, M, d); element-by-element symmetric operation
+        y = self.symmetric_dropout(y)  # shape (*, S, M, d); per-genome operation (using special dropout class)
         y = y * marker_padding_mask.unsqueeze(-1)  # Zero-out all markers that are "empty markers" (a.k.a. "padding")
-        y = self.pool(y)  # shape (*, d); "M" gets summed out.
+        y = self.pool(y)  # shape (*, S, d); "M" gets summed out.
         return y
 
 
