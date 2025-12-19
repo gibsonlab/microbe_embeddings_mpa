@@ -21,7 +21,7 @@ learning_rate=0.0001
 batch_size=20
 seed=12345
 
-outdir="/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/trained_model/evo"
+outdir="/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/trained_model/evo_v2"
 mkdir -p ${outdir}
 
 metadata="$outdir/metadata.txt"
@@ -47,6 +47,7 @@ python train_model.py \
   --seed "$seed" \
   --use-auto-mixed-precision \
   --prefetch-factor 2 \
-  --cuda-device "cuda:0"
+  --cuda-device "cuda:0" \
+  --model-version "V2"
 
 echo "Done."

@@ -9,7 +9,8 @@ import torch
 from torch import nn, optim
 
 from gem.mpa import AbstractMetaphlanDataset, MetaphlanDatasetMemmapped
-from gem.ml import safe_kl_div_loss, main_training_loop, SGBAbundancePredictionModel
+from gem.ml import safe_kl_div_loss, main_training_loop
+from gem.ml.models import *
 
 import sys
 import logging
@@ -35,6 +36,7 @@ def load_model_config(config_file: Path, marker_embed_dim: int, rng_seed: int) -
 
 
 def train_and_save_model(
+        model_version: str,
         model_cfg: Dict,
         model_save_dir: Path,
         loss_fn: nn.Module,
@@ -72,7 +74,14 @@ def train_and_save_model(
     """ Create model. """
     ## ======== Model & Optimizer instantiation. ========
     print("Using target cuda device: {}".format(cuda_device_name))
-    torch_embedding_model = SGBAbundancePredictionModel(**model_cfg).to(cuda_device_name)
+    if model_version == "V1":
+        torch_embedding_model = SGBAbundancePredictionModel(**model_cfg).to(cuda_device_name)
+    if model_version == "V2":
+        torch_embedding_model = SGBAbundanceLayeredPredictionModel(**model_cfg).to(cuda_device_name)
+
+    print("Using model class: {}".format(
+        torch_embedding_model.__class__.__name__
+    ))
     torch_embedding_model = torch.compile(
         torch_embedding_model
     )  # Invoke compile() to get some optimization. Uses up-front compilation cost.
@@ -123,12 +132,17 @@ def train_and_save_model(
         model_init_seed = rng.initial_seed()
         model_cfg['init_rng_seed'] = model_init_seed
         del model_cfg['init_rng']
+
+        # also include model class name.
+        model_cfg['class'] = torch_embedding_model.__class__.__name__
+
         json.dump(model_cfg, out_f, indent=4)
         logger.info(f"Wrote model config to {model_config_path}")
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
+    parser.add_argument("-v", "--model-version", dest="model_version", required=True, type=str)
     parser.add_argument("-train", "--train", dest="train", required=True, type=str)
     parser.add_argument("-test", "--test", dest="test", required=True, type=str)
     parser.add_argument("-c", "--model-config", dest="model_cfg_path", required=True, type=str)
@@ -194,7 +208,16 @@ def main():
     else:
         raise ValueError(f"Unsupported loss name '{args.loss_name}'")
 
+    model_version = args.model_version
+    model_supported_versions = {"V1", "V2"}
+    if model_version not in model_supported_versions:
+        raise ValueError(
+            f"Unsupported model version string {model_version}. "
+            f"Must be one of: {list(model_supported_versions)}"
+        )
+
     train_and_save_model(
+        model_version=model_version,
         model_cfg=model_cfg,
         model_save_dir=model_save_dir,
         loss_fn=loss_fn,
