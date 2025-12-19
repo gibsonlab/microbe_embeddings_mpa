@@ -18,7 +18,7 @@ test_set="/data/cctm/youn/metaphlan_dset/model_training/test.tsv"
 model_config="./model_v2_depth3.yaml"
 n_epochs=100
 learning_rate=0.0001
-batch_size=20
+batch_size=10
 seed=12345
 
 outdir="/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/trained_model/evo_v2/depth3"
