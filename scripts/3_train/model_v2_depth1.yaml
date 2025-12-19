@@ -1,0 +1,5 @@
+# marker_embed_dim are determined by the dataset.
+num_layers: 1
+sgb_model_dim: 256
+layer_num_heads: 8
+sgb_proj_dim_per_head: 64

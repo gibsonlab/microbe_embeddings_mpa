@@ -175,7 +175,7 @@ class SGBAbundanceLayeredPredictionModel(LinearInitializedModule):
             self,
             num_layers: int,
             sgb_model_dim: int,
-            sgb_marker_embed_dim: int,
+            marker_embed_dim: int,
             layer_num_heads: int,
             sgb_proj_dim_per_head: int,
             weight_decay_compatible: bool = True,
@@ -191,7 +191,7 @@ class SGBAbundanceLayeredPredictionModel(LinearInitializedModule):
         self.sgb_model_dim = sgb_model_dim
         layer_list = [
             V2Layer(
-                sgb_marker_embed_dim=sgb_marker_embed_dim,
+                sgb_marker_embed_dim=marker_embed_dim,
                 sgb_model_dim=sgb_model_dim,
                 sgb_proj_dim_per_head=sgb_proj_dim_per_head,
                 num_heads=layer_num_heads,

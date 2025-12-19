@@ -112,7 +112,7 @@ def test_model_v2_perm_invariance(
     model = Model(
         num_layers=n_layers,
         sgb_model_dim=sgb_model_dim,
-        sgb_marker_embed_dim=sgb_marker_embed_dim,
+        marker_embed_dim=sgb_marker_embed_dim,
         sgb_proj_dim_per_head=sgb_proj_dim_per_head,
         layer_num_heads=layer_num_heads,
     )
