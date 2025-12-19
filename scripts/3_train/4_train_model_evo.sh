@@ -43,7 +43,7 @@ python train_model.py \
   --learning-rate "$learning_rate" \
   --batch-size "$batch_size" \
   --print-every 5 \
-  --workers 4 \
+  --workers 10 \
   --seed "$seed" \
   --use-auto-mixed-precision \
   --prefetch-factor 2 \
