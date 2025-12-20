@@ -103,7 +103,7 @@ def test_model_v2_perm_invariance(
     torch.manual_seed(seed)
     sgb_marker_embed_dim = 6
     sgb_model_dim = 5
-    sgb_proj_dim_per_head = 4
+    sgb_proj_dim_per_head = 50
     layer_num_heads = 3
     batch_sz = 2
     n_sgbs = 7
@@ -133,6 +133,12 @@ def test_model_v2_perm_invariance(
             out_g_logits = model(g, g_mpadding, g_spadding)
             out_h_logits = model(h, h_mpadding, h_spadding)
             assert out_g_logits.shape == torch.Size([batch_sz, n_sgbs])
+            if i <= 5:
+                print(f"i = {i}")
+                print(out_g_logits)
+            # if i == 0:
+            #     print(out_g_logits)
+            #     print(g_spadding)
 
             if not torch.allclose(out_h_logits, out_g_logits[:, perm_indices], atol=model_epsilon_tolerance):
                 print("Violation of permutation invariance!")

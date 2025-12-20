@@ -4,7 +4,7 @@ import torch
 from torch import Tensor, nn
 
 from .base import LinearInitializedModule
-from .perm_invariant_blocks import ChannelwiseDropout, SumAlongDim
+from .perm_invariant_blocks import ChannelwiseDropout
 
 
 class SGBEmbeddingRenormalized(LinearInitializedModule):
@@ -66,6 +66,16 @@ class L1Normalize(nn.Module):
         return x / (x.abs().sum(dim=self.dim, keepdim=True) + self.eps)
 
 
+class L2Normalize(nn.Module):
+    def __init__(self, dim=-1, eps=1e-12):
+        super().__init__()
+        self.dim = dim
+        self.eps = eps
+
+    def forward(self, x):
+        return nn.functional.normalize(x, p=2, dim=self.dim, eps=self.eps)
+
+
 class V2Layer(LinearInitializedModule):
     def __init__(
             self,
@@ -98,11 +108,14 @@ class V2Layer(LinearInitializedModule):
 
         self.head_concat_feedforward = nn.Sequential(
             nn.Linear(in_features=num_heads * sgb_proj_dim_per_head, out_features=sgb_model_dim),
-            nn.GELU()
+            nn.GELU(),
+            nn.LayerNorm(normalized_shape=sgb_model_dim),
         )
         self.head_collapse_feedforward = nn.Sequential(
             nn.Linear(in_features=num_heads, out_features=1),
-            nn.GELU()
+            nn.GELU(),
+            nn.Flatten(start_dim=-2, end_dim=-1),
+            L2Normalize(dim=-1, eps=1e-6),
         )
         self.y2_batch_renorm = nn.LayerNorm(normalized_shape=num_heads * sgb_proj_dim_per_head)
         self.sgb_mask_eps = 1e-5
@@ -160,9 +173,7 @@ class V2Layer(LinearInitializedModule):
         # for each (sgb_i, z_j) pair, collapse all the heads.
         A = torch.diagonal(Z, dim1=-2, dim2=-1)                    # shape (*, H, S)
         A = A.transpose(-1, -2)                                    # shape (*, S, H)
-        A = self.head_collapse_feedforward(A)                      # shape (*, S, 1), linear with nonlinear activation
-        assert A.shape[-1] == 1, "Expected last dim to be size 1, to remove using squeeze."
-        A = A.squeeze(dim=-1)                                      # shape (*, S)
+        A = self.head_collapse_feedforward(A)                      # shape (*, S), linear with nonlinear activation
         A = self.a_activation(self.a_bias + A * self.a_scale)      # final rescaling by constant factor, learnable.
         # Note: the final scale (a_activation Prelu kernel scale, and a_scale) need to be learned on a per-layer basis!
         # This is intentional -- deeper layers represent higher-order interactions, and may have smaller contribution.
