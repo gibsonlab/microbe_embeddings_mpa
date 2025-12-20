@@ -55,25 +55,23 @@ class SGBEmbeddingRenormalized(LinearInitializedModule):
         return y
 
 
-class L1Normalize(nn.Module):
+class SparsityInvariantNorm(nn.Module):
+    """
+    Normalization that keeps non-zero entries on similar scale
+    regardless of sparsity pattern.
+    """
+
     def __init__(self, dim=-1, eps=1e-8):
         super().__init__()
         self.dim = dim
         self.eps = eps
 
-    def forward(self, x):
-        # x: (*, M, N)
-        return x / (x.abs().sum(dim=self.dim, keepdim=True) + self.eps)
-
-
-class L2Normalize(nn.Module):
-    def __init__(self, dim=-1, eps=1e-12):
-        super().__init__()
-        self.dim = dim
-        self.eps = eps
-
-    def forward(self, x):
-        return nn.functional.normalize(x, p=2, dim=self.dim, eps=self.eps)
+    def forward(self, x: Tensor, sparsity_mask: Tensor):
+        # RMS over non-zero entries only
+        num_nonzero = sparsity_mask.sum(dim=self.dim, keepdim=True)
+        sum_squares = torch.square(x).sum(dim=self.dim, keepdim=True)
+        rms = torch.sqrt((sum_squares / (num_nonzero + self.eps)) + self.eps)
+        return x / rms
 
 
 class V2Layer(LinearInitializedModule):
@@ -114,8 +112,7 @@ class V2Layer(LinearInitializedModule):
         self.head_collapse_feedforward = nn.Sequential(
             nn.Linear(in_features=num_heads, out_features=1),
             nn.GELU(),
-            nn.Flatten(start_dim=-2, end_dim=-1),
-            L2Normalize(dim=-1, eps=1e-6),
+            nn.Flatten(start_dim=-2, end_dim=-1)
         )
         self.y2_batch_renorm = nn.LayerNorm(normalized_shape=num_heads * sgb_proj_dim_per_head)
         self.sgb_mask_eps = 1e-5
@@ -124,7 +121,9 @@ class V2Layer(LinearInitializedModule):
         self.gelu = nn.GELU()
         self.product_activation = nn.Tanh()
 
-        self.l1_renorm = L1Normalize(dim=-1, eps=1e-5)
+        # proper rescaling to ensure predictions on 5 taxa aren't disproportionate scaled compared to 100 taxa
+        self.a_renormalize = SparsityInvariantNorm(dim=-1, eps=1e-8)
+
         self.a_bias = nn.Parameter(torch.zeros(1))
         self.a_scale = nn.Parameter(torch.ones(1))
         self.a_activation = nn.PReLU()
@@ -174,6 +173,7 @@ class V2Layer(LinearInitializedModule):
         A = torch.diagonal(Z, dim1=-2, dim2=-1)                    # shape (*, H, S)
         A = A.transpose(-1, -2)                                    # shape (*, S, H)
         A = self.head_collapse_feedforward(A)                      # shape (*, S), linear with nonlinear activation
+        A = self.a_renormalize(A, sgb_padding_mask)                # shape (*, S), renormalization (sparsity-invariant rescaling)
         A = self.a_activation(self.a_bias + A * self.a_scale)      # final rescaling by constant factor, learnable.
         # Note: the final scale (a_activation Prelu kernel scale, and a_scale) need to be learned on a per-layer basis!
         # This is intentional -- deeper layers represent higher-order interactions, and may have smaller contribution.

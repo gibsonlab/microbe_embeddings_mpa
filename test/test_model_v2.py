@@ -18,8 +18,8 @@ def test_layer(seed=123):
         sgb_proj_dim_per_head=sgb_proj_dim_per_head,
         num_heads=layer_num_heads,
     )
-    marker_padding_mask = torch.ones((batch_sz, n_sgbs, n_markers), dtype=torch.bool)
-    sgb_padding_mask = torch.ones((batch_sz, n_sgbs), dtype=torch.bool)
+    marker_padding_mask = (torch.rand(batch_sz, n_sgbs, n_markers) < 0.75)
+    sgb_padding_mask = (torch.rand(batch_sz, n_sgbs) < 0.75)
 
     g = torch.rand(batch_sz, n_sgbs, n_markers, sgb_marker_embed_dim)
     Y = torch.ones(g.shape[:-2] + (sgb_model_dim,), dtype=g.dtype)
