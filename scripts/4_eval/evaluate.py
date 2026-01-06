@@ -582,7 +582,7 @@ def evaluate_baseline_model(
 
 # ==================================================== TEST EXECUTION =================
 
-def main(model_options: List[str], plot_dir: Path):
+def main(model_options: List[str], plot_dir: Path, eval_device: str = 'cuda'):
     plot_dir.mkdir(exist_ok=True, parents=True)
     torch.set_float32_matmul_precision('high')
     train_df = pd.read_csv("/data/cctm/youn/metaphlan_dset/model_training/train.tsv", sep="\t", index_col="SampleID")
@@ -597,7 +597,8 @@ def main(model_options: List[str], plot_dir: Path):
             evaluate_torch_model(
                 model_config_file=model_basedir / "model_config.json",
                 model_state_file=model_basedir / "model_weights.pt",
-                dset=test_dset
+                dset=test_dset,
+                device=eval_device,
             ).to_csv(plot_dir / "evo-v1.tsv", sep='\t')
         elif model_option == "evo-v2-d3-e100":
             model_basedir = Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/trained_model/evo_v2/depth3")
@@ -605,7 +606,7 @@ def main(model_options: List[str], plot_dir: Path):
                 model_config_file=model_basedir / "model_config.json",
                 model_state_file=model_basedir / "model_weights.pt",
                 dset=test_dset,
-                device='cuda',
+                device=eval_device,
             ).to_csv(plot_dir / 'evo-v2-d3-e100.tsv', sep='\t')
         elif model_option == "evo-v2-d3-e300":
             model_basedir = Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/trained_model/evo_v2/depth3_epoch300")
@@ -613,7 +614,7 @@ def main(model_options: List[str], plot_dir: Path):
                 model_config_file=model_basedir / "model_config.json",
                 model_state_file=model_basedir / "model_weights.pt",
                 dset=test_dset,
-                device='cuda',
+                device=eval_device,
             ).to_csv(plot_dir / 'evo-v2-d3-e300.tsv', sep='\t')
         elif model_option == "evo-v2-d5-e300":
             model_basedir = Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/trained_model/evo_v2/depth5_epoch300")
@@ -621,7 +622,7 @@ def main(model_options: List[str], plot_dir: Path):
                 model_config_file=model_basedir / "model_config.json",
                 model_state_file=model_basedir / "model_weights.pt",
                 dset=test_dset,
-                device='cuda',
+                device=eval_device,
             ).to_csv(plot_dir / 'evo-v2-d5-e300.tsv', sep='\t')
         elif model_option == "uniform":
             import warnings
