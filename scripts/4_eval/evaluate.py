@@ -609,7 +609,7 @@ def main(model_options: List[str], plot_dir: Path):
             ).to_csv(plot_dir / 'evo-v2-d3-e100.tsv', sep='\t')
         elif model_option == "evo-v2-d3-e300":
             model_basedir = Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/trained_model/evo_v2/depth3_epoch300")
-            evo_LAYERED_D3_E300_torch_model_results = evaluate_torch_model(
+            evaluate_torch_model(
                 model_config_file=model_basedir / "model_config.json",
                 model_state_file=model_basedir / "model_weights.pt",
                 dset=test_dset,
@@ -617,7 +617,7 @@ def main(model_options: List[str], plot_dir: Path):
             ).to_csv(plot_dir / 'evo-v2-d3-e300.tsv', sep='\t')
         elif model_option == "evo-v2-d5-e300":
             model_basedir = Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/trained_model/evo_v2/depth5_epoch300")
-            evo_LAYERED_D5_E300_torch_model_results = evaluate_torch_model(
+            evaluate_torch_model(
                 model_config_file=model_basedir / "model_config.json",
                 model_state_file=model_basedir / "model_weights.pt",
                 dset=test_dset,
@@ -628,7 +628,7 @@ def main(model_options: List[str], plot_dir: Path):
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
             
-                uniform_baseline_results = evaluate_baseline_model(
+                evaluate_baseline_model(
                     baseline_method=UniformAbundancePredictor(),
                     dset_object=test_dset,
                     dset_df=test_df,
@@ -642,7 +642,7 @@ def main(model_options: List[str], plot_dir: Path):
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
             
-                nearest_neighbor_baseline_results = evaluate_baseline_model(
+                evaluate_baseline_model(
                     baseline_method=nearest_neighbor_baseline_method,
                     dset_object=test_dset,
                     dset_df=test_df,
