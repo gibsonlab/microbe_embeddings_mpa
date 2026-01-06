@@ -82,6 +82,8 @@ def train_and_save_model(
     print("Using model class: {}".format(
         torch_embedding_model.__class__.__name__
     ))
+    model_class_name = torch_embedding_model.__class__.__name__  # save name before compilation.
+    
     torch_embedding_model = torch.compile(
         torch_embedding_model
     )  # Invoke compile() to get some optimization. Uses up-front compilation cost.
@@ -134,7 +136,7 @@ def train_and_save_model(
         del model_cfg['init_rng']
 
         # also include model class name.
-        model_cfg['class'] = torch_embedding_model.__class__.__name__
+        model_cfg['class'] = model_class_name
 
         json.dump(model_cfg, out_f, indent=4)
         logger.info(f"Wrote model config to {model_config_path}")
