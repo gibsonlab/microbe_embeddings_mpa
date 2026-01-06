@@ -653,7 +653,8 @@ def main(model_options: List[str], plot_dir: Path, eval_device: str = 'cuda'):
 if __name__ == "__main__":
     main(
         model_options=["evo-v2-d3-e100", "evo-v2-d3-e300", "evo-v2-d5-e300", "uniform", "neighbor"],
-        plot_dir=Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/eval")
+        plot_dir=Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/eval"),
+        eval_device='cuda:0',
     )
 
 
