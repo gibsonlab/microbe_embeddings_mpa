@@ -1,11 +1,15 @@
+from abc import abstractmethod, ABC
 from typing import *
 from pathlib import Path
 import itertools
 from tqdm import tqdm
 
+from Bio import Phylo
+from Bio.Phylo.Newick import Tree
+
 import numpy as np
 import pandas as pd
-from gem.mpa import MetaphlanProfileExtractor
+from gem.mpa import MetaphlanProfileExtractor, MetaphlanProfile
 
 
 def select_profiles_in_metadata(metadata_df, profiles_df) -> pd.DataFrame:
@@ -17,6 +21,8 @@ def main(
         metadata_tsv_path: Path,
         train_out_path: Path,
         test_out_path: Path,
+        edge_weight_strategy: str,
+        optional_newick_tree_path: Optional[Path] = None,
 ):
     profiles = pd.read_csv(profile_tsv_path, sep="\t")
     profiles_indexed = profiles.set_index("clade_name").transpose()
@@ -29,7 +35,15 @@ def main(
         & (metadata['disease'] == 'healthy')
     ]
     print("Number of samples (Adult & Healthy): {}".format(metadata.shape[0]))
-    train_df, test_df = test_train_split_asv_separation(profiles_indexed, metadata_subset)
+
+    if edge_weight_strategy == "jaccard":
+        similarity = JaccardSimilarityOracle()
+    elif edge_weight_strategy == "phylogenetic":
+        tree = Phylo.read(optional_newick_tree_path, "newick")
+        similarity = PhylogeneticSimilarityOracle(tree)
+    else:
+        raise ValueError(f"Unrecognized edge_weight_strategy option `{edge_weight_strategy}")
+    train_df, test_df = test_train_split_asv_separation(profiles_indexed, metadata_subset, similarity)
 
     train_df.to_csv(train_out_path, sep="\t", index=True)
     test_df.to_csv(test_out_path, sep="\t", index=True)
@@ -41,9 +55,49 @@ def main(
     ))
 
 
+def jaccard_similarity(x: Set, y: Set) -> float:
+    numer = len(x.intersection(y))
+    denom = len(x.union(y))
+    return numer / denom
+
+
+class SampleSimilarityOracle(ABC):
+    @abstractmethod
+    def similarity(self, x: MetaphlanProfile, y: MetaphlanProfile) -> float:
+        pass
+
+
+class JaccardSimilarityOracle(SampleSimilarityOracle):
+    def similarity(self, x: MetaphlanProfile, y: MetaphlanProfile) -> float:
+        return jaccard_similarity(set(x.sgb_ids), set(y.sgb_ids))
+
+
+class PhylogeneticSimilarityOracle(SampleSimilarityOracle):
+    SGB_PREFIX_LEN = len("SGB")
+
+    def __init__(self, tree: Tree):
+        self.tree = tree
+
+    def similarity(self, x: MetaphlanProfile, y: MetaphlanProfile) -> float:
+        pairwise_distances = np.array([
+            [
+                self.tree.distance(x_sgb[self.SGB_PREFIX_LEN:], y_sgb[self.SGB_PREFIX_LEN:])
+                for y_sgb in y.sgb_ids
+            ]
+            for x_sgb in x.sgb_ids
+        ], dtype=float)
+
+        x_nn_dist = np.min(pairwise_distances, axis=1)  # nearest neighbor dist for each SGB in x
+        y_nn_dist = np.min(pairwise_distances, axis=0)  # nearest neighbor dist for each SGB in y
+
+        sym_nn_dist = 0.5 * (np.mean(x_nn_dist) + np.mean(y_nn_dist))  # symmetrized average of both
+        return np.exp(-sym_nn_dist)  # kernelized value, converting distance to similarity.
+
+
 def test_train_split_asv_separation(
         profiles_indexed: pd.DataFrame,
         metadata_subset_df: pd.DataFrame,
+        similarity_oracle: SampleSimilarityOracle,
 ):
     """ Main idea: Train samples should not share any ASVs with test samples. """
     import networkx as nx
@@ -57,11 +111,6 @@ def test_train_split_asv_separation(
                 if G.has_edge(i, j):
                     cut_values.append(G[i][j].get('weight', 0.0))
         return cut_values
-
-    def jaccard_similarity(x: Set, y: Set) -> float:
-        numer = len(x.intersection(y))
-        denom = len(x.union(y))
-        return numer / denom
 
     def spectral_division(G: nx.Graph, left_q: float, right_q: float):
         """
@@ -122,7 +171,7 @@ def test_train_split_asv_separation(
                 total=n_pairs,
                 desc="Sample pair calculation",
         ):
-            sample_sgb_sim = jaccard_similarity(set(sample_i.sgb_ids), set(sample_j.sgb_ids))
+            sample_sgb_sim = similarity_oracle.similarity(sample_i, sample_j)
             A[i, j] = sample_sgb_sim
             A[j, i] = sample_sgb_sim
         print("Computed sample similarity matrix of shape {}.".format(A.shape))
@@ -175,4 +224,5 @@ if __name__ == "__main__":
         metadata_tsv_path=metadata_tsv,
         train_out_path=train_out,
         test_out_path=test_out,
+        edge_weight_strategy="phylogenetic",
     )
