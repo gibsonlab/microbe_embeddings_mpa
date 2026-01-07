@@ -4,9 +4,6 @@ from pathlib import Path
 import itertools
 from tqdm import tqdm
 
-from Bio import Phylo
-from Bio.Phylo.Newick import Tree
-
 import numpy as np
 import pandas as pd
 from gem.mpa import MetaphlanProfileExtractor, MetaphlanProfile
@@ -39,8 +36,7 @@ def main(
     if edge_weight_strategy == "jaccard":
         similarity = JaccardSimilarityOracle()
     elif edge_weight_strategy == "phylogenetic":
-        tree = Phylo.read(optional_newick_tree_path, "newick")
-        similarity = PhylogeneticSimilarityOracle(tree)
+        similarity = PhylogeneticSimilarityOracle(optional_newick_tree_path)
     else:
         raise ValueError(f"Unrecognized edge_weight_strategy option `{edge_weight_strategy}")
     train_df, test_df = test_train_split_asv_separation(profiles_indexed, metadata_subset, similarity)
