@@ -243,12 +243,12 @@ class OptimizedDistanceMatrixComputer:
         # Initialize distance matrix
         dist_matrix = np.zeros((L, L), dtype=float)
         # Precompute leaf nodes for all_leaves
-        source_nodes = [self.leaf_nodes[leaf] for leaf in all_leaves]
+        all_leaf_nodes = [self.leaf_nodes[leaf] for leaf in all_leaves]
 
         # For each column (target leaf in subset)
-        for k, target_node in enumerate(all_leaves):
+        for k, target_node in enumerate(all_leaf_nodes):
             # Compute distances from target to all leaves
-            for i, source_node in enumerate(source_nodes):
+            for i, source_node in enumerate(all_leaf_nodes):
                 if i <= k:
                     continue
                 else:
