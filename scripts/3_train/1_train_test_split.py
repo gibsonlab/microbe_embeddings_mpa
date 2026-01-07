@@ -139,6 +139,7 @@ class OptimizedDistanceMatrixComputer:
     """
     def __init__(self, newick_file: Path):
         """Initialize with a Newick format tree string."""
+        print(f"Parsing tree file {newick_file}")
         with open(newick_file, 'r') as f:
             newick_string = f.read().strip()
         parser = NewickParser(newick_string)
