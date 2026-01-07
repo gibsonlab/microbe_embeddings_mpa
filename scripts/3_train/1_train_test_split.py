@@ -4,6 +4,8 @@ from pathlib import Path
 import itertools
 from tqdm import tqdm
 
+from joblib import Parallel, delayed
+
 import numpy as np
 import pandas as pd
 from gem.mpa import MetaphlanProfileExtractor, MetaphlanProfile
@@ -380,6 +382,11 @@ def test_train_split_asv_separation(
                 G.add_edge(node_names[i], node_names[j], weight=A[i, j])
         return G
 
+    # helpers for joblib -- parallelization
+    def compute_similarity(args):
+        (i, sample_i), (j, sample_j) = args
+        return i, j, similarity_oracle.similarity(sample_i, sample_j)
+
     def train_test_sgb_jaccard_spectral_split(profile_df: pd.DataFrame, train_fraction: float, test_fraction: float):
         extractor = MetaphlanProfileExtractor(profile_df)
         all_samples = list(extractor.samples())
@@ -387,16 +394,28 @@ def test_train_split_asv_separation(
 
         # Compute weighted adjacency matrix, A[i,j] = # of SGBs shared by sample i and j.
         n_samples = len(all_samples)
-        n_pairs = int(n_samples * (n_samples - 1) / 2)
+        # n_pairs = int(n_samples * (n_samples - 1) / 2)
         A = np.zeros((n_samples, n_samples), dtype=float)
-        for (i, sample_i), (j, sample_j) in tqdm(
-                itertools.combinations(enumerate(all_samples), r=2),
-                total=n_pairs,
-                desc="Sample pair calculation",
-        ):
-            sample_sgb_sim = similarity_oracle.similarity(sample_i, sample_j)
-            A[i, j] = sample_sgb_sim
-            A[j, i] = sample_sgb_sim
+
+        print("Using joblib to compute sample pair similarities in parallel.")
+        pairs = list(itertools.combinations(enumerate(all_samples), r=2))
+        results = Parallel(n_jobs=-1)(
+            delayed(compute_similarity)(pair)
+            for pair in tqdm(pairs, desc="Sample pair calculation")
+        )
+
+        for i, j, sim in results:
+            A[i, j] = sim
+            A[j, i] = sim
+
+        # for (i, sample_i), (j, sample_j) in tqdm(
+        #         itertools.combinations(enumerate(all_samples), r=2),
+        #         total=n_pairs,
+        #         desc="Sample pair calculation",
+        # ):
+        #     sample_sgb_sim = similarity_oracle.similarity(sample_i, sample_j)
+        #     A[i, j] = sample_sgb_sim
+        #     A[j, i] = sample_sgb_sim
         print("Computed sample similarity matrix of shape {}.".format(A.shape))
 
         # Create a graph, using "A" as an adjacency matrix. Enumerate all connected components.
