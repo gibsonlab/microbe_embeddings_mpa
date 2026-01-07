@@ -61,6 +61,215 @@ def jaccard_similarity(x: Set, y: Set) -> float:
     return numer / denom
 
 
+# ================================================= HELPER CODE: fast distance calculation in newick-formatted phylo tree
+
+class TreeNode:
+    """Represents a node in the phylogenetic tree."""
+    def __init__(self, name: Optional[str] = None, node_id: int = -1):
+        self.name = name
+        self.node_id = node_id
+        self.children: List[TreeNode] = []
+        self.parent: Optional[TreeNode] = None
+        self.branch_length: float = 0.0
+        self.dist_from_root: float = 0.0
+        self.depth: int = 0  # Depth in tree (for LCA)
+
+    def is_leaf(self) -> bool:
+        return len(self.children) == 0
+
+class NewickParser:
+    """Parser for Newick format phylogenetic trees."""
+    def __init__(self, newick_string: str):
+        self.newick = newick_string.strip()
+        self.pos = 0
+        self.node_counter = 0
+
+    def parse(self) -> TreeNode:
+        """Parse the Newick string and return the root node."""
+        if self.newick.endswith(';'):
+            self.newick = self.newick[:-1]
+        root = self._parse_node()
+        return root
+
+    def _parse_node(self) -> TreeNode:
+        """Recursively parse a node and its descendants."""
+        node = TreeNode(node_id=self.node_counter)
+        self.node_counter += 1
+        if self.pos < len(self.newick) and self.newick[self.pos] == '(':
+            # Internal node with children
+            self.pos += 1  # skip '('
+            while True:
+                child = self._parse_node()
+                child.parent = node
+                node.children.append(child)
+                if self.pos < len(self.newick) and self.newick[self.pos] == ',':
+                    self.pos += 1  # skip ','
+                else:
+                    break
+            if self.pos < len(self.newick) and self.newick[self.pos] == ')':
+                self.pos += 1  # skip ')'
+
+        # Parse node label
+        label_start = self.pos
+        while self.pos < len(self.newick) and self.newick[self.pos] not in ',:();':
+            self.pos += 1
+        if self.pos > label_start:
+            node.name = self.newick[label_start:self.pos]
+
+        # Parse branch length
+        if self.pos < len(self.newick) and self.newick[self.pos] == ':':
+            self.pos += 1  # skip ':'
+            length_start = self.pos
+            while self.pos < len(self.newick) and self.newick[self.pos] not in ',();':
+                self.pos += 1
+            length_str = self.newick[length_start:self.pos]
+            try:
+                node.branch_length = float(length_str)
+            except ValueError:
+                node.branch_length = 0.0
+        return node
+
+class OptimizedDistanceMatrixComputer:
+    """
+    Optimized distance matrix computation using efficient LCA queries.
+    Key optimizations:
+    1. Precompute all distances from root
+    2. Use binary lifting for O(log H) LCA queries (H = height)
+    3. Batch process columns to improve cache locality
+    """
+    def __init__(self, newick_file: Path):
+        """Initialize with a Newick format tree string."""
+        with open(newick_file, 'r') as f:
+            newick_string = f.read().strip()
+        parser = NewickParser(newick_string)
+        self.root = parser.parse()
+        self.leaf_nodes: Dict[str, TreeNode] = {}
+        self.all_nodes: List[TreeNode] = []
+        # Collect all nodes and leaves
+        print("collecting all nodes and leaves...")
+        self._collect_nodes(self.root)
+        # Precompute distances and depths
+        print("precomputing distances and tree depths...")
+        self._compute_root_distances_and_depths(self.root, 0.0, 0)
+        # Precompute binary lifting table for fast LCA
+        print("precomputing binary lifting table for fast LCA lookup...")
+        self._precompute_lca_table()
+
+    def _collect_nodes(self, node: TreeNode) -> None:
+        """Collect all nodes and leaf nodes."""
+        self.all_nodes.append(node)
+        if node.is_leaf():
+            if node.name:
+                self.leaf_nodes[node.name] = node
+        else:
+            for child in node.children:
+                self._collect_nodes(child)
+
+    def _compute_root_distances_and_depths(self, node: TreeNode, dist: float, depth: int) -> None:
+        """Compute distance from root and depth for all nodes."""
+        node.dist_from_root = dist
+        node.depth = depth
+        for child in node.children:
+            self._compute_root_distances_and_depths(
+                child,
+                dist + child.branch_length,
+                depth + 1
+            )
+
+    def _precompute_lca_table(self) -> None:
+        """
+        Precompute binary lifting table for O(log H) LCA queries.
+        ancestor[node][i] = 2^i-th ancestor of node
+        """
+        n = len(self.all_nodes)
+        if n == 0:
+            return
+        # Find maximum depth to determine table size
+        max_depth = max(node.depth for node in self.all_nodes)
+        log_depth = max_depth.bit_length()
+        # Initialize table
+        self.ancestor = {}
+        for node in self.all_nodes:
+            self.ancestor[node.node_id] = [None] * log_depth
+        # Fill table
+        for node in self.all_nodes:
+            if node.parent is not None:
+                self.ancestor[node.node_id][0] = node.parent
+        # Binary lifting: ancestor[node][i] = ancestor[ancestor[node][i-1]][i-1]
+        for i in range(1, log_depth):
+            for node in self.all_nodes:
+                if self.ancestor[node.node_id][i-1] is not None:
+                    prev_ancestor = self.ancestor[node.node_id][i-1]
+                    self.ancestor[node.node_id][i] = self.ancestor[prev_ancestor.node_id][i-1]
+
+    def _find_lca_optimized(self, node1: TreeNode, node2: TreeNode) -> TreeNode:
+        """
+        Find LCA using binary lifting in O(log H) time.
+        """
+        # Make node1 the deeper node
+        if node1.depth < node2.depth:
+            node1, node2 = node2, node1
+        # Bring node1 to same level as node2
+        depth_diff = node1.depth - node2.depth
+        log_depth = len(self.ancestor[node1.node_id])
+        for i in range(log_depth):
+            if depth_diff & (1 << i):
+                node1 = self.ancestor[node1.node_id][i]
+                if node1 is None:
+                    break
+        # If node2 is ancestor of node1
+        if node1 == node2:
+            return node1
+        # Binary search for LCA
+        for i in range(log_depth - 1, -1, -1):
+            if (self.ancestor[node1.node_id][i] is not None and
+                self.ancestor[node2.node_id][i] is not None and
+                self.ancestor[node1.node_id][i] != self.ancestor[node2.node_id][i]):
+                node1 = self.ancestor[node1.node_id][i]
+                node2 = self.ancestor[node2.node_id][i]
+        return node1.parent if node1.parent is not None else node1
+
+    def compute_distance_matrix(self) -> Tuple[np.ndarray, List[str]]:
+        """
+        Compute L×K distance matrix efficiently.
+        Time Complexity: O(L*log(L) + K*L*log(H)) where H is tree height
+        Space Complexity: O(N*log(H)) for LCA table, where N is total nodes
+        For balanced trees, H = O(log(L)), giving O(L*log(L) + K*L*log(log(L)))
+        For unbalanced trees, worst case is still better than naive O(LK) with large constants.
+        """
+        all_leaves = sorted(self.leaf_nodes.keys())
+        L = len(all_leaves)
+        # Verify all subset leaves exist
+        for leaf in all_leaves:
+            if leaf not in self.leaf_nodes:
+                raise ValueError(f"Leaf '{leaf}' not found in tree")
+        # Initialize distance matrix
+        dist_matrix = np.zeros((L, L), dtype=float)
+        # Precompute leaf nodes for all_leaves
+        source_nodes = [self.leaf_nodes[leaf] for leaf in all_leaves]
+
+        # For each column (target leaf in subset)
+        for k, target_node in enumerate(all_leaves):
+            # Compute distances from target to all leaves
+            for i, source_node in enumerate(source_nodes):
+                if i <= k:
+                    continue
+                else:
+                    # Find LCA and compute distance
+                    lca = self._find_lca_optimized(source_node, target_node)
+                    dist = (source_node.dist_from_root + target_node.dist_from_root - 2 * lca.dist_from_root)
+                    dist_matrix[i, k] = dist
+                    dist_matrix[k, i] = dist
+        return dist_matrix, all_leaves
+
+    def get_all_leaf_names(self) -> List[str]:
+        """Return sorted list of all leaf names."""
+        return sorted(self.leaf_nodes.keys())
+
+
+# ======================================================================================
+
+
 class SampleSimilarityOracle(ABC):
     @abstractmethod
     def similarity(self, x: MetaphlanProfile, y: MetaphlanProfile) -> float:
@@ -73,18 +282,35 @@ class JaccardSimilarityOracle(SampleSimilarityOracle):
 
 
 class PhylogeneticSimilarityOracle(SampleSimilarityOracle):
-    SGB_PREFIX_LEN = len("SGB")
+    def __init__(self, newick_path: Path):
+        computer = OptimizedDistanceMatrixComputer(newick_path)
+        dist_matrix, leaf_order = computer.compute_distance_matrix()
 
-    def __init__(self, tree: Tree):
-        self.tree = tree
+        self.dist_matrix = dist_matrix
+        self.leaf_indices = {
+            f'SGB{sgb_id}': idx
+            for idx, sgb_id in enumerate(leaf_order)
+        }
+
+    def sgb_dist(self, sgb_id1: str, sgb_id2: str) -> float:
+        i = self.leaf_indices[sgb_id1]
+        j = self.leaf_indices[sgb_id2]
+        return self.dist_matrix[i, j]
 
     def similarity(self, x: MetaphlanProfile, y: MetaphlanProfile) -> float:
+        x_sgb_ids = [sgb_id for sgb_id in x.sgb_ids if sgb_id in self.leaf_indices]
+        y_sgb_ids = [sgb_id for sgb_id in y.sgb_ids if sgb_id in self.leaf_indices]
+        if len(x_sgb_ids) == 0:
+            raise Exception(f"Sample {x.sample_id} had no SGBs to be found inside the tree.")
+        if len(y_sgb_ids) == 0:
+            raise Exception(f"Sample {y.sample_id} had no SGBs to be found inside the tree.")
+
         pairwise_distances = np.array([
             [
-                self.tree.distance(x_sgb[self.SGB_PREFIX_LEN:], y_sgb[self.SGB_PREFIX_LEN:])
-                for y_sgb in y.sgb_ids
+                self.sgb_dist(x_sgb, y_sgb)
+                for y_sgb in y_sgb_ids
             ]
-            for x_sgb in x.sgb_ids
+            for x_sgb in x_sgb_ids
         ], dtype=float)
 
         x_nn_dist = np.min(pairwise_distances, axis=1)  # nearest neighbor dist for each SGB in x
