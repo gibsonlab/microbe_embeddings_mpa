@@ -454,6 +454,7 @@ def test_train_split_asv_separation(
 if __name__ == "__main__":
     DATA_DIR = Path("/data/cctm/youn/metaphlan_dset/dataset")
     OUT_DIR = Path("/data/cctm/youn/metaphlan_dset/model_training")
+    print(f"Destination OUT_DIR: {OUT_DIR}")
 
     full_profile_tsv = DATA_DIR / "BlancoMiguezA_2023_profiles.tsv"
     metadata_tsv = DATA_DIR / "BlancoMiguezA_2023_metadata.tsv"
