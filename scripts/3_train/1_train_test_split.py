@@ -215,6 +215,7 @@ if __name__ == "__main__":
 
     full_profile_tsv = DATA_DIR / "BlancoMiguezA_2023_profiles.tsv"
     metadata_tsv = DATA_DIR / "BlancoMiguezA_2023_metadata.tsv"
+    tree_path = Path("/data/cctm/youn/metaphlan_dset/database/mpa_vJan21_CHOCOPhlAnSGB_202103.nwk")
     train_out = OUT_DIR / "train.tsv"
     test_out = OUT_DIR / "test.tsv"
 
@@ -225,4 +226,5 @@ if __name__ == "__main__":
         train_out_path=train_out,
         test_out_path=test_out,
         edge_weight_strategy="phylogenetic",
+        optional_newick_tree_path=tree_path,
     )
