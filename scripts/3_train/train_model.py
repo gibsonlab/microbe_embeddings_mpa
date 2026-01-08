@@ -9,7 +9,7 @@ import torch
 from torch import nn, optim
 
 from gem.mpa import AbstractMetaphlanDataset, MetaphlanDatasetMemmapped
-from gem.ml import safe_kl_div_loss, main_training_loop
+from gem.ml import safe_kl_div_loss, safe_mse_loss, main_training_loop
 from gem.ml.models import *
 
 import sys
@@ -55,6 +55,7 @@ def train_and_save_model(
         # specify whether to store sample-specific SGB embeddings to disk (not RAM).
 ):
     """
+    :param model_version:
     :param model_cfg:
     :param model_save_dir:
     :param loss_fn:
@@ -76,8 +77,12 @@ def train_and_save_model(
     print("Using target cuda device: {}".format(cuda_device_name))
     if model_version == "V1":
         torch_embedding_model = SGBAbundancePredictionModel(**model_cfg).to(cuda_device_name)
-    if model_version == "V2":
+    elif model_version == "V2":
         torch_embedding_model = SGBAbundanceLayeredPredictionModel(**model_cfg).to(cuda_device_name)
+    elif model_version == "EPC":
+        torch_embedding_model = SGBEmbedPoolConcatPredictionModel(**model_cfg).to(cuda_device_name)
+    else:
+        raise ValueError(f"Unsupported model_version `{model_version}`")
 
     print("Using model class: {}".format(
         torch_embedding_model.__class__.__name__
@@ -206,12 +211,12 @@ def main():
     if args.loss_name == 'kl':
         loss_fn = safe_kl_div_loss
     elif args.loss_name == 'mse':
-        loss_fn = nn.MSELoss(reduction='mean')
+        loss_fn = safe_mse_loss
     else:
         raise ValueError(f"Unsupported loss name '{args.loss_name}'")
 
     model_version = args.model_version
-    model_supported_versions = {"V1", "V2"}
+    model_supported_versions = {"V1", "V2", "EPC"}
     if model_version not in model_supported_versions:
         raise ValueError(
             f"Unsupported model version string {model_version}. "

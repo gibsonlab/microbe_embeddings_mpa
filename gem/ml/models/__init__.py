@@ -1,2 +1,3 @@
 from .abundance_pred import SGBAbundancePredictionModel
 from .v2 import SGBAbundanceLayeredPredictionModel
+from .embed_pool_concat import SGBEmbedPoolConcatPredictionModel
