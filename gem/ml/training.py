@@ -98,15 +98,15 @@ def main_training_loop(
                 with autocast(device_type='cuda', enabled=auto_mixed_precision, dtype=torch.bfloat16):
                     # note: bfloat16 historically has had better numerical stability, causing fewer NaN issues.
                     test_y_hat = model(
-                        test_batch_features.cuda(non_blocking=True),
-                        test_marker_mask.cuda(non_blocking=True),
-                        test_sgb_mask.cuda(non_blocking=True),
+                        test_batch_features.to(cuda_device_name, non_blocking=True),
+                        test_marker_mask.to(cuda_device_name, non_blocking=True),
+                        test_sgb_mask.to(cuda_device_name, non_blocking=True)
                     )
 
                     # assert test_y_hat.shape == test_y.shape, f"Neural Network output and ground truth have different shapes: {test_y_hat.shape} (NN) vs {test_y.shape} (truth)"
                     batch_loss = loss_fn(
                         nn.functional.log_softmax(test_y_hat, dim=-1),  # log pred probabilities
-                        torch.log(test_y.cuda(non_blocking=True))  # log target probabilities
+                        torch.log(test_y.to(cuda_device_name, non_blocking=True))  # log target probabilities
                     )
                     if torch.isnan(batch_loss).item():
                         # ========== Found NaN batch loss. Try to report current status and terminate training loop.
@@ -117,7 +117,7 @@ def main_training_loop(
                             sgb_mask_i = test_sgb_mask[i]
                             marker_mask_i = test_marker_mask[i]
                             y_hat_i = nn.functional.log_softmax(test_y_hat[i], dim=-1)
-                            yi = torch.log(test_y[i].cuda(non_blocking=True))
+                            yi = torch.log(test_y[i].to(cuda_device_name, non_blocking=True),)
                             loss_i = loss_fn(
                                 torch.unsqueeze(y_hat_i, dim=0),
                                 torch.unsqueeze(yi, dim=0)
@@ -151,16 +151,16 @@ def main_training_loop(
             with autocast(device_type='cuda', enabled=auto_mixed_precision, dtype=torch.bfloat16):
                 with timer("Model-With-Grad ({}/{})".format(batch_idx+1, len(train_dloader)), enabled=timer_profile):
                     training_y_hat = model(
-                        training_batch_features.cuda(non_blocking=True),
-                        training_marker_mask.cuda(non_blocking=True),
-                        training_sgb_mask.cuda(non_blocking=True),
+                        training_batch_features.to(cuda_device_name, non_blocking=True),
+                        training_marker_mask.to(cuda_device_name, non_blocking=True),
+                        training_sgb_mask.to(cuda_device_name, non_blocking=True),
                     )
 
                 # assert training_y_hat.shape == training_y.shape, f"Neural Network output and ground truth have different shapes: {training_y_hat.shape} (NN) vs {training_y.shape} (truth)"
                 with timer("Loss-With-Grad ({}/{})".format(batch_idx+1, len(train_dloader)), enabled=timer_profile):
                     training_loss = loss_fn(
                         nn.functional.log_softmax(training_y_hat, dim=-1),  # log pred probabilities
-                        torch.log(training_y.cuda(non_blocking=True))  # log target probabilities
+                        torch.log(training_y.to(cuda_device_name, non_blocking=True))  # log target probabilities
                     )
 
             with timer("Backward-Update", enabled=timer_profile):
