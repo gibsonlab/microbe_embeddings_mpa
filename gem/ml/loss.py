@@ -24,17 +24,22 @@ def safe_kl_div_loss(log_pred, log_target, reduction='batchmean'):
         return kl_elementwise
 
 
-def safe_mse_loss(log_pred, log_target, reduction='mean'):
+def safe_mse_loss(log_pred, log_target, reduction='batchmean'):
     """
     Safe mean-squared-error loss, but gracefully excluding -inf in log_pred.
     It is assumed that wherever log_target is -inf, log_pred is -inf also. (and the inverse is also true about non-inf)
     """
     finite_mask = torch.isfinite(log_target)                    # (*, S)
-    squared_diff = torch.where(finite_mask, torch.square(log_pred - log_target), torch.tensor(0.0))  # (*, S)
-    mean_errors = torch.sum(squared_diff, dim=-1) / torch.sum(finite_mask, dim=-1)   # (*)
+    squared_diff = torch.square(log_pred - log_target)
+    squared_diff = torch.where(finite_mask, squared_diff, torch.tensor(0.0))  # (*, S)
 
-    if reduction == 'mean':
-        return mean_errors.mean()
+    # mean_errors = torch.sum(squared_diff, dim=-1) / torch.sum(finite_mask, dim=-1)   # (*)
+
+    if reduction == 'batchmean':
+        return squared_diff.sum() / log_pred.shape[0]
+    elif reduction == 'mean':
+        return squared_diff.mean()
+    elif reduction == 'sum':
+        return squared_diff.sum()
     else:
-        # sum reduction
-        return mean_errors.sum()
+        return squared_diff
