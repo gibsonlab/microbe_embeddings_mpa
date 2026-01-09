@@ -83,6 +83,11 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
         if self.use_sgb_pooling:
             y = self.species_transform_layer(x)                                    # shape (*, S, sgb_pool_dim)
             y = self.species_pool_layer(y * sgb_padding_mask.unsqueeze(-1))        # shape (*, sgb_pool_dim)
+
+            # Normalization to prevent gradient explosion.
+            num_species = sgb_padding_mask.sum(dim=-1, keepdim=True).clamp(min=1)  # shape (*, 1)
+            y = y / num_species                                                    # shape (*, sgb_pool_dim)
+
             y = y.unsqueeze(-2)                                                    # shape (*, 1, sgb_pool_dim)
             y = y.expand(*x.shape[:-1], y.shape[-1])                                        # shape (*, S, sgb_pool_dim), broadcasted along dim=-2
 
