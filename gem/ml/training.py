@@ -142,7 +142,7 @@ def main_training_loop(
     test_dset.track_runtime = False
 
     current_lr = torch.nan
-    for epoch in tqdm(range(num_epochs)):
+    for epoch in tqdm(range(num_epochs), desc="Training", unit="epoch"):
         epoch_training_loss = 0.0
         model.train()
         for batch_idx, (training_sample_ids, training_batch_features, training_marker_mask, training_sgb_mask, training_y) in enumerate(train_dloader):
