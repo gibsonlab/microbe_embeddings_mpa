@@ -76,6 +76,7 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
         :param sgb_padding_mask: Boolean tensor of shape (n_batch, S). the (i,j) entry should be "True" if batch_i, SGB j should be included in computation.
         """
         x = self.marker_transform_layer(g)                                         # shape (*, S, M, sgb_model_dim)
+        # ========== mean-pooling (nanmean)
         x = torch.sum(
             x * marker_padding_mask.unsqueeze(-1),
             dim=-2, keepdim=False
@@ -85,12 +86,11 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
 
         if self.use_sgb_pooling:
             y = self.species_transform_layer(x)                                    # shape (*, S, sgb_pool_dim)
+            # ========== mean-pooling (nanmean)
             y = torch.sum(
                 y * sgb_padding_mask.unsqueeze(-1),
                 dim=-2, keepdim=False
             )                                                                      # shape (*, sgb_pool_dim)
-
-            # Normalization to prevent gradient explosion.
             num_species = sgb_padding_mask.sum(dim=-1, keepdim=True).clamp(min=1)  # shape (*, 1)
             y = y / num_species                                                    # shape (*, sgb_pool_dim)
 
