@@ -9,7 +9,7 @@ import torch
 from torch import nn, optim
 
 from gem.mpa import AbstractMetaphlanDataset, MetaphlanDatasetMemmapped
-from gem.ml import safe_kl_div_loss, safe_mse_loss, main_training_loop
+from gem.ml import *
 from gem.ml.models import *
 
 import sys
@@ -210,6 +210,8 @@ def main():
     """ loss function """
     if args.loss_name == 'kl':
         loss_fn = safe_kl_div_loss
+    elif args.loss_name == 'mse_log':
+        loss_fn = safe_mse_log_loss
     elif args.loss_name == 'mse':
         loss_fn = safe_mse_loss
     else:
