@@ -206,6 +206,7 @@ def main():
     )
     model_save_dir = Path(args.model_save_dir)
     model_save_dir.mkdir(exist_ok=True, parents=True)
+    print(f"Target output directory: {model_save_dir}")
 
     """ loss function """
     if args.loss_name == 'kl':
