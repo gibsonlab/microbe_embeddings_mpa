@@ -209,10 +209,13 @@ def main():
 
     """ loss function """
     if args.loss_name == 'kl':
+        print("Using KL loss")
         loss_fn = safe_kl_div_loss
     elif args.loss_name == 'mse_log':
+        print("Using Mean-Squared (Log-probability) loss")
         loss_fn = safe_mse_log_loss
     elif args.loss_name == 'mse':
+        print("Using Mean-Squared (Linear/non-log probability) loss")
         loss_fn = safe_mse_loss
     else:
         raise ValueError(f"Unsupported loss name '{args.loss_name}'")
