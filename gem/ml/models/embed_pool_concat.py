@@ -40,7 +40,6 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
             nn.LayerNorm(normalized_shape=sgb_model_dim),
             nn.GELU(),
         )
-        self.marker_pool_layer = SumAlongDim(dim=-2, keepdim=False)
 
         self.use_sgb_pooling = use_sgb_pooling
         if use_sgb_pooling:
@@ -53,7 +52,6 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
                 nn.LayerNorm(normalized_shape=sgb_pool_dim),
                 nn.GELU(),
             )
-            self.species_pool_layer = SumAlongDim(dim=-2, keepdim=False)
 
         # define final layer.
         if use_sgb_pooling:
@@ -77,12 +75,20 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
         :param marker_padding_mask: Boolean tensor of shape (n_batch, S, M). The (i,j,k) entry should be "True" if batch i, SGB j, marker k should be included in computation, "False" otherwise.
         :param sgb_padding_mask: Boolean tensor of shape (n_batch, S). the (i,j) entry should be "True" if batch_i, SGB j should be included in computation.
         """
-        x = self.marker_transform_layer(g)                                     # shape (*, S, M, sgb_model_dim)
-        x = self.marker_pool_layer(x * marker_padding_mask.unsqueeze(-1))      # shape (*, S, sgb_model_dim)
+        x = self.marker_transform_layer(g)                                         # shape (*, S, M, sgb_model_dim)
+        x = torch.sum(
+            x * marker_padding_mask.unsqueeze(-1),
+            dim=-2, keepdim=False
+        )                                                                          # shape (*, S, sgb_model_dim)
+        num_markers = marker_padding_mask.sum(dim=-1, keepdim=True).clamp(min=1)   # shape (*, S, 1)
+        x = x / num_markers                                                        # shape (*, S, sgb_model_dim)
 
         if self.use_sgb_pooling:
             y = self.species_transform_layer(x)                                    # shape (*, S, sgb_pool_dim)
-            y = self.species_pool_layer(y * sgb_padding_mask.unsqueeze(-1))        # shape (*, sgb_pool_dim)
+            y = torch.sum(
+                y * sgb_padding_mask.unsqueeze(-1),
+                dim=-2, keepdim=False
+            )                                                                      # shape (*, sgb_pool_dim)
 
             # Normalization to prevent gradient explosion.
             num_species = sgb_padding_mask.sum(dim=-1, keepdim=True).clamp(min=1)  # shape (*, 1)
