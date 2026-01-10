@@ -217,6 +217,9 @@ def main():
     elif args.loss_name == 'mse':
         print("Using Mean-Squared (Linear/non-log probability) loss")
         loss_fn = safe_mse_loss
+    elif args.loss_name == 'cross_entropy':
+        print("Using Cross-entropy loss")
+        loss_fn = safe_cross_entropy_loss
     else:
         raise ValueError(f"Unsupported loss name '{args.loss_name}'")
 
