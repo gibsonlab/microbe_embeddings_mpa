@@ -16,12 +16,12 @@ embeddings_memmap="/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/mem
 training_set="/data/cctm/youn/metaphlan_dset/model_training/train.tsv"
 test_set="/data/cctm/youn/metaphlan_dset/model_training/test.tsv"
 model_config="./model_epc_pool.yaml"
-n_epochs=100
+n_epochs=300
 learning_rate=0.0001
 batch_size=10
 seed=12345
 
-outdir="/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/trained_model/evo_epc/sgb_pool"
+outdir="/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/trained_model/evo_epc/sgbpool_epoch${n_epochs}_ce"
 mkdir -p ${outdir}
 
 metadata="$outdir/metadata.txt"
@@ -37,7 +37,7 @@ python train_model.py \
   --test "$test_set" \
   --model-config "$model_config" \
   --out-dir "$outdir" \
-  --loss "kl" \
+  --loss "cross_entropy" \
   --memmap-tensor-dir "$embeddings_memmap" \
   --epochs "$n_epochs" \
   --learning-rate "$learning_rate" \
@@ -45,9 +45,8 @@ python train_model.py \
   --print-every 5 \
   --workers 10 \
   --seed "$seed" \
-  --use-auto-mixed-precision \
   --prefetch-factor 2 \
-  --cuda-device "cuda:0" \
+  --cuda-device "cuda" \
   --model-version "EPC"
 
 echo "Done."
