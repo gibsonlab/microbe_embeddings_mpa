@@ -18,16 +18,15 @@ from pathlib import Path
 
 import h5py
 import pandas as pd
-from gem.mpa import MetaphlanMarkerEmbedding
-from gem.mpa import MetaphlanDataset
+from gem.mpa import MetaphlanDatasetMemmapped
 from tqdm import tqdm
 
 
-def hdf5_convert_dataset(dataset: MetaphlanDataset, out_path: Path):
+def hdf5_convert_dataset(dataset: MetaphlanDatasetMemmapped, out_path: Path):
     max_S = dataset.max_num_sgbs()
     max_M = dataset.max_num_markers()
     embed_dim = dataset.embed_feature_dim()
-    n_samples = len(dataset.samples)
+    n_samples = len(dataset.sample_ids)
 
     with h5py.File(out_path, "w") as f:
         f.create_dataset(
@@ -58,8 +57,8 @@ def hdf5_convert_dataset(dataset: MetaphlanDataset, out_path: Path):
         )
 
         # Fill data
-        for i, sample in enumerate(tqdm(dataset.samples, desc="Dataset HDF5 conversion")):
-            _, features, marker_padding_mask, sgb_padding_mask, targets = dataset.load_sample_embeddings(sample)
+        for i, sample in enumerate(tqdm(range(n_samples), desc="Dataset HDF5 conversion")):
+            _, features, marker_padding_mask, sgb_padding_mask, targets = dataset[i]
             S, M = features.shape[0], features.shape[1]
             f['features'][i, :S, :M, :] = features.cpu().numpy().astype(float)
             f['mpadding'][i, :S, :M] = marker_padding_mask.cpu().numpy().astype(bool)
@@ -68,15 +67,15 @@ def hdf5_convert_dataset(dataset: MetaphlanDataset, out_path: Path):
 
         f.create_dataset(
             'sample_ids',
-            data=[s.sample_id.encode() for s in dataset.samples]
+            data=[s.encode() for s in dataset.sample_ids]
         )
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--dataset-tsv", dest="dataset_tsv", required=True, type=str)
-    parser.add_argument("-e", "--embedding-dir", dest="marker_embedding_basedir", required=True, type=str)
     parser.add_argument("-o", "--out-path", dest="out_path", required=True, type=str)
+    parser.add_argument("-m", "--memmap-dir", dest="memmap_tensor_sample_dir", required=True, type=str)
     parser.add_argument("--dimension-reduce", dest="dimension_reduce_pca", required=False, default=None, type=int,
                         help="If specified (an integer greater than zero), will perform incremental PCA on the entire"
                              "set of embeddings for dimensionality reduction.")
@@ -87,7 +86,7 @@ def parse_args():
 
 def main(
         dataset_df: pd.DataFrame,
-        marker_embedding: MetaphlanMarkerEmbedding,
+        memmap_tensor_sample_dir: Path,
         out_path: Path,
 ):
     if out_path.exists():
@@ -95,7 +94,8 @@ def main(
         exit(0)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    regular_dset = MetaphlanDataset(dataset_df, marker_embedding)
+    regular_dset = MetaphlanDatasetMemmapped(dataset_df.index.tolist())
+    regular_dset.load_memmap_tensors(memmap_tensor_sample_dir)
     hdf5_convert_dataset(
         dataset=regular_dset,
         out_path=out_path,
@@ -107,13 +107,8 @@ if __name__ == "__main__":
     args = parse_args()
     dataset_df = pd.read_csv(args.dataset_tsv, sep='\t', index_col="SampleID")
 
-    marker_embedding = MetaphlanMarkerEmbedding(
-        marker_embedding_basedir=Path(args.marker_embedding_basedir),
-        dimension_reduce_pca=args.dimension_reduce_pca,
-        ipca_batch_size=args.ipca_batch_size,
-    )
     main(
         dataset_df=dataset_df,
-        marker_embedding=marker_embedding,
+        memmap_tensor_sample_dir=Path(args.memmap_tensor_sample_dir),
         out_path=Path(args.out_path),
     )

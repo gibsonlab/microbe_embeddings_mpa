@@ -12,11 +12,12 @@ set -e
 
 TSV_FILE=/data/cctm/youn/metaphlan_dset/model_training/test.tsv
 OUT_FILE=/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/hdf5_samples/test.hdf5
+MEMMAP_DIR=/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmmap_samples
 
 echo "HDF5 conversion of ${TSV_FILE} started."
 python dataset_hdf5_convert.py \
   --dataset-tsv "$TSV_FILE" \
-  --embedding-dir "/data/cctm/youn/metaphlan_dset/embeddings/phylophlan_markers/evo" \
+  --memmap-dir "$MEMMAP_DIR" \
   --out-path "$OUT_FILE" \
   --dimension-reduce 768
 
@@ -26,7 +27,7 @@ OUT_FILE=/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/hdf5_samples/
 echo "HDF5 conversion of ${TSV_FILE} started."
 python dataset_hdf5_convert.py \
   --dataset-tsv "$TSV_FILE" \
-  --embedding-dir "/data/cctm/youn/metaphlan_dset/embeddings/phylophlan_markers/evo" \
+  --memmap-dir "$MEMMAP_DIR" \
   --out-path "$OUT_FILE" \
   --dimension-reduce 768
 
