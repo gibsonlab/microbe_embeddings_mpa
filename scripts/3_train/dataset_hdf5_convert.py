@@ -23,7 +23,7 @@ from gem.mpa import MetaphlanDataset
 from tqdm import tqdm
 
 
-def hdf5_convert_dataset(dataset: MetaphlanDataset, out_path: Path, chunk_size: int = 32):
+def hdf5_convert_dataset(dataset: MetaphlanDataset, out_path: Path):
     max_S = dataset.max_num_sgbs()
     max_M = dataset.max_num_markers()
     embed_dim = dataset.embed_feature_dim()
@@ -34,26 +34,26 @@ def hdf5_convert_dataset(dataset: MetaphlanDataset, out_path: Path, chunk_size: 
             'features',
             shape=(n_samples, max_S, max_M, embed_dim),
             dtype='float32',
-            chunks=(chunk_size, max_S, max_M, embed_dim),
+            chunks=True,
             compression='lzf'
         )
         f.create_dataset(
             'mpadding',
             shape=(n_samples, max_S, max_M),
             dtype='bool',
-            chunks=(chunk_size, max_S, max_M)
+            chunks=True
         )
         f.create_dataset(
             'spadding',
             shape=(n_samples, max_S),
             dtype='bool',
-            chunks=(chunk_size, max_S)
+            chunks=True
         )
         f.create_dataset(
             'targets',
             shape=(n_samples, max_S),
             dtype='float32',
-            chunks=(chunk_size, max_S),
+            chunks=True,
             compression='lzf'
         )
 
@@ -82,7 +82,6 @@ def parse_args():
                              "set of embeddings for dimensionality reduction.")
     parser.add_argument("--pca-batch-size", dest="ipca_batch_size", required=False, default=10000, type=int,
                         help="Specify the batch size for incremental PCA. Default: 10000")
-    parser.add_argument("--chunk-size", dest="chunk_size", required=False, type=int, default=10)
     return parser.parse_args()
 
 
@@ -90,7 +89,6 @@ def main(
         dataset_df: pd.DataFrame,
         marker_embedding: MetaphlanMarkerEmbedding,
         out_path: Path,
-        chunk_size: int,
 ):
     if out_path.exists():
         print(f"Target file ({out_path}) already exists. Exiting.")
@@ -101,7 +99,6 @@ def main(
     hdf5_convert_dataset(
         dataset=regular_dset,
         out_path=out_path,
-        chunk_size=chunk_size,
     )
     print("Finished memory-mapping tensors.")
 
@@ -119,5 +116,4 @@ if __name__ == "__main__":
         dataset_df=dataset_df,
         marker_embedding=marker_embedding,
         out_path=Path(args.out_path),
-        chunk_size=args.chunk_size,
     )
