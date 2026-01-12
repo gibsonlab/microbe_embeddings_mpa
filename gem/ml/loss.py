@@ -1,4 +1,5 @@
 import torch
+import torch.nn.functional as F
 
 
 def safe_kl_div_loss(log_pred, log_target, reduction='batchmean'):
@@ -53,21 +54,18 @@ def safe_mse_log_loss(log_pred, log_target, reduction='batchmean'):
     """
     finite_mask = torch.isfinite(log_target)
 
-    # Compute squared-error elementwise
-    n_sgbs = torch.sum(finite_mask, dim=-1)
-    diff_elementwise = n_sgbs.reciprocal().unsqueeze(-1) * torch.square(log_target - log_pred)
-
-    # Mask out -inf contributions
-    diff_elementwise = torch.where(finite_mask, diff_elementwise, torch.tensor(0.0))
+    squared_error = (log_pred - log_target) ** 2
+    masked_squared_error = squared_error * finite_mask
+    per_sample_loss = masked_squared_error.sum(dim=-1) / finite_mask.sum(dim=-1)
 
     if reduction == 'batchmean':
-        return diff_elementwise.sum() / log_pred.shape[0]
+        return per_sample_loss.mean()
     elif reduction == 'mean':
-        return diff_elementwise.mean()
+        return per_sample_loss.mean()
     elif reduction == 'sum':
-        return diff_elementwise.sum()
+        return per_sample_loss.sum()
     else:
-        return diff_elementwise
+        return per_sample_loss
 
 
 def safe_mse_loss(log_pred, log_target, reduction='batchmean'):
