@@ -19,7 +19,7 @@ python dataset_hdf5_convert.py \
   --embedding-dir "/data/cctm/youn/metaphlan_dset/embeddings/phylophlan_markers/evo" \
   --out-path "$OUT_FILE" \
   --dimension-reduce 768 \
-  --chunk-size 8
+  --chunk-size 5
 
 TSV_FILE=/data/cctm/youn/metaphlan_dset/model_training/train.tsv
 OUT_FILE=/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/hdf5_samples/train.hdf5
@@ -30,6 +30,6 @@ python dataset_hdf5_convert.py \
   --embedding-dir "/data/cctm/youn/metaphlan_dset/embeddings/phylophlan_markers/evo" \
   --out-path "$OUT_FILE" \
   --dimension-reduce 768 \
-  --chunk-size 8
+  --chunk-size 5
 
 echo "Done!"
