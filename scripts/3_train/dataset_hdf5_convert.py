@@ -57,19 +57,19 @@ def hdf5_convert_dataset(dataset: MetaphlanDataset, out_path: Path):
             compression='lzf'
         )
 
-    # Fill data
-    for i, sample in enumerate(tqdm(dataset.samples, desc="Dataset HDF5 conversion")):
-        _, features, marker_padding_mask, sgb_padding_mask, targets = dataset.load_sample_embeddings(sample)
-        S, M = features.shape[0], features.shape[1]
-        f['features'][i, :S, :M, :] = features.cpu().numpy().astype(float)
-        f['mpadding'][i, :S, :M] = marker_padding_mask.cpu().numpy().astype(bool)
-        f['spadding'][i, :S] = sgb_padding_mask.cpu().numpy().astype(bool)
-        f['targets'][i, :S] = targets.cpu().numpy().astype(float)
+        # Fill data
+        for i, sample in enumerate(tqdm(dataset.samples, desc="Dataset HDF5 conversion")):
+            _, features, marker_padding_mask, sgb_padding_mask, targets = dataset.load_sample_embeddings(sample)
+            S, M = features.shape[0], features.shape[1]
+            f['features'][i, :S, :M, :] = features.cpu().numpy().astype(float)
+            f['mpadding'][i, :S, :M] = marker_padding_mask.cpu().numpy().astype(bool)
+            f['spadding'][i, :S] = sgb_padding_mask.cpu().numpy().astype(bool)
+            f['targets'][i, :S] = targets.cpu().numpy().astype(float)
 
-    f.create_dataset(
-        'sample_ids',
-        data=[s.sample_id.encode() for s in dataset.samples]
-    )
+        f.create_dataset(
+            'sample_ids',
+            data=[s.sample_id.encode() for s in dataset.samples]
+        )
 
 
 def parse_args():
