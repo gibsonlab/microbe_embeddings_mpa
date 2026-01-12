@@ -4,9 +4,9 @@
 #SBATCH --mem=320G
 #SBATCH --cpus-per-task=80
 #SBATCH --time=5-00:00:00
-#SBATCH --job-name=memmap_test
-#SBATCH --output=logs/memmap_test_%A_%a.out
-#SBATCH --error=logs/memmap_test_%A_%a.err
+#SBATCH --job-name=hdf5_conversion
+#SBATCH --output=logs/hdf5_conversion_%A_%a.out
+#SBATCH --error=logs/hdf5_conversion_%A_%a.err
 set -e
 
 
