@@ -28,6 +28,7 @@ python dataset_hdf5_convert.py \
   --dataset-tsv "$TSV_FILE" \
   --embedding-dir "/data/cctm/youn/metaphlan_dset/embeddings/phylophlan_markers/evo" \
   --out-path "$OUT_FILE" \
-  --dimension-reduce 768
+  --dimension-reduce 768 \
+  --chunk-size 8
 
 echo "Done!"

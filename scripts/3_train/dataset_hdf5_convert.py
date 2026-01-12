@@ -82,6 +82,7 @@ def parse_args():
                              "set of embeddings for dimensionality reduction.")
     parser.add_argument("--pca-batch-size", dest="ipca_batch_size", required=False, default=10000, type=int,
                         help="Specify the batch size for incremental PCA. Default: 10000")
+    parser.add_argument("--chunk-size", dest="chunk_size", required=False, type=int, default=10)
     return parser.parse_args()
 
 
@@ -89,6 +90,7 @@ def main(
         dataset_df: pd.DataFrame,
         marker_embedding: MetaphlanMarkerEmbedding,
         out_path: Path,
+        chunk_size: int,
 ):
     if out_path.exists():
         print(f"Target file ({out_path}) already exists. Exiting.")
@@ -99,6 +101,7 @@ def main(
     hdf5_convert_dataset(
         dataset=regular_dset,
         out_path=out_path,
+        chunk_size=chunk_size,
     )
     print("Finished memory-mapping tensors.")
 
@@ -116,4 +119,5 @@ if __name__ == "__main__":
         dataset_df=dataset_df,
         marker_embedding=marker_embedding,
         out_path=Path(args.out_path),
+        chunk_size=args.chunk_size,
     )
