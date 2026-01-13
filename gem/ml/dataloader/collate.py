@@ -109,10 +109,10 @@ def collate_fn_stack(
     """
     sample_ids = [item[0] for item in batch]
     with timer("Collate:Stack", enabled=True):
-        f_batch = torch.stack([item[1] for item in batch], dim=0)
-        m_batch = torch.stack([item[2] for item in batch], dim=0)
-        s_batch = torch.stack([item[3] for item in batch], dim=0)
-        t_batch = torch.stack([item[4] for item in batch], dim=0)
+        f_batch = torch.stack([item[1].to("cuda", non_blocking=True) for item in batch], dim=0)
+        m_batch = torch.stack([item[2].to("cuda", non_blocking=True) for item in batch], dim=0)
+        s_batch = torch.stack([item[3].to("cuda", non_blocking=True) for item in batch], dim=0)
+        t_batch = torch.stack([item[4].to("cuda", non_blocking=True) for item in batch], dim=0)
         return sample_ids, f_batch, m_batch, s_batch, t_batch
 
 
