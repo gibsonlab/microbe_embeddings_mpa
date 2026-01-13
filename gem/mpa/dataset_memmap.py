@@ -20,6 +20,25 @@ From https://docs.pytorch.org/tensordict/main/saving.html
 2) Loading a memmapped tensordict:
     x = TensorDict.load_memmap("/path/to/saved/dir")
 """
+def add_marker_padding(x: Tensor, n_markers: int) -> Tensor:
+    """
+
+    :param x: A tensor of shape (S, m, *), where * is potentially empty.
+    :param n_markers: An integer M >= m.
+    :return:
+    """
+    assert x.shape[1] <= n_markers, "Can't pad a tensor with marker dimension {} into a tensor of shape {}".format(
+        x.shape[1], n_markers
+    )
+
+    if len(x.shape) == 2:
+        new_x = torch.zeros(size=(x.shape[0], n_markers), dtype=x.dtype)
+    else:
+        new_x = torch.zeros(size=(x.shape[0], n_markers, *x.shape[2:]), dtype=x.dtype)
+
+    m = x.shape[1]
+    new_x[:, :m] = x
+    return new_x
 
 
 def allocate_sample(memmap_dir: Path, sample: MetaphlanProfile, dataset: MetaphlanDataset) -> bool:
@@ -29,6 +48,10 @@ def allocate_sample(memmap_dir: Path, sample: MetaphlanProfile, dataset: Metaphl
     assert not (memmap_dir / "meta.json").exists()
     memmap_dir.mkdir(exist_ok=True, parents=False)  # parent dir should already exist!
     _, features, marker_padding_mask, sgb_padding_mask, targets = dataset.load_sample_embeddings(sample)
+
+    marker_padding_mask = add_marker_padding(marker_padding_mask, dataset.global_max_num_markers)
+    features = add_marker_padding(features, dataset.global_max_num_markers)
+
     x = TensorDict()
     x['features'] = features
     x['mpadding'] = marker_padding_mask
@@ -113,6 +136,8 @@ class MetaphlanDatasetMemmapped(AbstractMetaphlanDataset):
         self.tensor_cache: List[TensorDict] = []
         self.sample_ids: List[str] = sample_ids
         self.loaded = False
+
+        td_stack = TensorDict.lazy_stack(self.tensor_cache, as_padded_tensor=True)
 
     def load_memmap_tensors(self, cache_dir: Path):
         print(f"Using tensor memmap directory: {cache_dir}")

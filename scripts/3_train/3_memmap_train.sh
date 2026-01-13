@@ -36,7 +36,7 @@ echo "Memory-mapping: Train set [Rows $start_row ~ $end_row] (inclusive)"
 python dataset_memmap.py \
   --dataset-tsv "$TSV_FILE" \
   --embedding-dir "/data/cctm/youn/metaphlan_dset/embeddings/phylophlan_markers/evo" \
-  --memmap-dir "/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmmap_samples" \
+  --memmap-dir "/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmmap_samples_padded" \
   --threads 6 \
   --start $start_row \
   --end $end_row \

@@ -45,6 +45,7 @@ def main(
 ):
     memmap_dir.mkdir(parents=True, exist_ok=True)
     regular_dset = MetaphlanDataset(dataset_df, marker_embedding)
+    print(f"[***] NOTE ---> Marker-dim will be padded into: {regular_dset.global_max_num_markers}")
     perform_allocation(
         dataset=regular_dset,
         cache_dir=memmap_dir,

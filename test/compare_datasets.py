@@ -67,6 +67,6 @@ def time_memmap(sample_ids: List[str], memmap_dir: Path, n_iters: int = 100, bat
 
 
 if __name__ == "__main__":
-    df = initialize_test_dataset(Path("/data/cctm/youn/metaphlan_dset/model_training/train.tsv"))
+    df = initialize_test_dataset(Path("/data/cctm/youn/metaphlan_dset/model_training/test.tsv"))
     time_memmap(df['SampleID'].tolist(), Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmmap_samples"))
     # time_hdf5(Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/hdf5_samples/test.hdf5"))
