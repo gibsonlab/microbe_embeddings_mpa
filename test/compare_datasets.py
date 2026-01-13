@@ -37,7 +37,7 @@ def time_hdf5(hdf5_path: Path, n_iters: int = 10, batch_sz: int = 5):
     )
     with timer("HDF5"):
         for batch_idx, (training_sample_ids, _, _, _, _) in tqdm(enumerate(dloader), total=len(dloader)):
-            print(_[0])
+            # print(training_sample_ids)
             if batch_idx == n_iters - 1:
                 break
 
@@ -58,7 +58,7 @@ def time_memmap(sample_ids: List[str], memmap_dir: Path, n_iters: int = 10, batc
     )
     with timer("Tensordict-memmap"):
         for batch_idx, (training_sample_ids, _, _, _, _) in tqdm(enumerate(dloader), total=len(dloader)):
-            print(_[0])
+            # print(training_sample_ids)
             if batch_idx == n_iters - 1:
                 break
 
