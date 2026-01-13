@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import *
 import pandas as pd
 
+from tqdm import tqdm
 import torch
 from gem.mpa import MetaphlanHDF5Dataset, MetaphlanDatasetMemmapped
 
@@ -24,7 +25,7 @@ def initialize_test_dataset(dataset_tsv: Path):
 def time_hdf5(hdf5_path: Path):
     dset = MetaphlanHDF5Dataset(hdf5_path, model_dtype=torch.float32)
     with timer("HDF5"):
-        for i in range(len(dset)):
+        for i in tqdm(range(len(dset))):
             _ = dset[i]
 
 
@@ -32,7 +33,7 @@ def time_memmap(sample_ids: List[str], memmap_dir: Path):
     dset = MetaphlanDatasetMemmapped(sample_ids=sample_ids)
     dset.load_memmap_tensors(memmap_dir)
     with timer("Tensordict-memmap"):
-        for i in range(len(dset)):
+        for i in tqdm(range(len(dset))):
             _ = dset[i]
 
 
