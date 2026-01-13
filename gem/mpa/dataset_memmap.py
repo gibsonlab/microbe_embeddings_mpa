@@ -113,6 +113,8 @@ class MetaphlanDatasetMemmapped(AbstractMetaphlanDataset):
         self.tensor_cache: List[TensorDict] = []
         self.sample_ids: List[str] = sample_ids
         self.loaded = False
+        self.max_S = None
+        self.max_M = None
 
     def load_memmap_tensors(self, cache_dir: Path):
         print(f"Using tensor memmap directory: {cache_dir}")
@@ -127,6 +129,8 @@ class MetaphlanDatasetMemmapped(AbstractMetaphlanDataset):
             self.tensor_cache.append(x)
         print("Finished loading memmapped tensors.")
         self.loaded = True
+        self.max_S = self.max_num_sgbs()
+        self.max_M = self.max_num_markers()
 
     def __getitem__(self, idx: int) -> Tuple[str, Tensor, Tensor, Tensor, Tensor]:
         """
@@ -136,7 +140,32 @@ class MetaphlanDatasetMemmapped(AbstractMetaphlanDataset):
             raise RuntimeError("Method load_memmap_tensors() must be run once prior to data access.")
         x = self.tensor_cache[idx]
         sample_id = self.sample_ids[idx]
-        return sample_id, x['features'], x['mpadding'], x['spadding'], x['targets']
+
+        # Get actual dimensions
+        S, M, embed_dim = x['features'].shape
+
+        # Pre-pad to max dimensions HERE in the dataset
+        if S < self.max_S or M < self.max_M:
+            features = torch.zeros(self.max_S, self.max_M, embed_dim, dtype=x['features'].dtype)
+            features[:S, :M, :] = x['features']
+
+            mpadding = torch.ones(self.max_S, self.max_M, dtype=torch.bool)  # True = padded
+            mpadding[:S, :M] = x['mpadding']
+
+            spadding = torch.ones(self.max_S, dtype=torch.bool)  # True = padded
+            spadding[:S] = x['spadding']
+
+            targets = torch.zeros(self.max_S, dtype=x['targets'].dtype)
+            targets[:S] = x['targets']
+        else:
+            # Already correct size
+            features = x['features']
+            mpadding = x['mpadding']
+            spadding = x['spadding']
+            targets = x['targets']
+
+        return sample_id, features, mpadding, spadding, targets
+
 
     def __len__(self) -> int:
         if not self.loaded:
@@ -147,16 +176,22 @@ class MetaphlanDatasetMemmapped(AbstractMetaphlanDataset):
         return self.tensor_cache[0]['features'].dtype
 
     def max_num_sgbs(self) -> int:
-        return max(
-            tdict['spadding'].sum().item()
-            for tdict in self.tensor_cache
-        )
+        if self.max_S is not None:
+            return self.max_S
+        else:
+            return max(
+                tdict['spadding'].sum().item()
+                for tdict in self.tensor_cache
+            )
 
     def max_num_markers(self) -> int:
-        return max(  # max across all samples
-            tdict['mpadding'].sum(dim=-1).max().item()  # max. # of markers among SGBs in sample
-            for tdict in self.tensor_cache
-        )
+        if self.max_M is not None:
+            return self.max_M
+        else:
+            return max(  # max across all samples
+                tdict['mpadding'].sum(dim=-1).max().item()  # max. # of markers among SGBs in sample
+                for tdict in self.tensor_cache
+            )
 
     def embed_feature_dim(self) -> int:
         return self.tensor_cache[0]['features'].shape[-1]

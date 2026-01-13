@@ -100,9 +100,24 @@ class BufferedCollator:
         )
 
 
+def collate_fn_stack(
+        batch: List[Tuple[str, Tensor, Tensor, Tensor, Tensor]]
+) -> Tuple[List[str], Tensor, Tensor, Tensor, Tensor]:
+    """
+    Assuming all samples are pre-padded to same size, just stack.
+    This function fails with an error if this size condition is not met.
+    """
+    sample_ids = [item[0] for item in batch]
+    f_batch = torch.stack([item[1] for item in batch], dim=0)
+    m_batch = torch.stack([item[2] for item in batch], dim=0)
+    s_batch = torch.stack([item[3] for item in batch], dim=0)
+    t_batch = torch.stack([item[4] for item in batch], dim=0)
+    return sample_ids, f_batch, m_batch, s_batch, t_batch
+
+
 def collate_fn_dynamic_alloc(
         batch: List[Tuple[str, Tensor, Tensor, Tensor, Tensor]]
-):
+) -> Tuple[str, Tensor, Tensor, Tensor, Tensor]:
     """Minimizes allocations while being multiprocessing-safe"""
     batch_size = len(batch)
 
