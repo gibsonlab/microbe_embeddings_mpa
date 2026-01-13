@@ -59,7 +59,7 @@ def time_memmap(sample_ids: List[str], memmap_dir: Path, n_iters: int = 100, bat
     with timer("Tensordict-memmap"):
         for batch_idx, batch in tqdm(enumerate(dloader), total=len(dloader)):
             for sample in batch:
-                print("{}: {}".format(sample[0], sample[1].shape))
+                print("{}: {}  --> sum = {}".format(sample[0], sample[1].shape, sample[1].sum().item()))
             if batch_idx == n_iters - 1:
                 break
 
