@@ -58,13 +58,13 @@ def time_memmap(sample_ids: List[str], memmap_dir: Path, n_iters: int = 100, bat
     )
     with timer("Tensordict-memmap"):
         for batch_idx, batch in tqdm(enumerate(dloader), total=len(dloader)):
-            for sample in batch:
-                print("{}: {}  --> sum = {}".format(sample[0], sample[1].shape, sample[1].sum().item()))
+            # for sample in batch:
+            #     print("{}: {}  --> sum = {}".format(sample[0], sample[1].shape, sample[1].sum().item()))
             if batch_idx == n_iters - 1:
                 break
 
 
 if __name__ == "__main__":
-    df = initialize_test_dataset(Path("/data/cctm/youn/metaphlan_dset/model_training/test.tsv"))
+    df = initialize_test_dataset(Path("/data/cctm/youn/metaphlan_dset/model_training/train.tsv"))
     time_memmap(df['SampleID'].tolist(), Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmmap_samples"))
     # time_hdf5(Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/hdf5_samples/test.hdf5"))
