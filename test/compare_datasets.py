@@ -60,7 +60,7 @@ def time_memmap(sample_ids: List[str], memmap_dir: Path, n_iters: int = 100, bat
         for batch_idx, batch in tqdm(enumerate(dloader), total=len(dloader)):
             for sample in batch:
                 print(sample[0])
-                print(sample[1])
+                print(sample[1].shape)
             if batch_idx == n_iters - 1:
                 break
 
