@@ -2,6 +2,8 @@ from typing import *
 import torch
 from torch import Tensor
 
+from gem.util import timer
+
 
 class BufferedCollator:
     """Collator with pre-allocated buffers per worker."""
@@ -114,20 +116,22 @@ def collate_fn_dynamic_alloc(
     f_dtype = batch[0][1].dtype
     t_dtype = batch[0][4].dtype
 
-    # Single allocation with torch.empty (faster than zeros if you fill everything)
-    sample_ids = []
-    f_batch = torch.zeros(batch_size, S_max, M_max, embed_dim, dtype=f_dtype, device=device)
-    m_batch = torch.zeros(batch_size, S_max, M_max, dtype=torch.bool, device=device)
-    s_batch = torch.zeros(batch_size, S_max, dtype=torch.bool, device=device)
-    t_batch = torch.zeros(batch_size, S_max, dtype=t_dtype, device=device)
+    with timer("Collate:Allocate", enabled=True):
+        # Single allocation with torch.empty (faster than zeros if you fill everything)
+        sample_ids = []
+        f_batch = torch.zeros(batch_size, S_max, M_max, embed_dim, dtype=f_dtype, device=device)
+        m_batch = torch.zeros(batch_size, S_max, M_max, dtype=torch.bool, device=device)
+        s_batch = torch.zeros(batch_size, S_max, dtype=torch.bool, device=device)
+        t_batch = torch.zeros(batch_size, S_max, dtype=t_dtype, device=device)
 
-    # In-place copy
-    for i, (sample_id, f, m, s, t) in enumerate(batch):
-        sample_ids.append(sample_id)
-        S_i, M_i = f.shape[0], f.shape[1]
-        f_batch[i, :S_i, :M_i, :] = f
-        m_batch[i, :S_i, :M_i] = m
-        s_batch[i, :S_i] = s
-        t_batch[i, :S_i] = t
+    with timer("Collate:Fill", enabled=True):
+        # In-place copy
+        for i, (sample_id, f, m, s, t) in enumerate(batch):
+            sample_ids.append(sample_id)
+            S_i, M_i = f.shape[0], f.shape[1]
+            f_batch[i, :S_i, :M_i, :] = f
+            m_batch[i, :S_i, :M_i] = m
+            s_batch[i, :S_i] = s
+            t_batch[i, :S_i] = t
 
     return sample_ids, f_batch, m_batch, s_batch, t_batch
