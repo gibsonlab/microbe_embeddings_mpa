@@ -48,7 +48,7 @@ def time_memmap(sample_ids: List[str], memmap_dir: Path, n_iters: int = 10, batc
         batch_size=batch_sz, num_workers=1, pin_memory=True,
         generator=12345, drop_last=False, prefetch_factor=2,
         persistent_workers=True,
-        shuffle=True, sampler=None,
+        shuffle=True,
     )
     with timer("Tensordict-memmap"):
         for batch_idx, (training_sample_ids, _, _, _, _) in tqdm(enumerate(dloader), total=len(dloader)):

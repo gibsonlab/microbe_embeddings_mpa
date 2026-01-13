@@ -20,7 +20,6 @@ class MetaphlanDataLoader(DataLoader):
             self,
             dataset: AbstractMetaphlanDataset,
             batch_size: int = 32,
-            shuffle: bool = True,
             num_workers: int = 0,
             pin_memory: bool = False,
             worker_rng_seed: int = 31415,
@@ -46,7 +45,6 @@ class MetaphlanDataLoader(DataLoader):
         super().__init__(
             dataset=dataset,
             batch_size=batch_size,
-            shuffle=shuffle,
             num_workers=num_workers,
             pin_memory=pin_memory,
             collate_fn=collate_fn_dynamic_alloc,
