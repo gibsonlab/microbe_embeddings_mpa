@@ -23,7 +23,7 @@ def initialize_test_dataset(dataset_tsv: Path):
     return df
 
 
-def time_hdf5(hdf5_path: Path, n_iters: int = 10, batch_sz: int = 5):
+def time_hdf5(hdf5_path: Path, n_iters: int = 100, batch_sz: int = 5):
     rng = torch.Generator()
     rng.manual_seed(12345)
 
@@ -42,7 +42,7 @@ def time_hdf5(hdf5_path: Path, n_iters: int = 10, batch_sz: int = 5):
                 break
 
 
-def time_memmap(sample_ids: List[str], memmap_dir: Path, n_iters: int = 10, batch_sz: int = 5):
+def time_memmap(sample_ids: List[str], memmap_dir: Path, n_iters: int = 100, batch_sz: int = 5):
     dset = MetaphlanDatasetMemmapped(sample_ids=sample_ids)
     dset.load_memmap_tensors(memmap_dir)
 
@@ -66,4 +66,4 @@ def time_memmap(sample_ids: List[str], memmap_dir: Path, n_iters: int = 10, batc
 if __name__ == "__main__":
     df = initialize_test_dataset(Path("/data/cctm/youn/metaphlan_dset/model_training/test.tsv"))
     time_memmap(df['SampleID'].tolist(), Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmmap_samples"))
-    time_hdf5(Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/hdf5_samples/test.hdf5"))
+    # time_hdf5(Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/hdf5_samples/test.hdf5"))
