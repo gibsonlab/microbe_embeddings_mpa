@@ -22,19 +22,23 @@ def initialize_test_dataset(dataset_tsv: Path):
     return df
 
 
-def time_hdf5(hdf5_path: Path):
+def time_hdf5(hdf5_path: Path, n_iters: int = 10):
     dset = MetaphlanHDF5Dataset(hdf5_path, model_dtype=torch.float32)
     with timer("HDF5"):
         for i in tqdm(range(len(dset))):
             _ = dset[i]
+            if i == n_iters - 1:
+                break
 
 
-def time_memmap(sample_ids: List[str], memmap_dir: Path):
+def time_memmap(sample_ids: List[str], memmap_dir: Path, n_iters: int = 10):
     dset = MetaphlanDatasetMemmapped(sample_ids=sample_ids)
     dset.load_memmap_tensors(memmap_dir)
     with timer("Tensordict-memmap"):
         for i in tqdm(range(len(dset))):
             _ = dset[i]
+            if i == n_iters - 1:
+                break
 
 
 if __name__ == "__main__":
