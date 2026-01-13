@@ -33,6 +33,7 @@ class MetaphlanHDF5Dataset(AbstractMetaphlanDataset):
         return self._file
 
     def __getitem__(self, idx: int) -> Tuple[str, Tensor, Tensor, Tensor, Tensor]:
+        print(f"GOT: __getitem__({idx})")
         f = self._get_file_handle()
 
         features = torch.from_numpy(f['features'][idx]).to(dtype=self.model_dtype)
