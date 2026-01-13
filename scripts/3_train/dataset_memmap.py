@@ -17,7 +17,7 @@ import argparse
 from pathlib import Path
 
 import pandas as pd
-from gem.mpa import MetaphlanMarkerEmbedding
+from gem.mpa import MetaphlanMarkerEmbedding, MetaphlanProfileExtractor
 from gem.mpa import perform_allocation, MetaphlanDataset
 
 
@@ -41,39 +41,51 @@ def main(
         dataset_df: pd.DataFrame,
         marker_embedding: MetaphlanMarkerEmbedding,
         memmap_dir: Path,
+        max_num_markers: int,
         num_workers: int,
 ):
     memmap_dir.mkdir(parents=True, exist_ok=True)
     regular_dset = MetaphlanDataset(dataset_df, marker_embedding)
-    print(f"[***] NOTE ---> Marker-dim will be padded into: {regular_dset.global_max_num_markers}")
+    print(f"[***] NOTE ---> Marker-dim will be padded into: {max_num_markers}")
     perform_allocation(
         dataset=regular_dset,
         cache_dir=memmap_dir,
-        num_threads=num_workers
+        num_threads=num_workers,
+        max_num_markers=max_num_markers,
     )
     print("Finished memory-mapping tensors.")
 
 
 if __name__ == "__main__":
     args = parse_args()
-    dataset_df = pd.read_csv(args.dataset_tsv, sep='\t', index_col="SampleID")
+    dataset_df_full = pd.read_csv(args.dataset_tsv, sep='\t', index_col="SampleID")
     start_idx = args.start_row - 1
     if args.end_row == -1:
         print(f"Executing allocation for row #{args.start_row} onwards.")
-        dataset_df = dataset_df.iloc[start_idx:]
+        dataset_df = dataset_df_full.iloc[start_idx:]
     else:
         print(f"Executing allocation for row #{args.start_row} ~ #{args.end_row} (inclusive).")
         end_idx = args.end_row
-        dataset_df = dataset_df.iloc[start_idx:end_idx]
+        dataset_df = dataset_df_full.iloc[start_idx:end_idx]
 
     marker_embedding = MetaphlanMarkerEmbedding(
         marker_embedding_basedir=Path(args.marker_embedding_basedir),
         dimension_reduce_pca=args.dimension_reduce_pca,
         ipca_batch_size=args.ipca_batch_size,
     )
+
+    all_samples = list(MetaphlanProfileExtractor(dataset_df_full).samples())
+    max_num_markers = max(
+        marker_embedding.num_markers(sgb_id)
+        for sample in all_samples
+        for sgb_id in sample.sgb_ids
+        if marker_embedding.contains_sgb(sgb_id)
+    )
+
     main(
         dataset_df=dataset_df,
         marker_embedding=marker_embedding,
         memmap_dir=Path(args.memmap_dir),
         num_workers=args.num_threads,
+        max_num_markers=max_num_markers,
     )
