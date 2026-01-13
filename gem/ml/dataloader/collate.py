@@ -135,3 +135,10 @@ def collate_fn_dynamic_alloc(
             t_batch[i, :S_i] = t
 
     return sample_ids, f_batch, m_batch, s_batch, t_batch
+
+
+def fn_no_collation(
+        batch: List[Tuple[str, Tensor, Tensor, Tensor, Tensor]]
+) -> List[Tuple[str, Tensor, Tensor, Tensor, Tensor]]:
+    """Don't pad at all - return list of tensors."""
+    return batch

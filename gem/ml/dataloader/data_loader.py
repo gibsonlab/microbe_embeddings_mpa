@@ -1,7 +1,7 @@
 from torch.utils.data import DataLoader
 
 from gem.mpa import AbstractMetaphlanDataset
-from .collate import BufferedCollator, collate_fn_dynamic_alloc
+from .collate import fn_no_collation
 
 
 def worker_init_fn(worker_id: int, base_rng_seed: int):
@@ -47,7 +47,7 @@ class MetaphlanDataLoader(DataLoader):
             batch_size=batch_size,
             num_workers=num_workers,
             pin_memory=pin_memory,
-            collate_fn=collate_fn_dynamic_alloc,
+            collate_fn=fn_no_collation,
             worker_init_fn=lambda wid: worker_init_fn(wid, worker_rng_seed),
             **dataloader_kwargs
         )
