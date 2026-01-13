@@ -30,7 +30,7 @@ def time_hdf5(hdf5_path: Path, n_iters: int = 10, batch_sz: int = 5):
         batch_size=batch_sz, num_workers=1, pin_memory=True,
         generator=12345, drop_last=False, prefetch_factor=2,
         persistent_workers=True,
-        shuffle=True, sampler=HDF5BatchShuffledSampler(dset, batch_sz, True),
+        sampler=HDF5BatchShuffledSampler(dset, batch_sz, True),
     )
     with timer("HDF5"):
         for batch_idx, (training_sample_ids, _, _, _, _) in tqdm(enumerate(dloader), total=len(dloader)):
