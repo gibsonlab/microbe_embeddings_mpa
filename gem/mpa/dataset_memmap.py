@@ -127,6 +127,23 @@ class MetaphlanDatasetMemmapped(AbstractMetaphlanDataset):
             self.tensor_cache.append(x)
         print("Finished loading memmapped tensors.")
         self.loaded = True
+        self.prefault_memmaps()
+
+    def prefault_memmaps(self):
+        """Touch all memmap pages to fault them into RAM."""
+        print("Pre-faulting memmap pages into RAM...")
+
+        for i in tqdm(range(len(self)), desc="Prefaulting"):
+            _, features, mpadding, spadding, targets = self[i]
+
+            # Touch first and last element to fault pages
+            _ = features[0, 0, 0]
+            _ = features[-1, -1, -1]
+            _ = mpadding[0, 0]
+            _ = spadding[0]
+            _ = targets[0]
+
+        print("Prefaulting complete - data should be in RAM now")
 
     def __getitem__(self, idx: int) -> Tuple[str, Tensor, Tensor, Tensor, Tensor]:
         """
