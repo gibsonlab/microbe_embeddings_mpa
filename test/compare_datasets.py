@@ -57,8 +57,9 @@ def time_memmap(sample_ids: List[str], memmap_dir: Path, n_iters: int = 100, bat
         shuffle=True,
     )
     with timer("Tensordict-memmap"):
-        for batch_idx, (training_sample_ids, _, _, _, _) in tqdm(enumerate(dloader), total=len(dloader)):
-            # print(training_sample_ids)
+        for batch_idx, batch in tqdm(enumerate(dloader), total=len(dloader)):
+            print(type(batch))
+            print(batch)
             if batch_idx == n_iters - 1:
                 break
 
