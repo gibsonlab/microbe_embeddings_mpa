@@ -47,7 +47,7 @@ class MetaphlanDataLoader(DataLoader):
             batch_size=batch_size,
             num_workers=num_workers,
             pin_memory=pin_memory,
-            collate_fn=collate_fn_dynamic_alloc,
+            collate_fn=collate_fn_stack,
             worker_init_fn=lambda wid: worker_init_fn(wid, worker_rng_seed),
             **dataloader_kwargs
         )

@@ -51,7 +51,7 @@ def time_memmap(sample_ids: List[str], memmap_dir: Path, n_iters: int = 100, bat
 
     dloader = MetaphlanDataLoader(
         dataset=dset,
-        batch_size=batch_sz, num_workers=5, pin_memory=True,
+        batch_size=batch_sz, num_workers=8, pin_memory=True,
         generator=rng, drop_last=False, prefetch_factor=2,
         persistent_workers=True,
         shuffle=True,
