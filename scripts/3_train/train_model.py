@@ -6,7 +6,7 @@ import json
 
 import pandas as pd
 import torch
-from torch import nn, optim
+from torch import optim
 
 from gem.mpa import AbstractMetaphlanDataset, MetaphlanDatasetMemmapped
 from gem.ml import *
@@ -39,10 +39,11 @@ def train_and_save_model(
         model_version: str,
         model_cfg: Dict,
         model_save_dir: Path,
-        loss_fn: nn.Module,
+        loss_name: str,
         train_dset: AbstractMetaphlanDataset,
         test_dset: AbstractMetaphlanDataset,
         n_epochs: int,
+        shuffle_dataset: bool,
         lr: float = 0.0001,
         print_every: int = 5,
         batch_size: int = 10,
@@ -58,7 +59,7 @@ def train_and_save_model(
     :param model_version:
     :param model_cfg:
     :param model_save_dir:
-    :param loss_fn:
+    :param loss_name:
     :param train_dset:
     :param test_dset:
     :param n_epochs:
@@ -71,6 +72,26 @@ def train_and_save_model(
     :param auto_mixed_precision:
     :param cuda_device_name:
     """
+
+    """ loss function """
+    if loss_name == 'kl':
+        print("Using KL loss")
+        loss_fn = safe_kl_div_loss
+        clip_grad_norm_ub = None
+    elif loss_name == 'mse_log':
+        print("Using Mean-Squared (Log-probability) loss")
+        loss_fn = safe_mse_log_loss
+        clip_grad_norm_ub = 1.0   # apply gradient clipping for MSE-log, as this tends to have exploding gradient issues.
+    elif loss_name == 'mse':
+        print("Using Mean-Squared (Linear/non-log probability) loss")
+        loss_fn = safe_mse_loss
+        clip_grad_norm_ub = None
+    elif loss_name == 'cross_entropy':
+        print("Using Cross-entropy loss")
+        loss_fn = safe_cross_entropy_loss
+        clip_grad_norm_ub = None
+    else:
+        raise ValueError(f"Unsupported loss name '{loss_name}'")
 
     """ Create model. """
     ## ======== Model & Optimizer instantiation. ========
@@ -120,6 +141,8 @@ def train_and_save_model(
         num_workers=num_workers,
         batch_size=batch_size,
         num_epochs=n_epochs,
+        shuffle_dataset=shuffle_dataset,
+        clip_gradient_norm_ub=clip_grad_norm_ub,
         print_progress=True,
         print_every=print_every,
         loss_plot_path=loss_plot_path,
@@ -163,6 +186,7 @@ def parse_args() -> argparse.Namespace:
     )
 
     parser.add_argument("-epochs", "--epochs", dest="n_epochs", type=int, required=True)
+    parser.add_argument("-sequential", "--sequential", dest="sequential_train", type=bool, action="store_true", default=False)
     parser.add_argument("-lr", "--learning-rate", dest="lr", type=float, required=True)
     parser.add_argument("-b", "--batch-size", dest="batch_size", type=int, required=True)
 
@@ -208,22 +232,6 @@ def main():
     model_save_dir.mkdir(exist_ok=True, parents=True)
     print(f"Target output directory: {model_save_dir}")
 
-    """ loss function """
-    if args.loss_name == 'kl':
-        print("Using KL loss")
-        loss_fn = safe_kl_div_loss
-    elif args.loss_name == 'mse_log':
-        print("Using Mean-Squared (Log-probability) loss")
-        loss_fn = safe_mse_log_loss
-    elif args.loss_name == 'mse':
-        print("Using Mean-Squared (Linear/non-log probability) loss")
-        loss_fn = safe_mse_loss
-    elif args.loss_name == 'cross_entropy':
-        print("Using Cross-entropy loss")
-        loss_fn = safe_cross_entropy_loss
-    else:
-        raise ValueError(f"Unsupported loss name '{args.loss_name}'")
-
     model_version = args.model_version
     model_supported_versions = {"V1", "V2", "EPC"}
     if model_version not in model_supported_versions:
@@ -236,10 +244,11 @@ def main():
         model_version=model_version,
         model_cfg=model_cfg,
         model_save_dir=model_save_dir,
-        loss_fn=loss_fn,
+        loss_name=args.loss_name,
         train_dset=train_dset,
         test_dset=test_dset,
         n_epochs=args.n_epochs,
+        shuffle_dataset=not args.sequential_train,
         lr=args.lr,
         print_every=args.print_every,
         batch_size=args.batch_size,

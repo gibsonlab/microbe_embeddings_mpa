@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import torch
 from torch import nn, GradScaler, autocast
 
-from gem.mpa import AbstractMetaphlanDataset
+from gem.mpa import AbstractMetaphlanDataset, MetaphlanHDF5Dataset, HDF5BatchShuffledSampler
 from gem.ml.dataloader.data_loader import MetaphlanDataLoader
 from gem.util import timer
 
@@ -15,12 +15,14 @@ from gem.util import timer
 def main_training_loop(
         model: nn.Module,
         optimizer: torch.optim.Optimizer,
-        lr_scheduler: torch.optim.lr_scheduler._LRScheduler,
+        lr_scheduler: torch.optim.lr_scheduler.LRScheduler,
         train_dset: AbstractMetaphlanDataset,
         test_dset: AbstractMetaphlanDataset,
-        loss_fn: nn.Module,
+        loss_fn: Union[nn.Module, Callable],
         batch_size: int = 5,
         num_workers: Optional[int] = 0,
+        shuffle_dataset: bool = True,
+        clip_gradient_norm_ub: Optional[float] = None,
         prefetch_factor: int = 2,
         num_epochs: int = 5000,
         print_progress: bool = True,
@@ -42,6 +44,8 @@ def main_training_loop(
     :param test_dset: The object that specifies the test dataset.
     :param loss_fn: The loss function to use for optimization.
     :param num_workers: Pass-through for prefetch_factors for torch.utils.data.DataLoader. Specify the number of workers to load data in parallel. Note that a separate dataloader is created for train/test.
+    :param shuffle_dataset: Indicate whether to shuffle the training data.
+    :param clip_gradient_norm_ub: If specified and greater than zero, applies gradient clipping.
     :param prefetch_factor: Pass-through for prefetch_factors for torch.utils.data.DataLoader.
     :param batch_size: The size of each batch.
     :param num_epochs: The total number of epochs to train. (1 epoch is a full pass on the entire training dataset, after batching.)
@@ -49,6 +53,8 @@ def main_training_loop(
     :param print_every: Indicate how often to print progress as a debug message to stdout. Only relevant if `print_progress` is set to true.
     :param loss_plot_path: If provided, plots the training loss/test loss history. Test loss is only plotted if test_df is provided.
     :param rng_seed: The random generator seed to use for training. Specify for reproducibility. (default: 314159)
+    :param auto_mixed_precision: Indicate whether to use torch's built-in auto-mixed precision mode.
+    :param cuda_device_name:
     """
 
     """ Initialization. """
@@ -61,11 +67,18 @@ def main_training_loop(
     """ Initialize dataset objects. """
     train_rng = torch.Generator()
     train_rng.manual_seed(rng_seed)
+    if isinstance(train_dset, MetaphlanHDF5Dataset):
+        sampler = HDF5BatchShuffledSampler(
+            data_source=train_dset, batch_size=batch_size, shuffle=shuffle_dataset, rng_seed=rng_seed,
+        )
+    else:
+        sampler = None
     train_dloader = MetaphlanDataLoader(
         dataset=train_dset,
-        batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True,
+        batch_size=batch_size, num_workers=num_workers, pin_memory=True,
         generator=train_rng, drop_last=False, prefetch_factor=prefetch_factor,
         persistent_workers=True,
+        shuffle=shuffle_dataset, sampler=sampler,
     )
     # also set RNG seed for dropout reproducibility.
     torch.manual_seed(rng_seed + 1)
@@ -77,9 +90,10 @@ def main_training_loop(
 
     test_dloader = MetaphlanDataLoader(
         dataset=test_dset,
-        batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True,
+        batch_size=batch_size, num_workers=num_workers, pin_memory=True,
         generator=train_rng, drop_last=False, prefetch_factor=prefetch_factor,
         persistent_workers=True,
+        shuffle=False,
     )
     print(f"Test dataset size: {len(test_dset)}")
     print(f"Number of test batches: {len(test_dloader)}")
@@ -165,6 +179,8 @@ def main_training_loop(
 
             with timer("Backward-Update", enabled=timer_profile):
                 scaler.scale(training_loss).backward()
+                if clip_gradient_norm_ub is not None and clip_gradient_norm_ub > 0:
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=clip_gradient_norm_ub)
                 scaler.step(optimizer)
                 scaler.update()
 

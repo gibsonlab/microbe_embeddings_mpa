@@ -2,7 +2,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import *
 
 from pathlib import Path
-import pandas as pd
 import torch
 from torch import Tensor
 from tensordict import TensorDict
