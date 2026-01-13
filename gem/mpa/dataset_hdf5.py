@@ -19,17 +19,16 @@ class MetaphlanHDF5Dataset(AbstractMetaphlanDataset):
         self.hdf5_path = hdf5_path
 
         # Open file once to get metadata
-        with h5py.File(hdf5_path, 'r') as f:
-            self.n_samples = f['features'].shape[0]
-            self.sample_ids = [s.decode() for s in f['sample_ids'][:]]
-
-        # Create batch indices
+        self._file = self._get_file_handle()
+        self.n_samples = self._file['features'].shape[0]
+        self.sample_ids = [s.decode() for s in self._file['sample_ids'][:]]
         self.model_dtype = model_dtype
-        self._file = None
 
     def _get_file_handle(self) -> h5py.File:
         if self._file is None:
+            print(f"Loading HDF5 file {self.hdf5_path}")
             self._file = h5py.File(self.hdf5_path, 'r')
+            print("Successfully opened file handle.")
         return self._file
 
     def __getitem__(self, idx: int) -> Tuple[str, Tensor, Tensor, Tensor, Tensor]:
