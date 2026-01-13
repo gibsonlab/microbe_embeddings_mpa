@@ -27,6 +27,7 @@ def time_hdf5(hdf5_path: Path, n_iters: int = 10):
     with timer("HDF5"):
         for i in tqdm(range(len(dset))):
             _ = dset[i]
+            print(_[0])
             if i == n_iters - 1:
                 break
 
@@ -37,6 +38,7 @@ def time_memmap(sample_ids: List[str], memmap_dir: Path, n_iters: int = 10):
     with timer("Tensordict-memmap"):
         for i in tqdm(range(len(dset))):
             _ = dset[i]
+            print(_[0])
             if i == n_iters - 1:
                 break
 
