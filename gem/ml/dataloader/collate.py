@@ -108,7 +108,7 @@ def collate_fn_stack(
     This function fails with an error if this size condition is not met.
     """
     sample_ids = [item[0] for item in batch]
-    with timer("Collate:Stack", enabled=True):
+    with timer("Collate:Stack [cuda]", enabled=True):
         f_batch = torch.stack([item[1].to("cuda", non_blocking=True) for item in batch], dim=0)
         m_batch = torch.stack([item[2].to("cuda", non_blocking=True) for item in batch], dim=0)
         s_batch = torch.stack([item[3].to("cuda", non_blocking=True) for item in batch], dim=0)
