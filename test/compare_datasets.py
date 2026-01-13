@@ -24,11 +24,14 @@ def initialize_test_dataset(dataset_tsv: Path):
 
 
 def time_hdf5(hdf5_path: Path, n_iters: int = 10, batch_sz: int = 5):
+    rng = torch.Generator()
+    rng.manual_seed(12345)
+
     dset = MetaphlanHDF5Dataset(hdf5_path, model_dtype=torch.float32)
     dloader = MetaphlanDataLoader(
         dataset=dset,
         batch_size=batch_sz, num_workers=1, pin_memory=True,
-        generator=12345, drop_last=False, prefetch_factor=2,
+        generator=rng, drop_last=False, prefetch_factor=2,
         persistent_workers=True,
         sampler=HDF5BatchShuffledSampler(dset, batch_sz, True),
     )
@@ -43,10 +46,13 @@ def time_memmap(sample_ids: List[str], memmap_dir: Path, n_iters: int = 10, batc
     dset = MetaphlanDatasetMemmapped(sample_ids=sample_ids)
     dset.load_memmap_tensors(memmap_dir)
 
+    rng = torch.Generator()
+    rng.manual_seed(12345)
+
     dloader = MetaphlanDataLoader(
         dataset=dset,
         batch_size=batch_sz, num_workers=1, pin_memory=True,
-        generator=12345, drop_last=False, prefetch_factor=2,
+        generator=rng, drop_last=False, prefetch_factor=2,
         persistent_workers=True,
         shuffle=True,
     )
