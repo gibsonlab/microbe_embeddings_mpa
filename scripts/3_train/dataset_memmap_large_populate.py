@@ -40,7 +40,7 @@ def parse_torch_dtype(s: str) -> torch.dtype:
 def parse_tdict_metadata(memmap_dir: Path) -> Tuple[int, int, int, int, torch.dtype]:
     with open(memmap_dir / "meta.json", "rt") as f:
         metadata = json.load(f)
-        return int(metadata["N"]), int(metadata["S"]), int(metadata["M"]), int(metadata["E"]), parse_torch_dtype(['dtype'])
+        return int(metadata["N"]), int(metadata["S"]), int(metadata["M"]), int(metadata["E"]), parse_torch_dtype(metadata['dtype'])
 
 
 def fetch_preallocated_tdict(memmap_dir: Path) -> TensorDict:
