@@ -16,8 +16,7 @@ def allocate_big_memmap_tdict(
     S_max_global: int,
     M_max_global: int,
     embed_dim: int,
-    f_dtype: torch.dtype = torch.float32,
-    t_dtype: torch.dtype = torch.float32,
+    dtype: torch.dtype = torch.float32,
 ):
     """
     Allocates a big memmapped tensordict, with the requested shape and dtype.
@@ -31,6 +30,11 @@ def allocate_big_memmap_tdict(
     :param t_dtype:
     :return:
     """
+    if dtype == torch.float32:
+        dtype_str = "torch.float32"
+    else:
+        raise ValueError(f"This script currently does not support the dtype {dtype}")
+
     print(f"Target allocation path: {out_dir}")
     out_dir.mkdir(parents=True, exist_ok=True)
     N = len(sample_ids)
@@ -39,7 +43,7 @@ def allocate_big_memmap_tdict(
     print("Feature shape: ({}, {}, {}, {})".format(N, S_max_global, M_max_global, embed_dim))
     big_features = MemoryMappedTensor.empty(
         (N, S_max_global, M_max_global, embed_dim),
-        dtype=f_dtype,
+        dtype=dtype,
         filename=str(out_dir / "features.mmap"),
     )
     big_mpadding = MemoryMappedTensor.empty(
@@ -54,7 +58,7 @@ def allocate_big_memmap_tdict(
     )
     big_targets = MemoryMappedTensor.empty(
         (N, S_max_global),
-        dtype=t_dtype,
+        dtype=dtype,
         filename=str(out_dir / "targets.mmap"),
     )
 
@@ -80,6 +84,7 @@ def allocate_big_memmap_tdict(
                 "S": S_max_global,
                 "M": M_max_global,
                 "E": embed_dim,
+                "dtype": dtype_str
             },
             f
         )
@@ -129,6 +134,5 @@ if __name__ == "__main__":
         S_max_global=max_num_sgbs,
         M_max_global=max_num_markers,
         embed_dim=marker_embedding.embedding_dim,
-        f_dtype=torch.float32,
-        t_dtype=torch.float32,
+        dtype=torch.float32,
     )
