@@ -12,7 +12,7 @@ set -e
 
 TSV_FILE=/data/cctm/youn/metaphlan_dset/model_training/test.tsv
 OUT_FILE=/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/hdf5_samples/test.hdf5
-MEMMAP_DIR=/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmmap_samples
+MEMMAP_DIR=/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples
 
 echo "HDF5 conversion of ${TSV_FILE} started."
 python dataset_hdf5_convert.py \

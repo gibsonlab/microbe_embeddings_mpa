@@ -55,5 +55,5 @@ def test_model_memmap_input(memmap_tensor_sample_dir: Path):
 
 
 if __name__ == "__main__":
-    memmap_tensor_sample_dir = Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmmap_samples")
+    memmap_tensor_sample_dir = Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples")
     test_model_memmap_input(memmap_tensor_sample_dir)

@@ -589,7 +589,7 @@ def main(model_options: List[str], plot_dir: Path, eval_device: str = 'cuda'):
     test_df = pd.read_csv("/data/cctm/youn/metaphlan_dset/model_training/test.tsv", sep="\t", index_col="SampleID")
 
     test_dset = MetaphlanDatasetMemmapped(list(test_df.index))
-    test_dset.load_memmap_tensors(Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmmap_samples"))
+    test_dset.load_memmap_tensors(Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples"))
 
     for model_option in model_options:
         if model_option == "evo-v1":
