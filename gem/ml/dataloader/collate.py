@@ -133,7 +133,7 @@ def collate_fn_dynamic_alloc(
     f_dtype = batch[0][1].dtype
     t_dtype = batch[0][4].dtype
 
-    with timer("Collate:Allocate", enabled=True):
+    with timer("Collate:Allocate", enabled=False):
         # Single allocation with torch.empty (faster than zeros if you fill everything)
         sample_ids = []
         f_batch = torch.zeros(batch_size, S_max, M_max, embed_dim, dtype=f_dtype, device=device)
@@ -141,7 +141,7 @@ def collate_fn_dynamic_alloc(
         s_batch = torch.zeros(batch_size, S_max, dtype=torch.bool, device=device)
         t_batch = torch.zeros(batch_size, S_max, dtype=t_dtype, device=device)
 
-    with timer("Collate:Fill", enabled=True):
+    with timer("Collate:Fill", enabled=False):
         # In-place copy
         for i, (sample_id, f, m, s, t) in enumerate(batch):
             sample_ids.append(sample_id)

@@ -88,7 +88,7 @@ def time_memmap_padded(sample_ids: List[str], memmap_dir: Path, n_iters: int = 1
     )
     with timer("Tensordict-memmap:padded"):
         for batch_idx, batch in tqdm(enumerate(dloader), total=len(dloader)):
-            # x = batch[1].to("cuda").sum()
+            x = batch[1].to("cuda").sum()
             # print("sum (cuda) = {}".format(x))
             # for sample in batch:
             #     print("{}: {}  --> sum = {}".format(sample[0], sample[1].shape, sample[1].sum().item()))
