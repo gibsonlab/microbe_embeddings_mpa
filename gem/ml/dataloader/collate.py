@@ -176,15 +176,18 @@ def collate_padded_tensordicts(
     
     The function gem.mpa.dataset_memmap.add_marker_padding implements the marker padding, prior to memmapping.
     """
+    print("collating...")
     sample_ids = [item[0] for item in batch]
     stacked_tdicts = LazyStackedTensorDict.lazy_stack(
         [item[1] for item in batch],
         as_padded_tensor=True,
     )
-    return (
+    x = (
         sample_ids,
         stacked_tdicts.get('features', as_padded_tensor=True),
         stacked_tdicts.get('mpadding', as_padded_tensor=True),
         stacked_tdicts.get('spadding', as_padded_tensor=True),
         stacked_tdicts.get('targets', as_padded_tensor=True)
     )
+    print("done.")
+    return x
