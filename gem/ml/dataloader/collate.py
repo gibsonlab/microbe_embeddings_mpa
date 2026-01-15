@@ -163,7 +163,7 @@ def fn_no_collation(
 
 def collate_padded_tensordicts(
         batch: List[Tuple[str, TensorDict]]
-) -> Tuple[List[str], LazyStackedTensorDict]:
+) -> Tuple[List[str], Tensor, Tensor, Tensor, Tensor]:
     """
     Collate the tensors via builtin lazy-stacking through TensorDict interface.
 
@@ -181,4 +181,10 @@ def collate_padded_tensordicts(
         [item[1] for item in batch],
         as_padded_tensor=True,
     )
-    return sample_ids, stacked_tdicts
+    return (
+        sample_ids,
+        stacked_tdicts.get('features', as_padded_tensor=True),
+        stacked_tdicts.get('mpadding', as_padded_tensor=True),
+        stacked_tdicts.get('spadding', as_padded_tensor=True),
+        stacked_tdicts.get('targets', as_padded_tensor=True)
+    )
