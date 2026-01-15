@@ -1,5 +1,6 @@
 from typing import *
 import torch
+from tensordict import TensorDict, LazyStackedTensorDict
 from torch import Tensor
 
 from gem.util import timer
@@ -158,3 +159,26 @@ def fn_no_collation(
 ) -> List[Tuple[str, Tensor, Tensor, Tensor, Tensor]]:
     """Don't pad at all - return list of tensors."""
     return batch
+
+
+def collate_padded_tensordicts(
+        batch: List[Tuple[str, TensorDict]]
+) -> Tuple[List[str], LazyStackedTensorDict]:
+    """
+    Collate the tensors via builtin lazy-stacking through TensorDict interface.
+
+    Note: (LazyStacked)TensorDict.lazy_stack uses the implementation of torch.nn.utils.rnn.pad_sequence,
+    which takes input tensors of shape (L1, *), (L2, *), ..., (Ln, *), and pads each into (L_max, *).
+    
+    The wildcard dimensions all must match.
+    Note that the feature tensors here are of varying shapes (S_i, M_i, E). Therefore, this collate function can only 
+    be used with input feature tensors where the marker genes have been pre-padded.
+    
+    The function gem.mpa.dataset_memmap.add_marker_padding implements the marker padding, prior to memmapping.
+    """
+    sample_ids = [item[0] for item in batch]
+    stacked_tdicts = LazyStackedTensorDict.lazy_stack(
+        [item[1] for item in batch],
+        as_padded_tensor=True,
+    )
+    return sample_ids, stacked_tdicts

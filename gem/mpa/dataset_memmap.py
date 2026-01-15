@@ -187,3 +187,60 @@ class MetaphlanDatasetMemmapped(AbstractMetaphlanDataset):
     def true_abundance_profile(self, idx: int) -> Tensor:
         _, _, _, _, abunds = self.__getitem__(idx)
         return abunds
+
+
+class MetaphlanDatasetMemmappedTensorDict(AbstractMetaphlanDataset):
+    """
+    A re-implementation of MetaphlanDatasetMemmapped.
+    Instead of returning the memmapped tensors by unpacking the dictionary, it returns the raw tensordict object
+    per sample instead.
+    """
+    def __init__(
+            self,
+            sample_ids: List[str]
+    ):
+        super().__init__()
+        self.tensor_cache: List[TensorDict] = []
+        self.sample_ids: List[str] = sample_ids
+        self.loaded = False
+
+    def load_memmap_tensors(self, cache_dir: Path):
+        print(f"Using tensor memmap directory: {cache_dir}")
+
+        for sample_id in tqdm(self.sample_ids, desc="Load-Memmap"):
+            memmap_dir = cache_dir / str(sample_id)
+            if (memmap_dir / "meta.json").exists():
+                # TensorDict is already allocated; load it from disk.
+                x = TensorDict.load_memmap(memmap_dir)
+            else:
+                raise FileNotFoundError(f"Memory-mapped tensordict not found for sample: {sample_id}. Run perform_allocation() prior to load_memmap_tensors().")
+            self.tensor_cache.append(x)
+        print("Finished loading memmapped tensors.")
+        self.loaded = True
+
+    def __getitem__(self, idx: int) -> Tuple[str, TensorDict]:
+        return self.sample_ids[idx], self.tensor_cache[idx]
+
+    def __len__(self) -> int:
+        return len(self.smaple_ids)
+
+    def embedding_dtype(self) -> torch.dtype:
+        return self.tensor_cache[0]['features'].dtype
+
+    def max_num_sgbs(self) -> int:
+        return max(
+            tdict['spadding'].sum().item()
+            for tdict in self.tensor_cache
+        )
+
+    def max_num_markers(self) -> int:
+        return max(  # max across all samples
+            tdict['mpadding'].sum(dim=-1).max().item()  # max. # of markers among SGBs in sample
+            for tdict in self.tensor_cache
+        )
+
+    def embed_feature_dim(self) -> int:
+        return self.tensor_cache[0]['features'].shape[-1]
+
+    def true_abundance_profile(self, idx: int) -> Tensor:
+        return self.tensor_cache[idx]['targets']

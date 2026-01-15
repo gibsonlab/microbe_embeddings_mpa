@@ -1,7 +1,8 @@
+from typing import Callable
 from torch.utils.data import DataLoader
 
 from gem.mpa import AbstractMetaphlanDataset
-from .collate import collate_fn_stack, collate_fn_dynamic_alloc, fn_no_collation
+from .collate import collate_fn_dynamic_alloc
 
 
 def worker_init_fn(worker_id: int, base_rng_seed: int):
@@ -22,6 +23,7 @@ class MetaphlanDataLoader(DataLoader):
             batch_size: int = 32,
             num_workers: int = 0,
             pin_memory: bool = False,
+            collate_fn: Callable = collate_fn_dynamic_alloc,
             worker_rng_seed: int = 31415,
             **dataloader_kwargs
     ):
@@ -35,19 +37,12 @@ class MetaphlanDataLoader(DataLoader):
         :param pin_memory: Whether to pin memory
         :param dataloader_kwargs: Additional DataLoader arguments
         """
-        # self.collator = BufferedCollator(
-        #     batch_size=batch_size,
-        #     max_num_sgbs=dataset.max_num_sgbs(),
-        #     max_markers=dataset.max_num_markers(),
-        #     embed_feature_dim=dataset.embed_feature_dim(),
-        #     dtype=dataset.embedding_dtype()
-        # )
         super().__init__(
             dataset=dataset,
             batch_size=batch_size,
             num_workers=num_workers,
             pin_memory=pin_memory,
-            collate_fn=fn_no_collation,
+            collate_fn=collate_fn,
             worker_init_fn=lambda wid: worker_init_fn(wid, worker_rng_seed),
             **dataloader_kwargs
         )

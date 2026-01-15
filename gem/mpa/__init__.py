@@ -1,5 +1,5 @@
 from .abundance_profile import MetaphlanProfile, MetaphlanProfileExtractor
 from .embeddings import MetaphlanMarkerEmbedding
 from .dataset import AbstractMetaphlanDataset, MetaphlanDataset
-from .dataset_memmap import MetaphlanDatasetMemmapped, perform_allocation
+from .dataset_memmap import MetaphlanDatasetMemmapped, MetaphlanDatasetMemmappedTensorDict, perform_allocation
 from .dataset_hdf5 import MetaphlanHDF5Dataset, HDF5BatchShuffledSampler
