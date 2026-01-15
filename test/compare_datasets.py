@@ -78,37 +78,27 @@ def time_memmap_padded(sample_ids: List[str], memmap_dir: Path, n_iters: int = 1
     rng.manual_seed(12345)
 
     from gem.ml import collate_padded_tensordicts
-    from tensordict import LazyStackedTensorDict
-    # dloader = MetaphlanDataLoader(
-    from torch.utils.data import DataLoader
-
-    def collate_lazy_stack(batch: Any):
-        print(type(batch))
-        print(batch)
-        return batch
-
-    td_stack = LazyStackedTensorDict.lazy_stack(dset.tensor_cache[:2], as_padded_tensor=True)
-    # dloader = DataLoader(
-    #     dataset=LazyStackedTensorDict.lazy_stack(dset.tensor_cache, as_padded_tensor=True),
-    #     batch_size=batch_sz, num_workers=8, pin_memory=True,
-    #     generator=rng, drop_last=False, prefetch_factor=2,
-    #     persistent_workers=True,
-    #     shuffle=True,
-    #     collate_fn=collate_lazy_stack
-    # )
-    # with timer("Tensordict-memmap:padded"):
-    #     for batch_idx, batch in tqdm(enumerate(dloader), total=len(dloader)):
-    #         x = batch[1].to("cuda", non_blocking=True).sum()
-    #         # print("sum (cuda) = {}".format(x))
-    #         # for sample in batch:
-    #         #     print("{}: {}  --> sum = {}".format(sample[0], sample[1].shape, sample[1].sum().item()))
-    #         if batch_idx == n_iters - 1:
-    #             break
+    dloader = MetaphlanDataLoader(
+        dataset=dset,
+        batch_size=batch_sz, num_workers=8, pin_memory=True,
+        generator=rng, drop_last=False, prefetch_factor=2,
+        persistent_workers=True,
+        shuffle=True,
+        collate_fn=collate_padded_tensordicts
+    )
+    with timer("Tensordict-memmap:padded"):
+        for batch_idx, batch in tqdm(enumerate(dloader), total=len(dloader)):
+            x = batch[1].to("cuda", non_blocking=True).sum()
+            # print("sum (cuda) = {}".format(x))
+            # for sample in batch:
+            #     print("{}: {}  --> sum = {}".format(sample[0], sample[1].shape, sample[1].sum().item()))
+            if batch_idx == n_iters - 1:
+                break
 
 
 if __name__ == "__main__":
     df = initialize_test_dataset(Path("/data/cctm/youn/metaphlan_dset/model_training/test.tsv"))
 
-    # time_memmap(df['SampleID'].tolist(), Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples"))
+    time_memmap(df['SampleID'].tolist(), Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples_padded"))
     time_memmap_padded(df['SampleID'].tolist(), Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples_padded"))
     # time_hdf5(Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/hdf5_samples/test.hdf5"))
