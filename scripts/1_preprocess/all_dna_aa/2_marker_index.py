@@ -61,6 +61,6 @@ def main(
 
 if __name__ == "__main__":
     main(
-        marker_fasta_file=Path("/data/cctm/youn/metaphlan_dset/phylophlan_data/processed") / "all_markers.fna",
-        output_json_path=Path("/data/cctm/youn/metaphlan_dset/phylophlan_data/processed") / "sgb_marker_index.json.zst",  # should end with ".zst" extension -- will be compressed using zstd.
+        marker_fasta_file=Path("/data/cctm/youn/metaphlan_dset/phylophlan_data/processed/all") / "all_markers.fna",
+        output_json_path=Path("/data/cctm/youn/metaphlan_dset/phylophlan_data/processed/all") / "sgb_marker_index.json.zst",  # should end with ".zst" extension -- will be compressed using zstd.
     )
