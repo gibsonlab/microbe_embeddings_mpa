@@ -20,7 +20,8 @@ def gather_markers(sgb_marker_file: Path, out_file: Path, seen_ids: Set[str]):
             gene_name = record.id.split(":")[0].split("_")[-1]
             assert gene_name.startswith("p") and len(gene_name) == 5, f"Expected to find gene name of the form `p<4-digit-id>`, but got `{gene_name}` instead."
             sgb_genome_name = sgb_marker_file.name[:-len(file_suffix)]
-            new_record = SeqRecord(record, id=f"dna:{gene_name}:{sgb_genome_name}", description="")
+            seq = record.seq
+            new_record = SeqRecord(seq, id=f"dna:{gene_name}:{sgb_genome_name}", description="")
             if new_record.id in seen_ids:
                 print(f"[WARNING] {new_record.id} already in use. Skipping!")
             else:
