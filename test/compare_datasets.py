@@ -97,7 +97,7 @@ def time_memmap_padded(sample_ids: List[str], memmap_dir: Path, n_iters: int = 1
 
 
 if __name__ == "__main__":
-    df = initialize_test_dataset(Path("/data/cctm/youn/metaphlan_dset/model_training/test.tsv"))
+    df = initialize_test_dataset(Path("/data/cctm/youn/metaphlan_dset/model_training/train.tsv"))
 
     time_memmap(df['SampleID'].tolist(), Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples"))
     time_memmap_padded(df['SampleID'].tolist(), Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples_padded"))
