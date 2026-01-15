@@ -222,7 +222,7 @@ class MetaphlanDatasetMemmappedTensorDict(AbstractMetaphlanDataset):
         return self.sample_ids[idx], self.tensor_cache[idx]
 
     def __len__(self) -> int:
-        return len(self.smaple_ids)
+        return len(self.sample_ids)
 
     def embedding_dtype(self) -> torch.dtype:
         return self.tensor_cache[0]['features'].dtype
