@@ -181,11 +181,12 @@ def collate_padded_tensordicts(
         [item[1] for item in batch],
         as_padded_tensor=True,
     )
+    batch_td = stacked_tdicts.contiguous()
     x = (
         sample_ids,
-        stacked_tdicts.get('features', as_padded_tensor=True),
-        stacked_tdicts.get('mpadding', as_padded_tensor=True),
-        stacked_tdicts.get('spadding', as_padded_tensor=True),
-        stacked_tdicts.get('targets', as_padded_tensor=True)
+        batch_td['features'],
+        batch_td['mpadding'],
+        batch_td['spadding'],
+        batch_td['targets']
     )
     return x
