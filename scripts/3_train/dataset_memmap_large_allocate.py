@@ -76,8 +76,10 @@ def allocate_big_memmap_tdict(
     with open(out_dir / "meta.json", "wt") as f:
         json.dump(
             {
+                "N": N,
                 "S": S_max_global,
                 "M": M_max_global,
+                "E": embed_dim,
             },
             f
         )
