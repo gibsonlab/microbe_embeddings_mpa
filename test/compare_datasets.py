@@ -78,13 +78,22 @@ def time_memmap_padded(sample_ids: List[str], memmap_dir: Path, n_iters: int = 1
     rng.manual_seed(12345)
 
     from gem.ml import collate_padded_tensordicts
-    dloader = MetaphlanDataLoader(
-        dataset=dset,
+    from tensordict import TensorDict
+    # dloader = MetaphlanDataLoader(
+    from torch.utils.data import DataLoader
+
+    def collate_lazy_stack(batch: Any):
+        print(type(batch))
+        print(batch)
+        return batch
+
+    dloader = DataLoader(
+        dataset=TensorDict.lazy_stack(dset.tensor_cache, as_padded_tensor=True),
         batch_size=batch_sz, num_workers=8, pin_memory=True,
         generator=rng, drop_last=False, prefetch_factor=2,
         persistent_workers=True,
         shuffle=True,
-        collate_fn=collate_padded_tensordicts
+        collate_fn=collate_lazy_stack
     )
     with timer("Tensordict-memmap:padded"):
         for batch_idx, batch in tqdm(enumerate(dloader), total=len(dloader)):
