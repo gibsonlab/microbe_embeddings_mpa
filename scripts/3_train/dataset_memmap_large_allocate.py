@@ -1,6 +1,7 @@
 import argparse
 from pathlib import Path
 from typing import *
+import json
 
 import pandas as pd
 import torch
@@ -67,9 +68,19 @@ def allocate_big_memmap_tdict(
         batch_size=[N],
         device="cpu",
     )
+
     with open(out_dir / "sample_ids.txt", "wt") as f:
         for s_id in sample_ids:
             print(s_id, file=f)
+
+    with open(out_dir / "meta.json", "wt") as f:
+        json.dump(
+            {
+                "S": S_max_global,
+                "M": M_max_global,
+            },
+            f
+        )
 
     return big_td
 
