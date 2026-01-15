@@ -59,7 +59,7 @@ def time_memmap(sample_ids: List[str], memmap_dir: Path, n_iters: int = 100, bat
         shuffle=True,
         collate_fn=collate_fn_dynamic_alloc
     )
-    with timer("Tensordict-memmap"):
+    with timer("Tensordict-memmap:dynamic"):
         for batch_idx, batch in tqdm(enumerate(dloader), total=len(dloader)):
             # x = batch[1].to("cuda").sum()
             # print("sum (cuda) = {}".format(x))
@@ -86,7 +86,7 @@ def time_memmap_padded(sample_ids: List[str], memmap_dir: Path, n_iters: int = 1
         shuffle=True,
         collate_fn=collate_padded_tensordicts
     )
-    with timer("Tensordict-memmap"):
+    with timer("Tensordict-memmap:padded"):
         for batch_idx, batch in tqdm(enumerate(dloader), total=len(dloader)):
             # x = batch[1].to("cuda").sum()
             # print("sum (cuda) = {}".format(x))
