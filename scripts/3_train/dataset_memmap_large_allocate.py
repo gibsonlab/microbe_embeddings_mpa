@@ -30,10 +30,12 @@ def allocate_big_memmap_tdict(
     :param t_dtype:
     :return:
     """
+    print(f"Target allocation path: {out_dir}")
     out_dir.mkdir(parents=True, exist_ok=True)
     N = len(sample_ids)
 
     # 1) Allocate on-disk MemoryMappedTensors
+    print("Feature shape: ({}, {}, {}, {})".format(N, S_max_global, M_max_global, embed_dim))
     big_features = MemoryMappedTensor.empty(
         (N, S_max_global, M_max_global, embed_dim),
         dtype=f_dtype,
