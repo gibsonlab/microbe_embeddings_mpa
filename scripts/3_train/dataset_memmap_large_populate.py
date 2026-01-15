@@ -50,22 +50,22 @@ def fetch_preallocated_tdict(memmap_dir: Path) -> TensorDict:
     features = MemoryMappedTensor.from_filename(
         filename=str(memmap_dir / "features.mmap"),
         dtype=dtype,
-        shape=torch.Size(N, S_max, M_max, E),
+        shape=torch.Size((N, S_max, M_max, E)),
     )
     mpadding = MemoryMappedTensor.from_filename(
         filename=str(memmap_dir / "mpadding.mmap"),
         dtype=torch.bool,
-        shape=torch.Size(N, S_max, M_max),
+        shape=torch.Size((N, S_max, M_max)),
     )
     spadding = MemoryMappedTensor.from_filename(
         filename=str(memmap_dir / "spadding.mmap"),
         dtype=torch.bool,
-        shape=torch.Size(N, S_max),
+        shape=torch.Size((N, S_max)),
     )
     targets = MemoryMappedTensor.from_filename(
         filename=str(memmap_dir / "targets.mmap"),
         dtype=dtype,
-        shape=torch.Size(N, S_max),
+        shape=torch.Size((N, S_max)),
     )
     return TensorDict(
         {"features": features, "mpadding": mpadding, "spadding": spadding, "targets": targets},
