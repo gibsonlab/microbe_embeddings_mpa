@@ -87,22 +87,23 @@ def time_memmap_padded(sample_ids: List[str], memmap_dir: Path, n_iters: int = 1
         print(batch)
         return batch
 
-    dloader = DataLoader(
-        dataset=LazyStackedTensorDict.lazy_stack(dset.tensor_cache, as_padded_tensor=True),
-        batch_size=batch_sz, num_workers=8, pin_memory=True,
-        generator=rng, drop_last=False, prefetch_factor=2,
-        persistent_workers=True,
-        shuffle=True,
-        collate_fn=collate_lazy_stack
-    )
-    with timer("Tensordict-memmap:padded"):
-        for batch_idx, batch in tqdm(enumerate(dloader), total=len(dloader)):
-            x = batch[1].to("cuda", non_blocking=True).sum()
-            # print("sum (cuda) = {}".format(x))
-            # for sample in batch:
-            #     print("{}: {}  --> sum = {}".format(sample[0], sample[1].shape, sample[1].sum().item()))
-            if batch_idx == n_iters - 1:
-                break
+    td_stack = LazyStackedTensorDict.lazy_stack(dset.tensor_cache[:2], as_padded_tensor=True)
+    # dloader = DataLoader(
+    #     dataset=LazyStackedTensorDict.lazy_stack(dset.tensor_cache, as_padded_tensor=True),
+    #     batch_size=batch_sz, num_workers=8, pin_memory=True,
+    #     generator=rng, drop_last=False, prefetch_factor=2,
+    #     persistent_workers=True,
+    #     shuffle=True,
+    #     collate_fn=collate_lazy_stack
+    # )
+    # with timer("Tensordict-memmap:padded"):
+    #     for batch_idx, batch in tqdm(enumerate(dloader), total=len(dloader)):
+    #         x = batch[1].to("cuda", non_blocking=True).sum()
+    #         # print("sum (cuda) = {}".format(x))
+    #         # for sample in batch:
+    #         #     print("{}: {}  --> sum = {}".format(sample[0], sample[1].shape, sample[1].sum().item()))
+    #         if batch_idx == n_iters - 1:
+    #             break
 
 
 if __name__ == "__main__":
