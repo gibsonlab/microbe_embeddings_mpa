@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --partition=bwh_comppath_long
-#SBATCH --array=1-10
+#SBATCH --array=1-20
 #SBATCH --ntasks=1
-#SBATCH --mem=320G
-#SBATCH --cpus-per-task=80
+#SBATCH --mem=20G
+#SBATCH --cpus-per-task=4
 #SBATCH --time=5-00:00:00
 #SBATCH --job-name=memmap_test
 #SBATCH --output=logs/memmap_test_%A_%a.out
@@ -33,11 +33,10 @@ fi
 
 
 echo "Memory-mapping: Test set [Rows $start_row ~ $end_row] (inclusive)"
-python dataset_memmap.py \
+python dataset_memmap_large_populate.py \
   --dataset-tsv "$TSV_FILE" \
   --embedding-dir "/data/cctm/youn/metaphlan_dset/embeddings/phylophlan_markers/evo" \
-  --memmap-dir "/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples_padded" \
-  --threads 6 \
+  --memmap-dir "/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples_complete_large/test" \
   --start $start_row \
   --end $end_row \
   --dimension-reduce 768

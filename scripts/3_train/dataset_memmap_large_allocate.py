@@ -26,8 +26,7 @@ def allocate_big_memmap_tdict(
     :param S_max_global:
     :param M_max_global:
     :param embed_dim:
-    :param f_dtype:
-    :param t_dtype:
+    :param dtype:
     :return:
     """
     if dtype == torch.float32:
