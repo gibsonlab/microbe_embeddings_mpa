@@ -184,7 +184,7 @@ class MetaphlanDatasetMemmappedLarge(AbstractMetaphlanDataset):
                 self.tensordict['features'][start_idx:end_idx], self.tensordict['mpadding'][start_idx:end_idx],
                 self.tensordict['spadding'][start_idx:end_idx], self.tensordict['targets'][start_idx:end_idx]
             )
-            print("got tensor slices.")
+            print("got tensor slices.: features = {}".format(tensors[1]))
             return tensors
         else:
             return (
