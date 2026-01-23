@@ -110,7 +110,7 @@ def time_memmap_large(sample_ids: List[str], memmap_dir: Path, n_iters: int = 10
         generator=rng, drop_last=False, prefetch_factor=2,
         persistent_workers=True,
         shuffle=True,
-        collate_fn=None,
+        collate_fn=lambda x: x,
         # this doesn't need a collate_fn, since dset implements __getitems__, supported by torch 1.12 onwards
     )
     with timer("Tensordict-memmap:large"):
