@@ -77,7 +77,14 @@ class MetaphlanMarkerEmbedding:
         self.print_diagnostic()
 
         # Determine embedding dimension, and print diagnostic.
-        self.apply_dimension_reduction = (dimension_reduce_pca is not None)
+        example_embedding = self.get_raw_example_tensor()
+        raw_embed_dim = example_embedding.shape[0]
+        if dimension_reduce_pca is not None and dimension_reduce_pca >= raw_embed_dim:
+            print("Specified dim-reduction into d={}, but embed dim is already smaller: d={}. Skipping PCA.".format(
+                dimension_reduce_pca, raw_embed_dim
+            ))
+
+        self.apply_dimension_reduction = (dimension_reduce_pca is not None and dimension_reduce_pca < raw_embed_dim)
         if self.apply_dimension_reduction:
             self.embedding_dim = dimension_reduce_pca
             assert ipca_batch_size is not None, "If applying dimensionality reduction on embeddings, ipca_batch_size cannot be NoneType."
@@ -91,15 +98,14 @@ class MetaphlanMarkerEmbedding:
                     ipca_batch_size=ipca_batch_size
                 )
                 save_models_joblib(self.pca_model, self.standard_scaler, ipca_model_dir)
-            example_embedding = self.get_raw_example_tensor()
+
             print("Tensor embeddings source: {} (genome embedding shape = {} --> {} after PCA)".format(
                 self.marker_embedding_basedir,
-                example_embedding.shape[0],
+                raw_embed_dim,
                 dimension_reduce_pca,
             ))
         else:
-            example_embedding = self.get_raw_example_tensor()
-            self.embedding_dim = example_embedding.shape[0]
+            self.embedding_dim = raw_embed_dim
             self.pca_model, self.standard_scaler = None, None
             print("Tensor embeddings source: {} (genome embedding shape = {}, no PCA)".format(
                 self.marker_embedding_basedir,
