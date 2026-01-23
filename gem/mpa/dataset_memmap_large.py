@@ -161,7 +161,6 @@ class MetaphlanDatasetMemmappedLarge(AbstractMetaphlanDataset):
         """
         Load from pre-computed tensordict.
         """
-        print("Got a singular getitem() call: idx = {}".format(idx))
         return (
             self.sample_ids[idx],
             self.tensordict['features'][idx], self.tensordict['mpadding'][idx],
@@ -171,6 +170,7 @@ class MetaphlanDatasetMemmappedLarge(AbstractMetaphlanDataset):
     def __getitems__(self, indices: List[int]) -> Tuple[List[str], Tensor, Tensor, Tensor, Tensor]:
         """
         Load from pre-computed tensordict, in a batch.
+        Supported automatically by torch 1.12 onwards in DataLoader.
         :param indices:
         :return:
         """
