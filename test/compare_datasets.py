@@ -53,7 +53,7 @@ def time_memmap(sample_ids: List[str], memmap_dir: Path, n_iters: int = 100, bat
     from gem.ml import collate_fn_dynamic_alloc
     dloader = MetaphlanDataLoader(
         dataset=dset,
-        batch_size=batch_sz, num_workers=8, pin_memory=True,
+        batch_size=batch_sz, num_workers=2, pin_memory=True,
         generator=rng, drop_last=False, prefetch_factor=2,
         persistent_workers=True,
         shuffle=True,
@@ -81,7 +81,7 @@ def time_memmap_padded(sample_ids: List[str], memmap_dir: Path, n_iters: int = 1
     from gem.ml import collate_padded_tensordicts
     dloader = MetaphlanDataLoader(
         dataset=dset,
-        batch_size=batch_sz, num_workers=8, pin_memory=True,
+        batch_size=batch_sz, num_workers=2, pin_memory=True,
         generator=rng, drop_last=False, prefetch_factor=2,
         persistent_workers=True,
         shuffle=True,
@@ -108,7 +108,7 @@ def time_memmap_large(sample_ids: List[str], memmap_dir: Path, n_iters: int = 10
 
     dloader = MetaphlanDataLoader(
         dataset=dset,
-        batch_size=batch_sz, num_workers=8, pin_memory=True,
+        batch_size=batch_sz, num_workers=2, pin_memory=True,
         generator=rng, drop_last=False, prefetch_factor=2,
         persistent_workers=True,
         shuffle=True,
@@ -132,7 +132,7 @@ if __name__ == "__main__":
     dset_name = "test"
     df = initialize_test_dataset(Path(f"/data/cctm/youn/metaphlan_dset/model_training/{dset_name}.tsv"))
 
-    time_memmap(df['SampleID'].tolist(), Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples_padded"))
+    #time_memmap(df['SampleID'].tolist(), Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples_padded"))
     ### the padded version has a bug --- TensorDict uses padding_1d built-in function, which can't stack tensors of shape (L_i, M, D) for matching M,D.
     #time_memmap_padded(df['SampleID'].tolist(), Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples_padded"))
     time_memmap_large(df['SampleID'].tolist(), Path(f"/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples_complete_large/evo/{dset_name}"))
