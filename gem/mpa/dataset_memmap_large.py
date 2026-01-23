@@ -161,6 +161,7 @@ class MetaphlanDatasetMemmappedLarge(AbstractMetaphlanDataset):
         """
         Load from pre-computed tensordict.
         """
+        print("Got a singular getitem() call: idx = {}".format(idx))
         return (
             self.sample_ids[idx],
             self.tensordict['features'][idx], self.tensordict['mpadding'][idx],
@@ -173,6 +174,7 @@ class MetaphlanDatasetMemmappedLarge(AbstractMetaphlanDataset):
         :param indices:
         :return:
         """
+        print("Got a getitems() call: indices = {}".format(indices))
         return (
             [self.sample_ids[i] for i in indices],
             self.tensordict['features'][indices], self.tensordict['mpadding'][indices],
