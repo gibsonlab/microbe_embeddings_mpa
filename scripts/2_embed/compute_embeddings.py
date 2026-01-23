@@ -8,6 +8,8 @@ import argparse
 from typing import *
 from pathlib import Path
 import json
+
+from torch.cuda import OutOfMemoryError
 from tqdm import tqdm
 import h5py
 from pyfaidx import Fasta
@@ -135,7 +137,11 @@ def compute_embedding_shard(
                     try:
                         marker_embedding = embedding_model.embed_sequence(marker_seq).cpu().float().numpy()
                     except RuntimeError as e:
-                        logger.error("For some reason, was unable to embed marker {marker_id} -- Skipping. Error message: %s", e)
+                        if "out of memory" in str(e) or "CUDA" in str(e):
+                            print(f"CUDA OOM: {e}")
+                            raise
+                        else:
+                            logger.error("For some reason, was unable to embed marker {marker_id} -- Skipping. Error message: %s",e)
                     else:
                         h5_file.create_dataset(marker_id, data=marker_embedding, compression='lzf')
 
