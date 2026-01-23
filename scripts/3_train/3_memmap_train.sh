@@ -45,7 +45,7 @@ pca_dim=200
 python dataset_memmap.py \
   --dataset-tsv "$TSV_FILE" \
   --embedding-dir "/data/cctm/youn/metaphlan_dset/embeddings/phylophlan_markers/${model_name}" \
-  --memmap-dir "/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples_padded/${model_name}_d${pca_dim}" \
+  --memmap-dir "/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples/${model_name}_d${pca_dim}" \
   --threads 6 \
   --start $start_row \
   --end $end_row \

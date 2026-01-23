@@ -79,14 +79,22 @@ class MetaphlanMarkerEmbedding:
         # Determine embedding dimension, and print diagnostic.
         example_embedding = self.get_raw_example_tensor()
         raw_embed_dim = example_embedding.shape[0]
-        if dimension_reduce_pca is not None and dimension_reduce_pca >= raw_embed_dim:
-            print("Specified dim-reduction into d={}, but embed dim is already smaller: d={}. Skipping PCA.".format(
-                dimension_reduce_pca, raw_embed_dim
-            ))
+        self.apply_dimension_reduction = False
+        self.embedding_dim = raw_embed_dim
 
-        self.apply_dimension_reduction = (dimension_reduce_pca is not None and dimension_reduce_pca < raw_embed_dim)
+        if dimension_reduce_pca is not None:
+            if dimension_reduce_pca >= raw_embed_dim:
+                print("Specified embedding dim. reduction d = {} -> d = {}, but embed dim is already smaller. Skipping PCA.".format(
+                    dimension_reduce_pca, raw_embed_dim
+                ))
+            else:
+                print("Applying dimensionality reduction for embeddings: d = {} -> d = {}".format(
+                    raw_embed_dim, dimension_reduce_pca
+                ))
+                self.apply_dimension_reduction = True
+                self.embedding_dim = dimension_reduce_pca
+
         if self.apply_dimension_reduction:
-            self.embedding_dim = dimension_reduce_pca
             assert ipca_batch_size is not None, "If applying dimensionality reduction on embeddings, ipca_batch_size cannot be NoneType."
             ipca_model_dir = self.marker_embedding_basedir / "ipca_{}".format(self.embedding_dim)
             try:
