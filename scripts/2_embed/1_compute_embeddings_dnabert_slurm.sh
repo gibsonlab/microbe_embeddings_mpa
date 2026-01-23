@@ -7,8 +7,8 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --time=5-00:00:00
 #SBATCH --job-name=mpa_embed_dnabert
-#SBATCH --output=embed_dnabert_%A_%a.out
-#SBATCH --error=embed_dnabert_%A_%a.err
+#SBATCH --output=logs/embed_dnabert_%A_%a.out
+#SBATCH --error=logs/embed_dnabert_%A_%a.err
 
 # Note: this is a Slurm script, meant to be run on ErisXDL compute nodes with 8 A100s.
 
@@ -23,7 +23,7 @@ HF_TOKEN=$(cat $HF_TOKEN_FILE)
 HF_HOME="/data/cctm/youn/huggingface_cache"
 
 
-TOTAL_SGBS=$(wc -l < $SGB_FILE)   # Total items (replace with your value)
+TOTAL_SGBS=$(wc -l < $SGB_SUBSET_FILE)   # Total items (replace with your value)
 M=$TOTAL_SGBS
 N=${SLURM_ARRAY_TASK_COUNT}
 k=${SLURM_ARRAY_TASK_ID}

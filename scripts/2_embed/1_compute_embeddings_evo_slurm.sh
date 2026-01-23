@@ -7,8 +7,8 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --time=5-00:00:00
 #SBATCH --job-name=mpa_embed_evo
-#SBATCH --output=embed_evo_%A_%a.out
-#SBATCH --error=embed_evo_%A_%a.err
+#SBATCH --output=logs/embed_evo_%A_%a.out
+#SBATCH --error=logs/embed_evo_%A_%a.err
 
 # Note: this is a Slurm script, meant to be run on ErisXDL compute nodes with 8 A100s.
 
@@ -22,7 +22,7 @@ FASTA_FILE=/data/cctm/youn/metaphlan_dset/phylophlan_data/processed/all/all_mark
 HF_TOKEN=$(cat $HF_TOKEN_FILE)
 HF_HOME="/data/cctm/youn/huggingface_cache"
 
-TOTAL_SGBS=$(wc -l < $SGB_FILE)   # Total items (replace with your value)
+TOTAL_SGBS=$(wc -l < $SGB_SUBSET_FILE)   # Total items (replace with your value)
 
 # Total number of items
 M=$TOTAL_SGBS
