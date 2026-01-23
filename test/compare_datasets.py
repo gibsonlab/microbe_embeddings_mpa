@@ -60,7 +60,7 @@ def time_memmap(sample_ids: List[str], memmap_dir: Path, n_iters: int = 100, bat
         collate_fn=collate_fn_dynamic_alloc
     )
     with timer("Tensordict-memmap:dynamic"):
-        for batch_idx, batch in tqdm(enumerate(dloader), total=len(dloader)):
+        for batch_idx, batch in tqdm(enumerate(dloader), total=len(dloader), desc="Batch-Load"):
             # x = batch[1].to("cuda").sum()
             # print("sum (cuda) = {}".format(x))
             # for sample in batch:
@@ -87,7 +87,7 @@ def time_memmap_padded(sample_ids: List[str], memmap_dir: Path, n_iters: int = 1
         collate_fn=collate_padded_tensordicts
     )
     with timer("Tensordict-memmap:padded"):
-        for batch_idx, batch in tqdm(enumerate(dloader), total=len(dloader)):
+        for batch_idx, batch in tqdm(enumerate(dloader), total=len(dloader), desc="Batch-Load"):
             x = batch[1].to("cuda", non_blocking=True).sum()
             # print("sum (cuda) = {}".format(x))
             # for sample in batch:
@@ -113,7 +113,7 @@ def time_memmap_large(sample_ids: List[str], memmap_dir: Path, n_iters: int = 10
         # this doesn't need a collate_fn, since dset implements __getitems__, supported by torch 1.12 onwards
     )
     with timer("Tensordict-memmap:large"):
-        for batch_idx, batch in tqdm(enumerate(dloader), total=len(dloader)):
+        for batch_idx, batch in tqdm(enumerate(dloader), total=len(dloader), desc="Batch-Load"):
             x = batch[1].to("cuda", non_blocking=True).sum()
             if batch_idx == n_iters - 1:
                 break
