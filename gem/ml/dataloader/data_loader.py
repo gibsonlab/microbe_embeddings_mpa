@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Optional
 from torch.utils.data import DataLoader
 
 from gem.mpa import AbstractMetaphlanDataset
@@ -23,7 +23,7 @@ class MetaphlanDataLoader(DataLoader):
             batch_size: int = 32,
             num_workers: int = 0,
             pin_memory: bool = False,
-            collate_fn: Callable = collate_fn_dynamic_alloc,
+            collate_fn: Optional[Callable] = collate_fn_dynamic_alloc,
             worker_rng_seed: int = 31415,
             **dataloader_kwargs
     ):

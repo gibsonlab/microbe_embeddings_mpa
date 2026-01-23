@@ -110,6 +110,7 @@ def time_memmap_large(sample_ids: List[str], memmap_dir: Path, n_iters: int = 10
         generator=rng, drop_last=False, prefetch_factor=2,
         persistent_workers=True,
         shuffle=True,
+        collate_fn=None,
         # this doesn't need a collate_fn, since dset implements __getitems__, supported by torch 1.12 onwards
     )
     with timer("Tensordict-memmap:large"):
@@ -123,7 +124,7 @@ if __name__ == "__main__":
     dset_name = "test"
     df = initialize_test_dataset(Path(f"/data/cctm/youn/metaphlan_dset/model_training/{dset_name}.tsv"))
 
-    time_memmap(df['SampleID'].tolist(), Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples_padded"))
+    #time_memmap(df['SampleID'].tolist(), Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples_padded"))
     ### the padded version has a bug --- TensorDict uses padding_1d built-in function, which can't stack tensors of shape (L_i, M, D) for matching M,D.
     #time_memmap_padded(df['SampleID'].tolist(), Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples_padded"))
     time_memmap_large(df['SampleID'].tolist(), Path(f"/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples_complete_large/evo/{dset_name}"))
