@@ -108,7 +108,7 @@ def time_memmap_large(sample_ids: List[str], memmap_dir: Path, n_iters: int = 10
 
     dloader = MetaphlanDataLoader(
         dataset=dset,
-        batch_size=batch_sz, num_workers=2, pin_memory=True,
+        batch_size=batch_sz, num_workers=2, pin_memory=False,
         generator=rng, drop_last=False, prefetch_factor=2,
         persistent_workers=True,
         shuffle=True,
@@ -117,11 +117,6 @@ def time_memmap_large(sample_ids: List[str], memmap_dir: Path, n_iters: int = 10
         # this doesn't need a collate_fn, since dset implements __getitems__, supported by torch 1.12 onwards
     )
     # preload
-    print("Performing pre-loading.")
-    for batch_idx, batch in enumerate(dloader):
-        print("got batch!")
-        x = batch[1].to("cuda", non_blocking=True).sum()
-        break
     with timer("Tensordict-memmap:large"):
         for batch_idx, batch in tqdm(enumerate(dloader), total=len(dloader), desc="Batch-Load"):
             x = batch[1].to("cuda", non_blocking=True).sum()

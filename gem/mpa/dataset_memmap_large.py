@@ -175,7 +175,6 @@ class MetaphlanDatasetMemmappedLarge(AbstractMetaphlanDataset):
         :param indices:
         :return:
         """
-        print("got __getitems__ call: {}".format(indices))
         if self.assume_contiguous_access:
             start_idx = indices[0]
             end_idx = indices[-1] + 1
