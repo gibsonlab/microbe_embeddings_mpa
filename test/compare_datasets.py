@@ -115,10 +115,6 @@ def time_memmap_large(sample_ids: List[str], memmap_dir: Path, n_iters: int = 10
     )
     with timer("Tensordict-memmap:large"):
         for batch_idx, batch in tqdm(enumerate(dloader), total=len(dloader), desc="Batch-Load"):
-            print(type(batch))
-            print(type(batch[0]))
-            print(type(batch[1]))
-            print(batch)
             x = batch[1].to("cuda", non_blocking=True).sum()
             if batch_idx == n_iters - 1:
                 break
