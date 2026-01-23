@@ -99,6 +99,7 @@ def time_memmap_padded(sample_ids: List[str], memmap_dir: Path, n_iters: int = 1
 def time_memmap_large(sample_ids: List[str], memmap_dir: Path, n_iters: int = 100, batch_sz: int = 5):
     print(f"Using memmap dir: {memmap_dir}")
     dset = MetaphlanDatasetMemmappedLarge(memmap_dir=memmap_dir)
+    assert len(dset.sample_ids) == len(sample_ids)
 
     rng = torch.Generator()
     rng.manual_seed(12345)
@@ -119,8 +120,10 @@ def time_memmap_large(sample_ids: List[str], memmap_dir: Path, n_iters: int = 10
 
 
 if __name__ == "__main__":
-    df = initialize_test_dataset(Path("/data/cctm/youn/metaphlan_dset/model_training/test.tsv"))
+    dset_name = "test"
+    df = initialize_test_dataset(Path(f"/data/cctm/youn/metaphlan_dset/model_training/{dset_name}.tsv"))
 
     time_memmap(df['SampleID'].tolist(), Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples_padded"))
     time_memmap_padded(df['SampleID'].tolist(), Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples_padded"))
+    time_memmap_large(df['SampleID'].tolist(), Path(f"/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples_complete_large/evo/{dset_name}"))
     # time_hdf5(Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/hdf5_samples/test.hdf5"))
