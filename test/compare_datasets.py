@@ -113,6 +113,10 @@ def time_memmap_large(sample_ids: List[str], memmap_dir: Path, n_iters: int = 10
         collate_fn=lambda x: x,
         # this doesn't need a collate_fn, since dset implements __getitems__, supported by torch 1.12 onwards
     )
+    # preload
+    for batch_idx, batch in tqdm(enumerate(dloader), total=len(dloader), desc="Batch-Load"):
+        x = batch[1].to("cuda", non_blocking=True).sum()
+        break
     with timer("Tensordict-memmap:large"):
         for batch_idx, batch in tqdm(enumerate(dloader), total=len(dloader), desc="Batch-Load"):
             x = batch[1].to("cuda", non_blocking=True).sum()
