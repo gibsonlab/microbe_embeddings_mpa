@@ -48,6 +48,7 @@ class MetaphlanDataLoader(DataLoader):
             pin_memory: bool = False,
             shuffle: bool = False,
             contiguous_batches: bool = False,
+            drop_last: bool = False,
             collate_fn: Optional[Callable] = collate_fn_dynamic_alloc,
             worker_rng_seed: int = 31415,
             **dataloader_kwargs
@@ -64,15 +65,27 @@ class MetaphlanDataLoader(DataLoader):
         """
         if contiguous_batches:
             batch_sampler = ContiguousBatchSampler(len(dataset), batch_size=batch_size, shuffle=shuffle, seed=torch.initial_seed())
+            super().__init__(
+                dataset=dataset,
+                num_workers=num_workers,
+                pin_memory=pin_memory,
+                collate_fn=collate_fn,
+                batch_sampler=batch_sampler,
+                # batch_size=batch_size,  # incompatible with batch_sampler option
+                # shuffle=shuffle,  # incompatible with batch_sampler option
+                # drop_last=drop_last,  # incompatible with batch_sampler option
+                worker_init_fn=lambda wid: worker_init_fn(wid, worker_rng_seed),
+                **dataloader_kwargs
+            )
         else:
-            batch_sampler = None
-        super().__init__(
-            dataset=dataset,
-            batch_size=batch_size,
-            num_workers=num_workers,
-            pin_memory=pin_memory,
-            collate_fn=collate_fn,
-            batch_sampler=batch_sampler,
-            worker_init_fn=lambda wid: worker_init_fn(wid, worker_rng_seed),
-            **dataloader_kwargs
-        )
+            super().__init__(
+                dataset=dataset,
+                batch_size=batch_size,
+                num_workers=num_workers,
+                pin_memory=pin_memory,
+                collate_fn=collate_fn,
+                shuffle=shuffle,
+                drop_last=drop_last,
+                worker_init_fn=lambda wid: worker_init_fn(wid, worker_rng_seed),
+                **dataloader_kwargs
+            )
