@@ -74,5 +74,5 @@ if [ $start_idx -le $M ]; then
       touch $breadcrumb
     fi
 else
-    echo "Job $k has no items to process (this shouldn't happen!)
+    echo "Job $k has no items to process (this shouldn't happen!)"
 fi
