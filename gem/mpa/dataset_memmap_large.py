@@ -152,7 +152,7 @@ class MetaphlanDatasetMemmappedLarge(AbstractMetaphlanDataset):
     A class which pre-computes all tensors and stores into a memory-mapped tensordict.
     """
 
-    def __init__(self, memmap_dir: Path, assume_contiguous_access: bool):
+    def __init__(self, memmap_dir: Path, assume_contiguous_access: bool = False):
         super().__init__()
         self.sample_ids: List[str] = parse_sample_ids_memmap(memmap_dir)
         self.tensordict, self.max_sgbs, self.max_markers, self.embed_dim, self.dtype = fetch_preallocated_tdict(memmap_dir)
