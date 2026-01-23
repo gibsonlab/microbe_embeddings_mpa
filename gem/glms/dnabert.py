@@ -45,14 +45,15 @@ class DNABertSWrapper(GenomeEmbedding):
         model_input = self.tokenizer(x, return_tensors='pt')
         with torch.no_grad():
             model_output, _ = self.model(
-                **kwargs_torch_convert_device(model_input, "cuda"))  # shape (1, n_tokens, embed_dim=768)
+                **kwargs_torch_convert_device(model_input, self.device))  # shape (1, n_tokens, embed_dim=768)
             return model_output[0, 0]  # output of shape 768, obtained by taking the first slice (see note above)
 
     def embed_batch(self, seqs: List[str]) -> Tensor:
         model_input = self.tokenizer(seqs, return_tensors='pt', padding=True)
         with torch.no_grad():
-            model_output, _ = self.model(**kwargs_torch_convert_device(
-                model_input))  # shape (n_seqs, n_tokens, embed_dim=768). Note that **model_input handles the padding masks automatically.
+            model_output, _ = self.model(
+                **kwargs_torch_convert_device(model_input, self.device)
+            )  # shape (n_seqs, n_tokens, embed_dim=768). Note that **model_input handles the padding masks automatically.
             return model_output[
                 :, 0, :]  # output of shape (n_seqs, 768), obtained by taking the first slice for each seq (see note above)
 
