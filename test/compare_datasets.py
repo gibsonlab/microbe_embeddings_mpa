@@ -124,6 +124,7 @@ if __name__ == "__main__":
     df = initialize_test_dataset(Path(f"/data/cctm/youn/metaphlan_dset/model_training/{dset_name}.tsv"))
 
     time_memmap(df['SampleID'].tolist(), Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples_padded"))
-    time_memmap_padded(df['SampleID'].tolist(), Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples_padded"))
+    ### the padded version has a bug --- TensorDict uses padding_1d built-in function, which can't stack tensors of shape (L_i, M, D) for matching M,D.
+    #time_memmap_padded(df['SampleID'].tolist(), Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples_padded"))
     time_memmap_large(df['SampleID'].tolist(), Path(f"/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples_complete_large/evo/{dset_name}"))
     # time_hdf5(Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/hdf5_samples/test.hdf5"))
