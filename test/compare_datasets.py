@@ -57,6 +57,7 @@ def time_memmap(sample_ids: List[str], memmap_dir: Path, n_iters: int = 100, bat
         generator=rng, drop_last=False, prefetch_factor=2,
         persistent_workers=True,
         shuffle=True,
+        contiguous_batches=True,
         collate_fn=collate_fn_dynamic_alloc
     )
     with timer("Tensordict-memmap:dynamic"):
@@ -84,6 +85,7 @@ def time_memmap_padded(sample_ids: List[str], memmap_dir: Path, n_iters: int = 1
         generator=rng, drop_last=False, prefetch_factor=2,
         persistent_workers=True,
         shuffle=True,
+        contiguous_batches=True,
         collate_fn=collate_padded_tensordicts
     )
     with timer("Tensordict-memmap:padded"):
@@ -110,6 +112,7 @@ def time_memmap_large(sample_ids: List[str], memmap_dir: Path, n_iters: int = 10
         generator=rng, drop_last=False, prefetch_factor=2,
         persistent_workers=True,
         shuffle=True,
+        contiguous_batches=True,
         collate_fn=lambda x: x,
         # this doesn't need a collate_fn, since dset implements __getitems__, supported by torch 1.12 onwards
     )
