@@ -152,10 +152,11 @@ class MetaphlanDatasetMemmappedLarge(AbstractMetaphlanDataset):
     A class which pre-computes all tensors and stores into a memory-mapped tensordict.
     """
 
-    def __init__(self, memmap_dir: Path):
+    def __init__(self, memmap_dir: Path, assume_contiguous_access: bool):
         super().__init__()
         self.sample_ids: List[str] = parse_sample_ids_memmap(memmap_dir)
         self.tensordict, self.max_sgbs, self.max_markers, self.embed_dim, self.dtype = fetch_preallocated_tdict(memmap_dir)
+        self.assume_contiguous_access = assume_contiguous_access  # for use with ContiguousBatchSampler
 
     def __getitem__(self, idx: int) -> Tuple[str, Tensor, Tensor, Tensor, Tensor]:
         """
@@ -174,11 +175,20 @@ class MetaphlanDatasetMemmappedLarge(AbstractMetaphlanDataset):
         :param indices:
         :return:
         """
-        return (
-            [self.sample_ids[i] for i in indices],
-            self.tensordict['features'][indices], self.tensordict['mpadding'][indices],
-            self.tensordict['spadding'][indices], self.tensordict['targets'][indices]
-        )
+        if self.assume_contiguous_access:
+            start_idx = indices[0]
+            end_idx = indices[-1] + 1
+            return (
+                [self.sample_ids[i] for i in indices],
+                self.tensordict['features'][start_idx:end_idx], self.tensordict['mpadding'][start_idx:end_idx],
+                self.tensordict['spadding'][start_idx:end_idx], self.tensordict['targets'][start_idx:end_idx]
+            )
+        else:
+            return (
+                [self.sample_ids[i] for i in indices],
+                self.tensordict['features'][indices], self.tensordict['mpadding'][indices],
+                self.tensordict['spadding'][indices], self.tensordict['targets'][indices]
+            )
 
     def __len__(self) -> int:
         return len(self.sample_ids)
