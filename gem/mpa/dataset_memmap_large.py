@@ -174,7 +174,6 @@ class MetaphlanDatasetMemmappedLarge(AbstractMetaphlanDataset):
         :param indices:
         :return:
         """
-        print("Got a getitems() call: indices = {}".format(indices))
         return (
             [self.sample_ids[i] for i in indices],
             self.tensordict['features'][indices], self.tensordict['mpadding'][indices],
