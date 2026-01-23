@@ -10,6 +10,6 @@ model_name="$1"
 
 pca_dim=200
 python precompute_embedding_pca.py \
-  -i "/data/local/youn/metaphlan_abundance_prediction/embedding/${model_name}" \
+  -i "/data/cctm/youn/metaphlan_dset/embeddings/phylophlan_markers/${model_name}" \
   --dimension-reduce ${pca_dim} \
   --pca-batch-size 10000
