@@ -38,6 +38,9 @@ class ContiguousBatchSampler(Sampler):
         for start in batch_starts:
             yield list(range(start, start + self.batch_size))
 
+    def __len__(self) -> int:
+        return self.num_batches
+
 
 class MetaphlanDataLoader(DataLoader):
     def __init__(
