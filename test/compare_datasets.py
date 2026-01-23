@@ -100,7 +100,7 @@ def time_memmap_padded(sample_ids: List[str], memmap_dir: Path, n_iters: int = 1
 
 def time_memmap_large(sample_ids: List[str], memmap_dir: Path, n_iters: int = 100, batch_sz: int = 5):
     print(f"Using memmap dir: {memmap_dir}")
-    dset = MetaphlanDatasetMemmappedLarge(memmap_dir=memmap_dir, assume_contiguous_access=True)
+    dset = MetaphlanDatasetMemmappedLarge(memmap_dir=memmap_dir, assume_contiguous_access=False)
     assert len(dset.sample_ids) == len(sample_ids)
 
     rng = torch.Generator()
