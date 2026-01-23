@@ -41,7 +41,7 @@ fi
 
 
 echo "Memory-mapping: Train set [Rows $start_row ~ $end_row] (inclusive)"
-pca_dim=300
+pca_dim=200
 python dataset_memmap.py \
   --dataset-tsv "$TSV_FILE" \
   --embedding-dir "/data/cctm/youn/metaphlan_dset/embeddings/phylophlan_markers/${model_name}" \

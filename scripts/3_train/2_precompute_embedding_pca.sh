@@ -8,7 +8,7 @@ if [ $# -eq 0 ]; then
 fi
 model_name="$1"
 
-pca_dim=300
+pca_dim=200
 python precompute_embedding_pca.py \
   -i "/data/local/youn/metaphlan_abundance_prediction/embedding/${model_name}" \
   --dimension-reduce ${pca_dim} \
