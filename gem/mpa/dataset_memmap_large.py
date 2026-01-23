@@ -179,11 +179,13 @@ class MetaphlanDatasetMemmappedLarge(AbstractMetaphlanDataset):
         if self.assume_contiguous_access:
             start_idx = indices[0]
             end_idx = indices[-1] + 1
-            return (
-                [self.sample_ids[i] for i in indices],
+            tensors = (
+                self.sample_ids[start_idx:end_idx],
                 self.tensordict['features'][start_idx:end_idx], self.tensordict['mpadding'][start_idx:end_idx],
                 self.tensordict['spadding'][start_idx:end_idx], self.tensordict['targets'][start_idx:end_idx]
             )
+            print("got tensor slices.")
+            return tensors
         else:
             return (
                 [self.sample_ids[i] for i in indices],
