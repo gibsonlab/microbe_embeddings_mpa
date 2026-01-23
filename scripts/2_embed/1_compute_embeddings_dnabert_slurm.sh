@@ -42,8 +42,8 @@ else
 fi
 
 # Ensure end_idx doesn't exceed M
-if [ $end_row -gt $M ]; then
-    end_row=$M
+if [ $end_idx -gt $M ]; then
+    end_idx=$M
 fi
 
 # Only run if start_idx is valid
