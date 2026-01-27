@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --partition=bwh_comppath_long
-#SBATCH --array=1-10
+#SBATCH --array=1-20
 #SBATCH --ntasks=1
-#SBATCH --mem=320G
-#SBATCH --cpus-per-task=80
+#SBATCH --mem=20G
+#SBATCH --cpus-per-task=4
 #SBATCH --time=5-00:00:00
 #SBATCH --job-name=memmap_test
 #SBATCH --output=logs/memmap_test_%A_%a.out
@@ -15,17 +15,23 @@ TSV_FILE=/data/cctm/youn/metaphlan_dset/model_training/test.tsv
 N_LINES_TSV=$(wc -l < $TSV_FILE)   # Total items (replace with your value)
 N_SAMPLES=$((N_LINES_TSV - 1))
 
-# Total number of items
 M=$N_SAMPLES
-# Total number of jobs
 N=${SLURM_ARRAY_TASK_COUNT}
-# Current job index (1 to N)
 k=${SLURM_ARRAY_TASK_ID}
-# Calculate items per job (ceiling division)
-items_per_job=$(( (M + N - 1) / N ))
-# Calculate start and end indices for this job
-start_row=$(( (k - 1) * items_per_job + 1 ))
-end_row=$(( k * items_per_job ))
+
+# Floor division
+items_per_job=$(( M / N ))
+remainder=$(( M % N ))
+
+# First 'remainder' jobs get one extra item
+if [ $k -le $remainder ]; then
+    start_row=$(( (k - 1) * (items_per_job + 1) + 1 ))
+    end_row=$(( k * (items_per_job + 1) ))
+else
+    start_row=$(( remainder * (items_per_job + 1) + (k - remainder - 1) * items_per_job + 1 ))
+    end_row=$(( remainder * (items_per_job + 1) + (k - remainder) * items_per_job ))
+fi
+
 # Ensure end_idx doesn't exceed M
 if [ $end_row -gt $M ]; then
     end_row=$M
