@@ -11,6 +11,14 @@
 set -e
 
 
+if [ $# -eq 0 ]; then
+  echo "Error: model_name is required"
+  echo "Usage: $0 <model_name>"
+  exit 1
+fi
+model_name="$1"
+
+
 TSV_FILE=/data/cctm/youn/metaphlan_dset/model_training/test.tsv
 N_LINES_TSV=$(wc -l < $TSV_FILE)   # Total items (replace with your value)
 N_SAMPLES=$((N_LINES_TSV - 1))
@@ -39,13 +47,14 @@ fi
 
 
 echo "Memory-mapping: Test set [Rows $start_row ~ $end_row] (inclusive)"
+pca_dim=200
 python dataset_memmap.py \
   --dataset-tsv "$TSV_FILE" \
-  --embedding-dir "/data/cctm/youn/metaphlan_dset/embeddings/phylophlan_markers/evo" \
-  --memmap-dir "/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples_padded" \
+  --embedding-dir "/data/cctm/youn/metaphlan_dset/embeddings/phylophlan_markers/${model_name}" \
+  --memmap-dir "/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples/${model_name}_d${pca_dim}" \
   --threads 6 \
   --start $start_row \
   --end $end_row \
-  --dimension-reduce 768
+  --dimension-reduce ${pca_dim}
 
 echo "Done!"

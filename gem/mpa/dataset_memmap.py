@@ -41,7 +41,13 @@ def add_marker_padding(x: Tensor, n_markers: int) -> Tensor:
     return new_x
 
 
-def allocate_sample(memmap_dir: Path, sample: MetaphlanProfile, max_num_markers: int, dataset: MetaphlanDataset) -> bool:
+def allocate_sample(
+        memmap_dir: Path,
+        sample: MetaphlanProfile,
+        add_padding: bool,
+        max_num_markers: int,
+        dataset: MetaphlanDataset
+) -> bool:
     """
     Allocate a single sample to memory-mapped storage.
     """
@@ -49,8 +55,9 @@ def allocate_sample(memmap_dir: Path, sample: MetaphlanProfile, max_num_markers:
     memmap_dir.mkdir(exist_ok=True, parents=False)  # parent dir should already exist!
     _, features, marker_padding_mask, sgb_padding_mask, targets = dataset.load_sample_embeddings(sample)
 
-    marker_padding_mask = add_marker_padding(marker_padding_mask, max_num_markers)
-    features = add_marker_padding(features, max_num_markers)
+    if add_padding:
+        marker_padding_mask = add_marker_padding(marker_padding_mask, max_num_markers)
+        features = add_marker_padding(features, max_num_markers)
 
     x = TensorDict()
     x['features'] = features
@@ -61,16 +68,16 @@ def allocate_sample(memmap_dir: Path, sample: MetaphlanProfile, max_num_markers:
     return True
 
 
-def perform_allocation(dataset: MetaphlanDataset, cache_dir: Path, num_threads: int, max_num_markers: int):
+def perform_allocation(dataset: MetaphlanDataset, cache_dir: Path, num_threads: int, add_padding: bool, max_num_markers: int):
     if num_threads <= 1:
         print("Performing memory-mapping allocation in single-threaded mode.")
-        perform_allocation_single_thread(dataset, cache_dir, max_num_markers)
+        perform_allocation_single_thread(dataset, cache_dir, add_padding, max_num_markers)
     else:
         print(f"Performing memory-mapping allocation with {num_threads} threads.")
-        perform_allocation_multi_thread(dataset, cache_dir, num_threads, max_num_markers)
+        perform_allocation_multi_thread(dataset, cache_dir, num_threads, add_padding, max_num_markers)
 
 
-def perform_allocation_single_thread(dataset: MetaphlanDataset, cache_dir: Path, max_num_markers: int):
+def perform_allocation_single_thread(dataset: MetaphlanDataset, cache_dir: Path, add_padding: bool, max_num_markers: int):
     for sample in tqdm(dataset.samples, desc="Sample Allocation"):
         memmap_dir = cache_dir / sample.sample_id
         if (memmap_dir / "meta.json").exists():
@@ -78,10 +85,10 @@ def perform_allocation_single_thread(dataset: MetaphlanDataset, cache_dir: Path,
             pass
         else:
             # Allocate the TensorDict.
-            allocate_sample(memmap_dir, sample, max_num_markers, dataset)
+            allocate_sample(memmap_dir, sample, add_padding, max_num_markers, dataset)
 
 
-def perform_allocation_multi_thread(dataset: MetaphlanDataset, cache_dir: Path, num_threads: int, max_num_markers: int):
+def perform_allocation_multi_thread(dataset: MetaphlanDataset, cache_dir: Path, num_threads: int, add_padding: bool, max_num_markers: int):
     with ThreadPoolExecutor(max_workers=num_threads) as executor:
         # Submit all tasks
         futures = []
@@ -93,7 +100,7 @@ def perform_allocation_multi_thread(dataset: MetaphlanDataset, cache_dir: Path, 
             if (memmap_dir / "meta.json").exists():
                 continue
 
-            future = executor.submit(allocate_sample, memmap_dir, sample, max_num_markers, dataset)
+            future = executor.submit(allocate_sample, memmap_dir, sample, add_padding, max_num_markers, dataset)
             futures.append(future)
             futures_sample_id[future] = sample.sample_id
             n_tasks += 1

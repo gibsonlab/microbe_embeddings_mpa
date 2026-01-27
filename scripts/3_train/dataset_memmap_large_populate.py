@@ -1,12 +1,10 @@
 import argparse
 from pathlib import Path
-from typing import *
 from tqdm import tqdm
-import json
 
 import pandas as pd
-import torch
-from tensordict import TensorDict, MemoryMappedTensor
+from gem.mpa.dataset_memmap_large import fetch_preallocated_tdict, parse_sample_ids_memmap
+from tensordict import TensorDict
 
 from gem.mpa import MetaphlanDataset, MetaphlanMarkerEmbedding
 
@@ -25,52 +23,6 @@ def populate_memmap_tdict(
         big_tdict['mpadding'][big_idx, :S, :M] = marker_padding_mask
         big_tdict['spadding'][big_idx, :S] = sgb_padding_mask
         big_tdict['targets'][big_idx, :S] = targets
-
-
-def parse_torch_dtype(s: str) -> torch.dtype:
-    # allow both "float32" and "torch.float32"
-    if s.startswith("torch."):
-        s = s.split(".", 1)[1]
-    dt = getattr(torch, s)
-    if not isinstance(dt, torch.dtype):
-        raise TypeError(f"{s} is not a torch.dtype")
-    return dt
-
-
-def parse_tdict_metadata(memmap_dir: Path) -> Tuple[int, int, int, int, torch.dtype]:
-    with open(memmap_dir / "meta.json", "rt") as f:
-        metadata = json.load(f)
-        return int(metadata["N"]), int(metadata["S"]), int(metadata["M"]), int(metadata["E"]), parse_torch_dtype(metadata['dtype'])
-
-
-def fetch_preallocated_tdict(memmap_dir: Path) -> TensorDict:
-    assert memmap_dir.is_dir()
-    assert memmap_dir.exists()
-    N, S_max, M_max, E, dtype = parse_tdict_metadata(memmap_dir)
-    features = MemoryMappedTensor.from_filename(
-        filename=str(memmap_dir / "features.mmap"),
-        dtype=dtype,
-        shape=torch.Size((N, S_max, M_max, E)),
-    )
-    mpadding = MemoryMappedTensor.from_filename(
-        filename=str(memmap_dir / "mpadding.mmap"),
-        dtype=torch.bool,
-        shape=torch.Size((N, S_max, M_max)),
-    )
-    spadding = MemoryMappedTensor.from_filename(
-        filename=str(memmap_dir / "spadding.mmap"),
-        dtype=torch.bool,
-        shape=torch.Size((N, S_max)),
-    )
-    targets = MemoryMappedTensor.from_filename(
-        filename=str(memmap_dir / "targets.mmap"),
-        dtype=dtype,
-        shape=torch.Size((N, S_max)),
-    )
-    return TensorDict(
-        {"features": features, "mpadding": mpadding, "spadding": spadding, "targets": targets},
-        batch_size=[N],
-    )
 
 
 def parse_args():
@@ -107,24 +59,23 @@ if __name__ == "__main__":
         dimension_reduce_pca=args.dimension_reduce_pca,
         ipca_batch_size=args.ipca_batch_size,
     )
-    dataset = MetaphlanDataset(dataset_df, marker_embedding)
+    dset = MetaphlanDataset(dataset_df, marker_embedding)
 
     # validate sample ID ordering.
     print("Validating sample ordering.")
-    with open(memmap_dir / "sample_ids.txt", "rt") as f:
-        cached_sample_ids = [line.strip() for line in f]
-    for sample_idx, sample in enumerate(dataset.samples):
-        expected_id = cached_sample_ids[start_idx + sample_idx]
-        assert expected_id == sample.sample_id, "Sample ID validation failed! Offset index = {}, cached sample ID = {}, sliced sample ID = {}".format(
-            sample_idx, expected_id, sample.sample_id
+    cached_sample_ids = parse_sample_ids_memmap(memmap_dir)
+    for s_idx, _sample in enumerate(dset.samples):
+        expected_id = cached_sample_ids[start_idx + s_idx]
+        assert expected_id == _sample.sample_id, "Sample ID validation failed! Offset index = {}, cached sample ID = {}, sliced sample ID = {}".format(
+            s_idx, expected_id, _sample.sample_id
         )
 
     print("Fetching large preallocated tensordict.")
-    big_tdict = fetch_preallocated_tdict(memmap_dir)
+    prealloc_tdict, S_max, M_max, E, dtype = fetch_preallocated_tdict(memmap_dir)
 
     print("Populating section")
     populate_memmap_tdict(
-        dataset=dataset,
+        dataset=dset,
         tdict_start_idx=start_idx,
-        big_tdict=big_tdict
+        big_tdict=prealloc_tdict
     )

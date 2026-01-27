@@ -1,94 +1,11 @@
 import argparse
 from pathlib import Path
-from typing import *
-import json
 
 import pandas as pd
 import torch
-from tensordict import TensorDict, MemoryMappedTensor
+from gem.mpa.dataset_memmap_large import allocate_big_memmap_tdict
 
 from gem.mpa import MetaphlanProfileExtractor, MetaphlanMarkerEmbedding
-
-
-def allocate_big_memmap_tdict(
-    sample_ids: List[str],
-    out_dir: Path,
-    S_max_global: int,
-    M_max_global: int,
-    embed_dim: int,
-    dtype: torch.dtype = torch.float32,
-):
-    """
-    Allocates a big memmapped tensordict, with the requested shape and dtype.
-
-    :param dataset:
-    :param out_dir:
-    :param S_max_global:
-    :param M_max_global:
-    :param embed_dim:
-    :param dtype:
-    :return:
-    """
-    if dtype == torch.float32:
-        dtype_str = "torch.float32"
-    else:
-        raise ValueError(f"This script currently does not support the dtype {dtype}")
-
-    print(f"Target allocation path: {out_dir}")
-    out_dir.mkdir(parents=True, exist_ok=True)
-    N = len(sample_ids)
-
-    # 1) Allocate on-disk MemoryMappedTensors
-    print("Feature shape: ({}, {}, {}, {})".format(N, S_max_global, M_max_global, embed_dim))
-    big_features = MemoryMappedTensor.empty(
-        (N, S_max_global, M_max_global, embed_dim),
-        dtype=dtype,
-        filename=str(out_dir / "features.mmap"),
-    )
-    big_mpadding = MemoryMappedTensor.empty(
-        (N, S_max_global, M_max_global),
-        dtype=torch.bool,
-        filename=str(out_dir / "mpadding.mmap"),
-    )
-    big_spadding = MemoryMappedTensor.empty(
-        (N, S_max_global),
-        dtype=torch.bool,
-        filename=str(out_dir / "spadding.mmap"),
-    )
-    big_targets = MemoryMappedTensor.empty(
-        (N, S_max_global),
-        dtype=dtype,
-        filename=str(out_dir / "targets.mmap"),
-    )
-
-    big_td = TensorDict(
-        {
-            "features": big_features,
-            "mpadding": big_mpadding,
-            "spadding": big_spadding,
-            "targets": big_targets,
-        },
-        batch_size=[N],
-        device="cpu",
-    )
-
-    with open(out_dir / "sample_ids.txt", "wt") as f:
-        for s_id in sample_ids:
-            print(s_id, file=f)
-
-    with open(out_dir / "meta.json", "wt") as f:
-        json.dump(
-            {
-                "N": N,
-                "S": S_max_global,
-                "M": M_max_global,
-                "E": embed_dim,
-                "dtype": dtype_str
-            },
-            f
-        )
-
-    return big_td
 
 
 def parse_args():

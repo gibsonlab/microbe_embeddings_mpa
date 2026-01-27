@@ -29,6 +29,7 @@ def parse_args():
     parser.add_argument("-t", "--threads", dest="num_threads", required=False, type=int, default=1)
     parser.add_argument("--start", dest="start_row", required=False, type=int, default=0)  # inclusive
     parser.add_argument("--end", dest="end_row", required=False, type=int, default=-1)  # inclusive
+    parser.add_argument("--padding", dest="add_padding", required=False, action="store_true", default=False)
     parser.add_argument("--dimension-reduce", dest="dimension_reduce_pca", required=False, default=None, type=int,
                         help="If specified (an integer greater than zero), will perform incremental PCA on the entire"
                              "set of embeddings for dimensionality reduction.")
@@ -41,16 +42,19 @@ def main(
         dataset_df: pd.DataFrame,
         marker_embedding: MetaphlanMarkerEmbedding,
         memmap_dir: Path,
+        add_padding: bool,
         max_num_markers: int,
         num_workers: int,
 ):
     memmap_dir.mkdir(parents=True, exist_ok=True)
     regular_dset = MetaphlanDataset(dataset_df, marker_embedding)
-    print(f"[***] NOTE ---> Marker-dim will be padded into: {max_num_markers}")
+    if add_padding:
+        print(f"[***] NOTE ---> Marker-dim will be padded into: {max_num_markers}")
     perform_allocation(
         dataset=regular_dset,
         cache_dir=memmap_dir,
         num_threads=num_workers,
+        add_padding=add_padding,
         max_num_markers=max_num_markers,
     )
     print("Finished memory-mapping tensors.")
@@ -87,5 +91,6 @@ if __name__ == "__main__":
         marker_embedding=marker_embedding,
         memmap_dir=Path(args.memmap_dir),
         num_workers=args.num_threads,
+        add_padding=args.add_padding,
         max_num_markers=max_num_markers,
     )
