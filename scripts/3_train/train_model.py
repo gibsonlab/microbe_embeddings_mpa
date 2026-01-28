@@ -186,7 +186,8 @@ def parse_args() -> argparse.Namespace:
     )
 
     parser.add_argument("-epochs", "--epochs", dest="n_epochs", type=int, required=True)
-    parser.add_argument("-sequential", "--sequential", dest="sequential_train", type=bool, action="store_true", default=False)
+    parser.add_argument("-sequential", "--sequential", dest="sequential_train", action="store_true", default=False,
+                        help="If flag is given, samples will be shuffled batch-wise. Meaning: batch order will be shuffled, but batch contents will not.")
     parser.add_argument("-lr", "--learning-rate", dest="lr", type=float, required=True)
     parser.add_argument("-b", "--batch-size", dest="batch_size", type=int, required=True)
 
