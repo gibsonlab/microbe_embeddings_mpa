@@ -4,24 +4,34 @@
 #SBATCH --mem=80G
 #SBATCH --cpus-per-task=8
 #SBATCH --time=5-00:00:00
-#SBATCH --job-name=train_emb_evo
-#SBATCH --output=train_emb_evo_%A_%a.out
-#SBATCH --error=train_emb_evo_%A_%a.err
+#SBATCH --job-name=train_epc
+#SBATCH --output=train_epc_%A_%a.out
+#SBATCH --error=train_epc_%A_%a.err
 
 # Note: this is a Slurm script, meant to be run on ErisXDL compute nodes with GPUs.
 set -e
 
-embeddings_memmap="/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples"
+if [ $# -eq 0 ]; then
+  echo "Error: model_name is required"
+  echo "Usage: $0 <model_name>"
+  exit 1
+fi
+model_name="$1"
+pca_dim=200
+
+# point to the proper pretrained model embeddings
+embeddings_memmap="/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples/${model_name}_d${pca_dim}"
+
 
 training_set="/data/cctm/youn/metaphlan_dset/model_training/train.tsv"
 test_set="/data/cctm/youn/metaphlan_dset/model_training/test.tsv"
-model_config="./model_v2_depth3.yaml"
+model_config="./model_epc_pool.yaml"
 n_epochs=300
 learning_rate=0.0001
 batch_size=10
 seed=12345
 
-outdir="/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/trained_model/evo_v2/depth3_epoch${n_epochs}"
+outdir="/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/trained_model/${model_name}_d${pca_dim}_epc/sgbpool_epoch${n_epochs}_kl"
 mkdir -p ${outdir}
 
 metadata="$outdir/metadata.txt"
@@ -37,7 +47,7 @@ python train_model.py \
   --test "$test_set" \
   --model-config "$model_config" \
   --out-dir "$outdir" \
-  --loss "cross_entropy" \
+  --loss "kl" \
   --memmap-tensor-dir "$embeddings_memmap" \
   --epochs "$n_epochs" \
   --learning-rate "$learning_rate" \
@@ -47,6 +57,6 @@ python train_model.py \
   --seed "$seed" \
   --prefetch-factor 2 \
   --cuda-device "cuda" \
-  --model-version "V2"
+  --model-version "EPC"
 
 echo "Done."
