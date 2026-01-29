@@ -176,8 +176,12 @@ def main_training_loop(
         start_epoch = 1
         current_lr = torch.nan
 
-    pbar = tqdm(range(1, num_epochs + 1), desc="Training", unit="epoch")
-    pbar.update(n=start_epoch - 2)
+    pbar = tqdm(
+        range(start_epoch, num_epochs + 1),
+        desc="Training", unit="epoch",
+        initial=start_epoch-1,
+        total=num_epochs
+    )
     for epoch in pbar:
         print(f"on epoch {epoch}")
         epoch_training_loss = 0.0
