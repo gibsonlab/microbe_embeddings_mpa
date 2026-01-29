@@ -155,26 +155,30 @@ def main_training_loop(
                 total_test_loss += batch_loss.item() * test_y.shape[0] / len(test_dloader.dataset)
         return total_test_loss
 
-    test_dset.track_runtime = True
-    print(f"Initial Test Loss: {_compute_test_loss(show_pbar=True)}")
-    test_dset.track_runtime = False
-
     """ Try to resume from checkpoint file, if specified. """
     if resume_from_checkpoint is not None:
+        print(f"Resuming from: {resume_from_checkpoint}")
         last_epoch, epoch_history, training_loss_history, test_loss_history = load_checkpoint(
             resume_from_checkpoint,
             model, optimizer, lr_scheduler, scaler, data_rng
         )
+        print(f"Last completed epoch = {last_epoch}")
         start_epoch = last_epoch + 1
         current_lr = lr_scheduler.get_last_lr()[0]
     else:
+        test_dset.track_runtime = True
+        print(f"Initial Test Loss: {_compute_test_loss(show_pbar=True)}")
+        test_dset.track_runtime = False
+
         epoch_history = []
         training_loss_history = []
         test_loss_history = []
         start_epoch = 1
         current_lr = torch.nan
 
-    for epoch in tqdm(range(start_epoch, num_epochs+1), desc="Training", unit="epoch"):
+    pbar = tqdm(range(1, num_epochs + 1), desc="Training", unit="epoch")
+    pbar.update(n=start_epoch - 1)
+    for epoch in pbar:
         epoch_training_loss = 0.0
         model.train()
         for batch_idx, (training_sample_ids, training_batch_features, training_marker_mask, training_sgb_mask, training_y) in enumerate(train_dloader):
