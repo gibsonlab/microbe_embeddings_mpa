@@ -53,6 +53,7 @@ python train_model.py \
   --learning-rate "$learning_rate" \
   --batch-size "$batch_size" \
   --print-every 5 \
+  --checkpoint-every 20 \
   --workers 10 \
   --seed "$seed" \
   --prefetch-factor 2 \

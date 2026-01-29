@@ -250,15 +250,15 @@ def main():
         )
 
     if args.resume_from_path is not None:
-        checkpoint_path = Path(args.resume_from_path)
+        resume_from_checkpoint_path = Path(args.resume_from_path)
     else:
-        checkpoint_path = None
+        resume_from_checkpoint_path = None
 
     train_and_save_model(
         model_version=model_version,
         model_cfg=model_cfg,
         model_save_dir=model_save_dir,
-        load_checkpoint_file=checkpoint_path,
+        load_checkpoint_file=resume_from_checkpoint_path,
         checkpoint_every=args.checkpoint_every,
         loss_name=args.loss_name,
         train_dset=train_dset,
