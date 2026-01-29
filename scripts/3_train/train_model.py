@@ -160,8 +160,8 @@ def train_and_save_model(
     )
 
     """ save model to file. """
-    torch.save(torch_embedding_model.state_dict(), model_save_path)
-    logger.info(f"Wrote model parameters to {model_save_path}")
+    # torch.save(torch_embedding_model.state_dict(), model_save_path)
+    # logger.info(f"Wrote model parameters to {model_save_path}")
 
     with open(model_config_path, "wt") as out_f:
         rng = model_cfg['init_rng']

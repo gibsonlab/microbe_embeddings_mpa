@@ -21,6 +21,7 @@ def main_training_loop(
         train_dset: AbstractMetaphlanDataset,
         test_dset: AbstractMetaphlanDataset,
         loss_fn: Union[nn.Module, Callable],
+        checkpoint_dir: Path,
         batch_size: int = 5,
         num_workers: Optional[int] = 0,
         shuffle_dataset: bool = True,
@@ -31,7 +32,6 @@ def main_training_loop(
         print_every: int = 5,
         resume_from_checkpoint: Optional[Path] = None,
         checkpoint_every: int = 25,
-        checkpoint_dir: Optional[Path] = None,
         loss_plot_path: Optional[Path] = None,
         auto_mixed_precision: bool = False,
         rng_seed: int = 314159,
@@ -65,9 +65,8 @@ def main_training_loop(
     """ Initialization. """
     scaler = GradScaler(cuda_device_name, enabled=auto_mixed_precision)
 
-    if checkpoint_dir is not None:
-        print(f"Checkpoints saved to {checkpoint_dir} --> every {checkpoint_every} epochs")
-        checkpoint_dir.mkdir(exist_ok=True, parents=True)
+    print(f"Checkpoints saved to {checkpoint_dir} --> every {checkpoint_every} epochs")
+    checkpoint_dir.mkdir(exist_ok=True, parents=True)
 
     """ Initialize dataset objects. """
     data_rng = torch.Generator()
@@ -227,7 +226,7 @@ def main_training_loop(
             training_loss_history.append(epoch_training_loss)
             test_loss_history.append(epoch_test_loss)
 
-        if (checkpoint_dir is not None) and (epoch % checkpoint_every == 0):
+        if (epoch % checkpoint_every == 0) and (epoch > 0):
             """ Save the model and optimizer states. """
             filepath = checkpoint_dir / f"checkpoint_{epoch}.pt"
             save_checkpoint(
@@ -244,6 +243,14 @@ def main_training_loop(
         ax.set_xlabel("Epoch")
         ax.legend()
         plt.savefig(loss_plot_path, bbox_inches="tight")
+
+    # finally, save the final checkpoint file.
+    filepath = checkpoint_dir / f"checkpoint_{epoch}.pt"
+    save_checkpoint(
+        epoch, model, optimizer, lr_scheduler, scaler, data_rng,
+        epoch_history, training_loss_history, test_loss_history,
+        filepath,
+    )
 
 
 def save_checkpoint(
