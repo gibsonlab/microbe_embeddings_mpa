@@ -26,7 +26,7 @@ embeddings_memmap="/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/mem
 training_set="/data/cctm/youn/metaphlan_dset/model_training/train.tsv"
 test_set="/data/cctm/youn/metaphlan_dset/model_training/test.tsv"
 model_config="./model_epc_pool.yaml"
-n_epochs=300
+n_epochs=80
 learning_rate=0.0001
 batch_size=10
 seed=12345
@@ -53,7 +53,7 @@ python train_model.py \
   --learning-rate "$learning_rate" \
   --batch-size "$batch_size" \
   --print-every 5 \
-  --checkpoint-every 20 \
+  --checkpoint-every 10 \
   --workers 10 \
   --seed "$seed" \
   --prefetch-factor 2 \
