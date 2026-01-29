@@ -52,6 +52,8 @@ def train_and_save_model(
         num_workers: int = 4,
         auto_mixed_precision: bool = False,
         cuda_device_name: str = "cuda",
+        checkpoint_every: int = 50,
+        load_checkpoint_file: Optional[Path] = None,
         timer_profile: bool = False,
         # specify whether to store sample-specific SGB embeddings to disk (not RAM).
 ):
@@ -131,6 +133,7 @@ def train_and_save_model(
     model_config_path = model_save_dir / "model_config.json"
 
     """ invoke main training loop. """
+    checkpoint_dir = model_save_dir / "model_checkpoints"
     main_training_loop(
         model=torch_embedding_model,
         optimizer=optimizer,
@@ -145,6 +148,9 @@ def train_and_save_model(
         clip_gradient_norm_ub=clip_grad_norm_ub,
         print_progress=True,
         print_every=print_every,
+        checkpoint_every=checkpoint_every,
+        checkpoint_dir=checkpoint_dir,
+        resume_from_checkpoint=load_checkpoint_file,
         loss_plot_path=loss_plot_path,
         auto_mixed_precision=auto_mixed_precision,
         rng_seed=train_rng_seed,
@@ -195,6 +201,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("-w", "--workers", dest="num_workers", type=int, default=1)
     parser.add_argument("-s", "--seed", dest="seed", required=False, type=int, default=314159)
     parser.add_argument("-pf", "--prefetch-factor", dest="batch_prefetch_factor", required=False, type=int, default=2)
+    parser.add_argument("-resume", "--resume-from", dest="resume_from_path", required=False, type=str, default=None)
+    parser.add_argument("-checkpoint", "--checkpoint-every", dest="checkpoint_every", required=False, type=int, default=20)
     parser.add_argument(
         "-amp", "--use-auto-mixed-precision", dest="use_auto_mixed_precision",
         action="store_true", default=False
@@ -241,10 +249,17 @@ def main():
             f"Must be one of: {list(model_supported_versions)}"
         )
 
+    if args.resume_from_path is not None:
+        checkpoint_path = Path(args.resume_from_path)
+    else:
+        checkpoint_path = None
+
     train_and_save_model(
         model_version=model_version,
         model_cfg=model_cfg,
         model_save_dir=model_save_dir,
+        load_checkpoint_file=checkpoint_path,
+        checkpoint_every=args.checkpoint_every,
         loss_name=args.loss_name,
         train_dset=train_dset,
         test_dset=test_dset,

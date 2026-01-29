@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 
 import torch
 from torch import nn, GradScaler, autocast
+from torch.optim import Optimizer
+from torch.optim.lr_scheduler import LRScheduler
 
 from gem.mpa import AbstractMetaphlanDataset, MetaphlanHDF5Dataset, HDF5BatchShuffledSampler
 from gem.ml.dataloader.data_loader import MetaphlanDataLoader
@@ -14,8 +16,8 @@ from gem.util import timer
 
 def main_training_loop(
         model: nn.Module,
-        optimizer: torch.optim.Optimizer,
-        lr_scheduler: torch.optim.lr_scheduler.LRScheduler,
+        optimizer: Optimizer,
+        lr_scheduler: LRScheduler,
         train_dset: AbstractMetaphlanDataset,
         test_dset: AbstractMetaphlanDataset,
         loss_fn: Union[nn.Module, Callable],
@@ -26,8 +28,11 @@ def main_training_loop(
         prefetch_factor: int = 2,
         num_epochs: int = 5000,
         print_progress: bool = True,
-        print_every: int = 50,
-        loss_plot_path: Path = Optional[None],
+        print_every: int = 5,
+        resume_from_checkpoint: Optional[Path] = None,
+        checkpoint_every: int = 25,
+        checkpoint_dir: Optional[Path] = None,
+        loss_plot_path: Optional[Path] = None,
         auto_mixed_precision: bool = False,
         rng_seed: int = 314159,
         cuda_device_name: str = "cuda",
@@ -58,15 +63,15 @@ def main_training_loop(
     """
 
     """ Initialization. """
-    plot_history = (loss_plot_path is not None)
-    epoch_history = []
-    training_loss_history = []
-    test_loss_history = []
     scaler = GradScaler(cuda_device_name, enabled=auto_mixed_precision)
 
+    if checkpoint_dir is not None:
+        print(f"Checkpoints saved to {checkpoint_dir} --> every {checkpoint_every} epochs")
+        checkpoint_dir.mkdir(exist_ok=True, parents=True)
+
     """ Initialize dataset objects. """
-    train_rng = torch.Generator()
-    train_rng.manual_seed(rng_seed)
+    data_rng = torch.Generator()
+    data_rng.manual_seed(rng_seed)
     if isinstance(train_dset, MetaphlanHDF5Dataset):
         sampler = HDF5BatchShuffledSampler(
             data_source=train_dset, batch_size=batch_size, shuffle=shuffle_dataset, rng_seed=rng_seed,
@@ -76,7 +81,7 @@ def main_training_loop(
     train_dloader = MetaphlanDataLoader(
         dataset=train_dset,
         batch_size=batch_size, num_workers=num_workers, pin_memory=True,
-        generator=train_rng, drop_last=False, prefetch_factor=prefetch_factor,
+        generator=data_rng, drop_last=False, prefetch_factor=prefetch_factor,
         persistent_workers=True,
         shuffle=shuffle_dataset, sampler=sampler,
     )
@@ -91,7 +96,7 @@ def main_training_loop(
     test_dloader = MetaphlanDataLoader(
         dataset=test_dset,
         batch_size=batch_size, num_workers=num_workers, pin_memory=True,
-        generator=train_rng, drop_last=False, prefetch_factor=prefetch_factor,
+        generator=None, drop_last=False, prefetch_factor=prefetch_factor,
         persistent_workers=True,
         shuffle=False,
     )
@@ -155,8 +160,22 @@ def main_training_loop(
     print(f"Initial Test Loss: {_compute_test_loss(show_pbar=True)}")
     test_dset.track_runtime = False
 
-    current_lr = torch.nan
-    for epoch in tqdm(range(num_epochs), desc="Training", unit="epoch"):
+    """ Try to resume from checkpoint file, if specified. """
+    if resume_from_checkpoint is not None:
+        last_epoch, epoch_history, training_loss_history, test_loss_history = load_checkpoint(
+            resume_from_checkpoint,
+            model, optimizer, lr_scheduler, scaler, data_rng
+        )
+        start_epoch = last_epoch + 1
+        current_lr = lr_scheduler.get_last_lr()[0]
+    else:
+        epoch_history = []
+        training_loss_history = []
+        test_loss_history = []
+        start_epoch = 0
+        current_lr = torch.nan
+
+    for epoch in tqdm(range(start_epoch, num_epochs), desc="Training", unit="epoch"):
         epoch_training_loss = 0.0
         model.train()
         for batch_idx, (training_sample_ids, training_batch_features, training_marker_mask, training_sgb_mask, training_y) in enumerate(train_dloader):
@@ -204,10 +223,18 @@ def main_training_loop(
                     f"LR = {current_lr}"
                 )
 
-            if plot_history:
-                epoch_history.append(epoch)
-                training_loss_history.append(epoch_training_loss)
-                test_loss_history.append(epoch_test_loss)
+            epoch_history.append(epoch)
+            training_loss_history.append(epoch_training_loss)
+            test_loss_history.append(epoch_test_loss)
+
+        if (checkpoint_dir is not None) and (epoch % checkpoint_every == 0):
+            """ Save the model and optimizer states. """
+            filepath = checkpoint_dir / f"checkpoint_{epoch}.pt"
+            save_checkpoint(
+                epoch, model, optimizer, lr_scheduler, scaler, data_rng,
+                epoch_history, training_loss_history, test_loss_history,
+                filepath,
+            )
 
     if loss_plot_path is not None:
         fig, ax = plt.subplots(1, 1)
@@ -217,3 +244,59 @@ def main_training_loop(
         ax.set_xlabel("Epoch")
         ax.legend()
         plt.savefig(loss_plot_path, bbox_inches="tight")
+
+
+def save_checkpoint(
+    epoch: int,
+    model: nn.Module,
+    optimizer: Optimizer,
+    scheduler: LRScheduler,
+    scaler: GradScaler,
+    data_rng: torch.Generator,
+    epoch_history: List[int],
+    training_history: List[float],
+    test_history: List[float],
+    filepath: Path,
+) -> None:
+    """Save training checkpoint including RNG state"""
+    checkpoint: Dict[str, Any] = {
+        'epoch': epoch,
+        'model_state_dict': model.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+        'scheduler_state_dict': scheduler.state_dict(),
+        'scaler_state_dict': scaler.state_dict(),
+        'data_rng_state': data_rng.get_state(),
+        'epoch_history': epoch_history,
+        'training_history': training_history,
+        'test_history': test_history,
+    }
+    torch.save(checkpoint, filepath)
+    print(f"Checkpoint saved at epoch {epoch}")
+
+
+def load_checkpoint(
+        filepath: Path,
+        model: nn.Module,
+        optimizer: Optimizer,
+        scheduler: LRScheduler,
+        scaler: GradScaler,
+        data_rng: torch.Generator
+) -> Tuple[int, List[int], List[float], List[float]]:
+    """
+    Load training checkpoint and restore RNG state.
+    The input objects rae modified in-place from the checkpoint file.
+    :return: the last completed epoch.
+    """
+    checkpoint: Dict[str, Any] = torch.load(filepath)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+    scaler.load_state_dict(checkpoint['scaler_state_dict'])
+    data_rng.set_state(checkpoint['data_rng_state'])
+
+    last_epoch: int = checkpoint['epoch']
+    epoch_history: List[int] = checkpoint['epoch_history']
+    training_history: List[float] = checkpoint['training_history']
+    test_history: List[float] = checkpoint['test_history']
+    print(f"Checkpoint loaded, last epoch completed = {last_epoch}")
+    return last_epoch, epoch_history, training_history, test_history
