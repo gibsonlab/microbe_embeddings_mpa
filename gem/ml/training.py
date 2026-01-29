@@ -171,10 +171,10 @@ def main_training_loop(
         epoch_history = []
         training_loss_history = []
         test_loss_history = []
-        start_epoch = 0
+        start_epoch = 1
         current_lr = torch.nan
 
-    for epoch in tqdm(range(start_epoch, num_epochs), desc="Training", unit="epoch"):
+    for epoch in tqdm(range(start_epoch, num_epochs+1), desc="Training", unit="epoch"):
         epoch_training_loss = 0.0
         model.train()
         for batch_idx, (training_sample_ids, training_batch_features, training_marker_mask, training_sgb_mask, training_y) in enumerate(train_dloader):
