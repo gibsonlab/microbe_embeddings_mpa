@@ -10,7 +10,7 @@ from .base import GenomeEmbedding, kwargs_torch_convert_device
 class DNABertSWrapper(GenomeEmbedding):
     def __init__(
             self,
-            device: str = 'cuda:0',
+            device: torch.device
     ):
         """ Constructor for the wrapper. """
         """ 
@@ -24,7 +24,7 @@ class DNABertSWrapper(GenomeEmbedding):
         for name, token in tokenizer.special_tokens_map.items():
             print(f"  {name}: {token} (ID: {tokenizer.convert_tokens_to_ids(token)})")
 
-        if device.startswith("cuda"):
+        if device.type == 'cuda':
             assert torch.cuda.is_available(), "CUDA is unavailable!"
             torch.cuda.empty_cache()
 

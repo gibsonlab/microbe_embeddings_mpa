@@ -11,12 +11,12 @@ from .base import GenomeEmbedding
 class EvoWrapper(GenomeEmbedding):
     def __init__(
             self,
-            num_hyena_layers: int = 32,
-            device: str = 'cuda:0',
+            num_hyena_layers: int,
+            device: torch.device,
     ):
         """
         :param num_hyena_layers: number of hyena layers to use. The final embedding output is the output of the k-th layer (k = num_hyena_layers).
-        Default = 32. Note: evo1 pre-trained model is exactly 32 hyena layers.
+        Note: evo1 pre-trained model is exactly 32 hyena layers.
         :param device: device to use
         """
         evo_model = Evo('evo-1-131k-base')
@@ -28,7 +28,7 @@ class EvoWrapper(GenomeEmbedding):
         #     print("using half precision")
         #     model = model.half()
 
-        if device.startswith("cuda"):
+        if device.type == 'cuda':
             assert torch.cuda.is_available(), "CUDA is unavailable!"
             torch.cuda.empty_cache()
 

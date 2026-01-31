@@ -160,9 +160,9 @@ def do_job(
         shard_size: int,
 ):
     if model_name == 'evo':
-        model_fn = lambda: EvoWrapper(device='cuda')
+        model_fn = lambda: EvoWrapper(device=torch.device('cuda'), num_hyena_layers=32)
     elif model_name == 'dnabert-s':
-        model_fn = lambda: DNABertSWrapper(device='cuda')
+        model_fn = lambda: DNABertSWrapper(device=torch.device('cuda'))
     else:
         raise ValueError("Unknown model name {}".format(model_name))
 
