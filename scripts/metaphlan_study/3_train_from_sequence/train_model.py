@@ -205,7 +205,7 @@ def parse_args() -> argparse.Namespace:
         action="store_true", default=False
     )
     parser.add_argument(
-        "-cd", "--cuda-devices", dest="cuda_device_names", type=str, required=True,
+        "-cd", "--cuda-devices", dest="cuda_device_ids", type=str, required=True,
         help="A comma-separated list of CUDA devices to use during training. "
              "If more than one is passed, the first CUDA device will be used for gradients and backprop, and the "
              "rest will be used to compute the embeddings. "
