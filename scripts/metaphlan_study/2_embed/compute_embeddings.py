@@ -160,7 +160,7 @@ def do_job(
         shard_size: int,
 ):
     if model_name == 'evo':
-        model_fn = lambda: EvoWrapper(device=torch.device('cuda'), num_hyena_layers=32)
+        model_fn = lambda: EvoWrapper(device=torch.device('cuda'), num_hyena_layers=32, checkpoint_name='evo-1-131k-base')
     elif model_name == 'dnabert-s':
         model_fn = lambda: DNABertSWrapper(device=torch.device('cuda'))
     else:

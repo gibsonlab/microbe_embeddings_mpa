@@ -20,6 +20,7 @@ class EvoWrapper(GenomeEmbedding):
         Note: evo1 pre-trained model is exactly 32 hyena layers.
         :param device: device to use
         """
+        print(f"Using Evo checkpoint '{checkpoint_name}'")
         evo_model = Evo(checkpoint_name)
         hyena_model, tokenizer = evo_model.model, evo_model.tokenizer
 
