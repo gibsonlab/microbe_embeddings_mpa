@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --partition=bwh_comppath
+#SBATCH --partition=bwh_comppath_all
 #SBATCH --array=1-8
 #SBATCH --ntasks=1
 #SBATCH --gres=gpu:1
