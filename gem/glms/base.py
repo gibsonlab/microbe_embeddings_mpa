@@ -1,16 +1,29 @@
+from abc import abstractmethod, ABC
 from typing import *
 
+import torch
 from torch import Tensor
 
 
 """ Generic embedding wrapper class """
-class GenomeEmbedding:
+class GenomeEmbedding(ABC):
+    @abstractmethod
+    def device(self) -> torch.device:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def embed_dim(self) -> int:
+        raise NotImplementedError()
+
+    @abstractmethod
     def embed_sequence(self, x: str) -> Tensor:
         raise NotImplementedError()
 
+    @abstractmethod
     def embed_batch(self, strs: List[str]) -> Tensor:
         raise NotImplementedError()
 
+    @abstractmethod
     def embed_empty_sequence(self) -> Tensor:
         raise NotImplementedError()
 
