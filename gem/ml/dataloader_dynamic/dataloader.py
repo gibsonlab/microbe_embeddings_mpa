@@ -110,7 +110,7 @@ class MultiGPUEmbeddingCollateFn:
                 embeddings_list = []
 
                 for i in range(0, len(all_genes), self.model_minibatch_size):
-                    print("embedding genes = {} ~ {}".format(i, i + self.model_minibatch_size))
+                    print("embedding genes = {} ~ {}".format(i, i + self.model_minibatch_size - 1))
                     minibatch_genes = all_genes[i:i + self.model_minibatch_size]
                     minibatch_embeddings = self.embedding.embed_batch(minibatch_genes)
                     embeddings_list.append(minibatch_embeddings)

@@ -13,13 +13,14 @@ class EvoWrapper(GenomeEmbedding):
             self,
             num_hyena_layers: int,
             device: torch.device,
+            checkpoint_name: str = 'evo-1-8k-base',
     ):
         """
         :param num_hyena_layers: number of hyena layers to use. The final embedding output is the output of the k-th layer (k = num_hyena_layers).
         Note: evo1 pre-trained model is exactly 32 hyena layers.
         :param device: device to use
         """
-        evo_model = Evo('evo-1-131k-base')
+        evo_model = Evo(checkpoint_name)
         hyena_model, tokenizer = evo_model.model, evo_model.tokenizer
 
         ### not needed, StripedHyena already in bfloat16 mode for weights.
