@@ -88,6 +88,8 @@ class MultiGPUEmbeddingCollateFn:
         abundance_tensors = []
         m_batch = torch.zeros((b, S, G), dtype=torch.bool)  # this doesn't need to be created on the worker device.
         s_batch = torch.zeros((b, S), dtype=torch.bool)  # this doesn't need to be created on the worker device.
+        print("s_batch shape:", m_batch.shape)
+        print("s_batch shape:", s_batch.shape)
 
         # Collect all gene strings with positions
         all_genes = []
@@ -96,8 +98,10 @@ class MultiGPUEmbeddingCollateFn:
         for sample_idx_in_batch, ((sample_id, sample_taxa), abundance_targets) in enumerate(batch):
             sample_ids.append(sample_id)
             abundance_tensors.append(abundance_targets)
+            print(f"Sample {sample_id} has {len(sample_taxa)} taxa")
             s_batch[sample_idx_in_batch, :len(sample_taxa)] = True
             for taxa_idx, taxa_genes in enumerate(sample_taxa):
+                print(f"Taxa #{taxa_idx} has {len(taxa_genes)} genes")
                 m_batch[sample_idx_in_batch, taxa_idx, :len(taxa_genes)] = True
                 for gene_idx, gene in enumerate(taxa_genes):
                     all_genes.append(gene)

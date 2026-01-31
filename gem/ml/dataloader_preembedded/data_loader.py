@@ -10,8 +10,6 @@ from .collate import collate_fn_dynamic_alloc
 def worker_init_fn(worker_id: int, base_rng_seed: int):
     """ Set random seed """
     import random, torch, numpy as np
-    # import os  # debug
-    # print(f"Initializing DataLoader worker ID {worker_id} (pid {os.getpid()})")  # debug
     worker_seed = base_rng_seed + worker_id
     np.random.seed(worker_seed)
     random.seed(worker_seed)
