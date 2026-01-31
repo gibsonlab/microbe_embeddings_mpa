@@ -13,6 +13,10 @@ class BacterialTaxaDatabase(ABC):
     def fetch_taxa(self, taxa_id: str) -> BacterialTaxa:
         pass
 
+    @abstractmethod
+    def __contains__(self, taxa_id: str) -> bool:
+        pass
+
 
 """ Implementations below """
 class MetaphlanTaxaDatabase(BacterialTaxaDatabase):
@@ -47,3 +51,6 @@ class MetaphlanTaxaDatabase(BacterialTaxaDatabase):
 
     def fetch_taxa(self, taxa_id: str) -> BacterialTaxa:
         return self.catalogue[taxa_id]
+
+    def __contains__(self, taxa_id: str) -> bool:
+        return taxa_id in self.catalogue
