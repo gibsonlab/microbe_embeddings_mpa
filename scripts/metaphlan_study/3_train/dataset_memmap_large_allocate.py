@@ -5,7 +5,8 @@ import pandas as pd
 import torch
 from gem.datasets.mpa.dataset_memmap_large import allocate_big_memmap_tdict
 
-from gem.datasets.mpa import MetaphlanProfileCollection, MetaphlanMarkerEmbedding
+from gem.datasets.abundance_profile import MetaphlanProfileParser
+from gem.datasets.mpa import MetaphlanMarkerPrecomputedEmbedding
 
 
 def parse_args():
@@ -24,9 +25,9 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
     dataset_df_full = pd.read_csv(args.dataset_tsv, sep='\t', index_col="SampleID")
-    all_samples = list(MetaphlanProfileCollection(dataset_df_full).samples())
+    all_samples = list(MetaphlanProfileParser(dataset_df_full).samples())
 
-    marker_embedding = MetaphlanMarkerEmbedding(
+    marker_embedding = MetaphlanMarkerPrecomputedEmbedding(
         marker_embedding_basedir=Path(args.marker_embedding_basedir),
         dimension_reduce_pca=args.dimension_reduce_pca,
         ipca_batch_size=args.ipca_batch_size,

@@ -2,7 +2,7 @@ from typing import *
 import numpy as np
 import pandas as pd
 
-from ..profile import AbundanceProfile, AbundanceProfileCollection
+from .profile import AbundanceProfile, AbundanceProfileParser
 
 
 class MetaphlanProfile(AbundanceProfile):
@@ -17,7 +17,7 @@ class MetaphlanProfile(AbundanceProfile):
         self.sgb_ids = [sgb[:-suffix_len] if sgb.endswith(suffix) else sgb for sgb in self.sgb_ids_raw]
 
 
-class MetaphlanProfileCollection(AbundanceProfileCollection):
+class MetaphlanProfileParser(AbundanceProfileParser):
     """
     Implementation of AbundanceProfileExtractor for Metaphlan tables.
     """

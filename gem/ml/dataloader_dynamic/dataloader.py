@@ -4,12 +4,14 @@ import torch
 from torch.utils.data import DataLoader
 
 from gem.glms import GenomeEmbedding
-from gem.datasets.dataset_sequence import Sample, OrganismDataset
+from gem.datasets.generic import OrganismGeneSequenceDataset
+from gem.datasets.generic.types import Sample
 
 GenomeEmbedding_Subclass = TypeVar("GenomeEmbedding_Subclass", bound=GenomeEmbedding)
 
 
 class MultiGPUEmbeddingCollateFn:
+    FALLBACK_DEVICE = torch.device("cuda")
     def __init__(
             self,
             embedding_class: Type[GenomeEmbedding_Subclass],
@@ -42,14 +44,13 @@ class MultiGPUEmbeddingCollateFn:
 
         if worker_info is None:
             # Single-process data loading (num_workers=0)
-            self.worker_id = 0
-            self.device = self.device_array[0]
+            self.device = self.FALLBACK_DEVICE
+            print(f"No workers being used for embeddings. Using fallback device {self.device}")
         else:
             # Multi-process data loading
-            self.worker_id = worker_info.id
-            self.device = self.device_array[worker_info.id]
-
-        print(f"Worker {self.worker_id} initializing on {self.device}")
+            worker_id = worker_info.id
+            self.device = self.device_array[worker_id]
+            print(f"Worker {worker_id} initializing on {self.device}")
 
         # Initialize the embedding model on this worker's GPU
         self.embedding: GenomeEmbedding = self.embedding_class(device=self.device, **self.embedding_kwargs)
@@ -106,7 +107,7 @@ class MultiGPUEmbeddingCollateFn:
 
 
 def create_dataloader_dynamic_embedding(
-        dataset: OrganismDataset,
+        dataset: OrganismGeneSequenceDataset,
         embedding_class: Type[GenomeEmbedding_Subclass],
         embedding_kwargs: Dict[str, Any],
         worker_devices: List[torch.device],
@@ -116,5 +117,6 @@ def create_dataloader_dynamic_embedding(
     return DataLoader(
         dataset,
         collate_fn=MultiGPUEmbeddingCollateFn(embedding_class, embedding_kwargs, worker_devices, model_batch_size),
+        num_workers=len(worker_devices),
         **dataloader_kwargs
     )

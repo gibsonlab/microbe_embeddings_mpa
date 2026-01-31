@@ -17,8 +17,8 @@ import argparse
 from pathlib import Path
 
 import pandas as pd
-from gem.datasets.mpa import MetaphlanMarkerEmbedding, MetaphlanProfileCollection
-from gem.datasets.mpa import perform_allocation, MetaphlanDataset
+from gem.datasets.mpa import MetaphlanMarkerPrecomputedEmbedding, MetaphlanProfileParser
+from gem.datasets.mpa import perform_allocation, MetaphlanPreembeddedDataset
 
 
 def parse_args():
@@ -40,14 +40,14 @@ def parse_args():
 
 def main(
         dataset_df: pd.DataFrame,
-        marker_embedding: MetaphlanMarkerEmbedding,
+        marker_embedding: MetaphlanMarkerPrecomputedEmbedding,
         memmap_dir: Path,
         add_padding: bool,
         max_num_markers: int,
         num_workers: int,
 ):
     memmap_dir.mkdir(parents=True, exist_ok=True)
-    regular_dset = MetaphlanDataset(dataset_df, marker_embedding)
+    regular_dset = MetaphlanPreembeddedDataset(dataset_df, marker_embedding)
     if add_padding:
         print(f"[***] NOTE ---> Marker-dim will be padded into: {max_num_markers}")
     perform_allocation(
@@ -72,13 +72,13 @@ if __name__ == "__main__":
         end_idx = args.end_row
         dataset_df = dataset_df_full.iloc[start_idx:end_idx]
 
-    marker_embedding = MetaphlanMarkerEmbedding(
+    marker_embedding = MetaphlanMarkerPrecomputedEmbedding(
         marker_embedding_basedir=Path(args.marker_embedding_basedir),
         dimension_reduce_pca=args.dimension_reduce_pca,
         ipca_batch_size=args.ipca_batch_size,
     )
 
-    all_samples = list(MetaphlanProfileCollection(dataset_df_full).samples())
+    all_samples = list(MetaphlanProfileParser(dataset_df_full).samples())
     max_num_markers = max(
         marker_embedding.num_markers(sgb_id)
         for sample in all_samples

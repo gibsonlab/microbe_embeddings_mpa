@@ -1,10 +1,10 @@
 import argparse
 from pathlib import Path
-from gem.datasets.mpa import MetaphlanMarkerEmbedding
+from gem.datasets.mpa import MetaphlanMarkerPrecomputedEmbedding
 
 
 def main(embed_basedir: Path, target_dim: int, ipca_batch_size: int):
-    _ = MetaphlanMarkerEmbedding(
+    _ = MetaphlanMarkerPrecomputedEmbedding(
         embed_basedir,
         dimension_reduce_pca=target_dim,
         ipca_batch_size=ipca_batch_size

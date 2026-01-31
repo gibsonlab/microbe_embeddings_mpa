@@ -24,7 +24,7 @@ class AbundanceProfile:
         return f"[{self.sample_id} --> {len(self.taxa_ids)} Taxa]"
 
 
-class AbundanceProfileCollection(ABC):
+class AbundanceProfileParser(ABC):
     """
     Generic class which extracts profiles one by one.
     """
@@ -34,3 +34,4 @@ class AbundanceProfileCollection(ABC):
 
     def samples(self) -> Iterator[AbundanceProfile]:
         raise NotImplementedError()
+    

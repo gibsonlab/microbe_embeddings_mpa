@@ -11,7 +11,7 @@ import numpy as np
 import scipy
 import pandas as pd
 
-from gem.datasets.mpa import AbstractMetaphlanDataset, MetaphlanDatasetMemmapped, MetaphlanProfileCollection
+from gem.datasets.mpa import AbstractMetaphlanPreembeddedDataset, MetaphlanPreembeddedDatasetMemmapped, MetaphlanProfileParser
 from gem.ml import SGBAbundancePredictionModel, SGBAbundanceLayeredPredictionModel, safe_kl_div_loss
 
 
@@ -359,7 +359,7 @@ class NearestNeighborAveragingPredictor(BaselinePredictor):
     """
     def __init__(self, sgb_phylogenetic_tree_file: Path, train_df: pd.DataFrame):
         assert train_df.shape[0] > 0
-        profile_df = MetaphlanProfileCollection(train_df).sgb_profile_df
+        profile_df = MetaphlanProfileParser(train_df).sgb_profile_df
         zero_cols = profile_df.columns[(profile_df == 0).all()]
         profile_df = profile_df.drop(columns=zero_cols)
         profile_df = profile_df.rename(columns=lambda x: x[:-6] if x.endswith('_group') else x)
@@ -440,8 +440,8 @@ class NearestNeighborAveragingPredictor(BaselinePredictor):
 
 
 def evaluate_method(
-    inference_fn: Callable[[AbstractMetaphlanDataset, int], Tensor],
-    dset: AbstractMetaphlanDataset
+    inference_fn: Callable[[AbstractMetaphlanPreembeddedDataset, int], Tensor],
+    dset: AbstractMetaphlanPreembeddedDataset
 ) -> pd.DataFrame:
     """
     :param inference_fn: A function (e.g. lambda expression) which takes a MicrobiomeSample as input and outputs a (abund_predictions) tensor. The abund_predictions should be a vector of LOGS of relative abundances.
@@ -495,7 +495,7 @@ def evaluate_method(
     return pd.DataFrame(df_entries)
             
 
-def perform_inference_torch_model(torch_model: nn.Module, dset: AbstractMetaphlanDataset, sample_idx: int, eval_device: str = 'cuda') -> Tensor:
+def perform_inference_torch_model(torch_model: nn.Module, dset: AbstractMetaphlanPreembeddedDataset, sample_idx: int, eval_device: str = 'cuda') -> Tensor:
     """
     :param torch_model: A pytorch model which takes as input a batched tensor of SGB embeddings, which was trained using the function 'main_training_loop'. This model should output logits.
     :param sample: A sample on which to perform inference on.
@@ -522,7 +522,7 @@ def perform_inference_torch_model(torch_model: nn.Module, dset: AbstractMetaphla
 def evaluate_torch_model(
     model_config_file: Path,
     model_state_file: Path,
-    dset: AbstractMetaphlanDataset,
+    dset: AbstractMetaphlanPreembeddedDataset,
     device: str = 'cuda',
 ) -> pd.DataFrame:
     """ 
@@ -554,14 +554,14 @@ def evaluate_torch_model(
 
 def evaluate_baseline_model(
     baseline_method: BaselinePredictor,
-    dset_object: AbstractMetaphlanDataset,
+    dset_object: AbstractMetaphlanPreembeddedDataset,
     dset_df: pd.DataFrame,
 ) -> pd.DataFrame:
     def predict_fn(_dset, _idx):
         sample_id, _, _, sgb_padding_mask, _ = dset_object[_idx]
         subset_df = dset_df.loc[dset_df.index == sample_id]
         assert subset_df.shape[0] == 1, f"Expected 1 sample matching ID {sample_id}, got: {subset_df.shape[0]}"
-        extractor = MetaphlanProfileCollection(subset_df)
+        extractor = MetaphlanProfileParser(subset_df)
         target_sample = next(iter(extractor.samples()))
         
         abunds = baseline_method.predict_abundances(target_sample.sgb_ids, len(target_sample.sgb_ids))
@@ -581,7 +581,7 @@ def main(model_options: List[str], plot_dir: Path, eval_device: str = 'cuda'):
     train_df = pd.read_csv("/data/cctm/youn/metaphlan_dset/model_training/train.tsv", sep="\t", index_col="SampleID")
     test_df = pd.read_csv("/data/cctm/youn/metaphlan_dset/model_training/test.tsv", sep="\t", index_col="SampleID")
 
-    test_dset = MetaphlanDatasetMemmapped(list(test_df.index))
+    test_dset = MetaphlanPreembeddedDatasetMemmapped(list(test_df.index))
     test_dset.load_memmap_tensors(Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples"))
 
     for model_option in model_options:

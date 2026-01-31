@@ -18,11 +18,11 @@ from pathlib import Path
 
 import h5py
 import pandas as pd
-from gem.datasets.mpa import MetaphlanDatasetMemmapped
+from gem.datasets.mpa import MetaphlanPreembeddedDatasetMemmapped
 from tqdm import tqdm
 
 
-def hdf5_convert_dataset(dataset: MetaphlanDatasetMemmapped, out_path: Path):
+def hdf5_convert_dataset(dataset: MetaphlanPreembeddedDatasetMemmapped, out_path: Path):
     max_S = dataset.max_num_sgbs()
     max_M = dataset.max_num_markers()
     embed_dim = dataset.embed_feature_dim()
@@ -94,7 +94,7 @@ def main(
         exit(0)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    regular_dset = MetaphlanDatasetMemmapped(dataset_df.index.tolist())
+    regular_dset = MetaphlanPreembeddedDatasetMemmapped(dataset_df.index.tolist())
     regular_dset.load_memmap_tensors(memmap_tensor_sample_dir)
     hdf5_convert_dataset(
         dataset=regular_dset,

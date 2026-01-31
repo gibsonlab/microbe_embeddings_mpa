@@ -7,8 +7,8 @@ from torch import Tensor
 from tensordict import TensorDict
 from tqdm import tqdm
 
-from .abundance_profile import MetaphlanProfile
-from .dataset import MetaphlanDataset, AbstractMetaphlanDataset
+from ..abundance_profile import MetaphlanProfile
+from .dataset import MetaphlanPreembeddedDataset, AbstractMetaphlanPreembeddedDataset
 
 """
 From https://docs.pytorch.org/tensordict/main/saving.html
@@ -46,7 +46,7 @@ def allocate_sample(
         sample: MetaphlanProfile,
         add_padding: bool,
         max_num_markers: int,
-        dataset: MetaphlanDataset
+        dataset: MetaphlanPreembeddedDataset
 ) -> bool:
     """
     Allocate a single sample to memory-mapped storage.
@@ -68,7 +68,7 @@ def allocate_sample(
     return True
 
 
-def perform_allocation(dataset: MetaphlanDataset, cache_dir: Path, num_threads: int, add_padding: bool, max_num_markers: int):
+def perform_allocation(dataset: MetaphlanPreembeddedDataset, cache_dir: Path, num_threads: int, add_padding: bool, max_num_markers: int):
     if num_threads <= 1:
         print("Performing memory-mapping allocation in single-threaded mode.")
         perform_allocation_single_thread(dataset, cache_dir, add_padding, max_num_markers)
@@ -77,7 +77,7 @@ def perform_allocation(dataset: MetaphlanDataset, cache_dir: Path, num_threads: 
         perform_allocation_multi_thread(dataset, cache_dir, num_threads, add_padding, max_num_markers)
 
 
-def perform_allocation_single_thread(dataset: MetaphlanDataset, cache_dir: Path, add_padding: bool, max_num_markers: int):
+def perform_allocation_single_thread(dataset: MetaphlanPreembeddedDataset, cache_dir: Path, add_padding: bool, max_num_markers: int):
     for sample in tqdm(dataset.samples, desc="Sample Allocation"):
         memmap_dir = cache_dir / sample.sample_id
         if (memmap_dir / "meta.json").exists():
@@ -88,7 +88,7 @@ def perform_allocation_single_thread(dataset: MetaphlanDataset, cache_dir: Path,
             allocate_sample(memmap_dir, sample, add_padding, max_num_markers, dataset)
 
 
-def perform_allocation_multi_thread(dataset: MetaphlanDataset, cache_dir: Path, num_threads: int, add_padding: bool, max_num_markers: int):
+def perform_allocation_multi_thread(dataset: MetaphlanPreembeddedDataset, cache_dir: Path, num_threads: int, add_padding: bool, max_num_markers: int):
     with ThreadPoolExecutor(max_workers=num_threads) as executor:
         # Submit all tasks
         futures = []
@@ -130,7 +130,7 @@ def perform_allocation_multi_thread(dataset: MetaphlanDataset, cache_dir: Path, 
     ))
 
 
-class MetaphlanDatasetMemmapped(AbstractMetaphlanDataset):
+class MetaphlanPreembeddedDatasetMemmapped(AbstractMetaphlanPreembeddedDataset):
     """
     A class which pre-computes all tensors and stores into a memory-mapped tensordict.
     """
@@ -196,7 +196,7 @@ class MetaphlanDatasetMemmapped(AbstractMetaphlanDataset):
         return abunds
 
 
-class MetaphlanDatasetMemmappedTensorDict(AbstractMetaphlanDataset):
+class MetaphlanPreembeddedDatasetMemmappedTensorDict(AbstractMetaphlanPreembeddedDataset):
     """
     A re-implementation of MetaphlanDatasetMemmapped.
     Instead of returning the memmapped tensors by unpacking the dictionary, it returns the raw tensordict object

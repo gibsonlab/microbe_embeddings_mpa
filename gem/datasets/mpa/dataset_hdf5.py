@@ -6,10 +6,10 @@ import h5py
 import torch
 from torch import Tensor
 
-from .dataset import AbstractMetaphlanDataset
+from .dataset import AbstractMetaphlanPreembeddedDataset
 
 
-class MetaphlanHDF5Dataset(AbstractMetaphlanDataset):
+class MetaphlanHDF5PreembeddedDataset(AbstractMetaphlanPreembeddedDataset):
     def __init__(
             self,
             hdf5_path: Path,
@@ -84,7 +84,7 @@ class HDF5BatchShuffledSampler(torch.utils.data.Sampler):
     """
     def __init__(
             self,
-            data_source: MetaphlanHDF5Dataset,
+            data_source: MetaphlanHDF5PreembeddedDataset,
             batch_size: int,
             shuffle: bool = True,
             rng_seed: Optional[int] = None,

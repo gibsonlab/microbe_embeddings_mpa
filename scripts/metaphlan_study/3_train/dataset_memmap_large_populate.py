@@ -6,11 +6,11 @@ import pandas as pd
 from gem.datasets.mpa.dataset_memmap_large import fetch_preallocated_tdict, parse_sample_ids_memmap
 from tensordict import TensorDict
 
-from gem.datasets.mpa import MetaphlanDataset, MetaphlanMarkerEmbedding
+from gem.datasets.mpa import MetaphlanPreembeddedDataset, MetaphlanMarkerPrecomputedEmbedding
 
 
 def populate_memmap_tdict(
-        dataset: MetaphlanDataset,
+        dataset: MetaphlanPreembeddedDataset,
         tdict_start_idx: int,
         big_tdict: TensorDict
 ):
@@ -54,12 +54,12 @@ if __name__ == "__main__":
         end_idx = args.end_row
         dataset_df = dataset_df_full.iloc[start_idx:end_idx]
 
-    marker_embedding = MetaphlanMarkerEmbedding(
+    marker_embedding = MetaphlanMarkerPrecomputedEmbedding(
         marker_embedding_basedir=Path(args.marker_embedding_basedir),
         dimension_reduce_pca=args.dimension_reduce_pca,
         ipca_batch_size=args.ipca_batch_size,
     )
-    dset = MetaphlanDataset(dataset_df, marker_embedding)
+    dset = MetaphlanPreembeddedDataset(dataset_df, marker_embedding)
 
     # validate sample ID ordering.
     print("Validating sample ordering.")

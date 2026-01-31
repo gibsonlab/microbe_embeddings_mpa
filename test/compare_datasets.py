@@ -5,7 +5,7 @@ import pandas as pd
 from tqdm import tqdm
 import torch
 from gem.datasets.mpa import *
-from gem.ml.dataloader import MetaphlanDataLoader
+from gem.ml.dataloader_preembedded import MetaphlanDataLoader
 
 import time
 from contextlib import contextmanager
@@ -27,7 +27,7 @@ def time_hdf5(hdf5_path: Path, n_iters: int = 100, batch_sz: int = 5):
     rng = torch.Generator()
     rng.manual_seed(12345)
 
-    dset = MetaphlanHDF5Dataset(hdf5_path, model_dtype=torch.float32)
+    dset = MetaphlanHDF5PreembeddedDataset(hdf5_path, model_dtype=torch.float32)
     dloader = MetaphlanDataLoader(
         dataset=dset,
         batch_size=batch_sz, num_workers=1, pin_memory=True,
@@ -44,7 +44,7 @@ def time_hdf5(hdf5_path: Path, n_iters: int = 100, batch_sz: int = 5):
 
 def time_memmap(sample_ids: List[str], memmap_dir: Path, n_iters: int = 100, batch_sz: int = 5):
     print(f"Using memmap dir: {memmap_dir}")
-    dset = MetaphlanDatasetMemmapped(sample_ids=sample_ids)
+    dset = MetaphlanPreembeddedDatasetMemmapped(sample_ids=sample_ids)
     dset.load_memmap_tensors(memmap_dir)
 
     rng = torch.Generator()
@@ -72,7 +72,7 @@ def time_memmap(sample_ids: List[str], memmap_dir: Path, n_iters: int = 100, bat
 
 def time_memmap_padded(sample_ids: List[str], memmap_dir: Path, n_iters: int = 100, batch_sz: int = 5):
     print(f"Using memmap dir: {memmap_dir}")
-    dset = MetaphlanDatasetMemmappedTensorDict(sample_ids=sample_ids)
+    dset = MetaphlanPreembeddedDatasetMemmappedTensorDict(sample_ids=sample_ids)
     dset.load_memmap_tensors(memmap_dir)
 
     rng = torch.Generator()
@@ -100,7 +100,7 @@ def time_memmap_padded(sample_ids: List[str], memmap_dir: Path, n_iters: int = 1
 
 def time_memmap_large(sample_ids: List[str], memmap_dir: Path, n_iters: int = 100, batch_sz: int = 5):
     print(f"Using memmap dir: {memmap_dir}")
-    dset = MetaphlanDatasetMemmappedLarge(memmap_dir=memmap_dir, assume_contiguous_access=False)
+    dset = MetaphlanPreembeddedDatasetMemmappedLarge(memmap_dir=memmap_dir, assume_contiguous_access=False)
     assert len(dset.sample_ids) == len(sample_ids)
 
     rng = torch.Generator()

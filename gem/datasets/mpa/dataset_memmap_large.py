@@ -5,9 +5,8 @@ from pathlib import Path
 import torch
 from torch import Tensor
 from tensordict import TensorDict, MemoryMappedTensor
-from tqdm import tqdm
 
-from .dataset import AbstractMetaphlanDataset
+from .dataset import AbstractMetaphlanPreembeddedDataset
 
 
 def parse_torch_dtype(s: str) -> torch.dtype:
@@ -147,7 +146,7 @@ def fetch_preallocated_tdict(memmap_dir: Path) -> Tuple[TensorDict, int, int, in
     ), S_max, M_max, E, dtype
 
 
-class MetaphlanDatasetMemmappedLarge(AbstractMetaphlanDataset):
+class MetaphlanPreembeddedDatasetMemmappedLarge(AbstractMetaphlanPreembeddedDataset):
     """
     A class which pre-computes all tensors and stores into a memory-mapped tensordict.
     """

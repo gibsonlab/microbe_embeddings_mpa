@@ -8,7 +8,7 @@ from joblib import Parallel, delayed
 
 import numpy as np
 import pandas as pd
-from gem.datasets.mpa import MetaphlanProfileCollection, MetaphlanProfile
+from gem.datasets.abundance_profile import MetaphlanProfileParser, MetaphlanProfile
 
 
 def select_profiles_in_metadata(metadata_df, profiles_df) -> pd.DataFrame:
@@ -388,7 +388,7 @@ def test_train_split_asv_separation(
         return i, j, similarity_oracle.similarity(sample_i, sample_j)
 
     def train_test_sgb_jaccard_spectral_split(profile_df: pd.DataFrame, train_fraction: float, test_fraction: float):
-        extractor = MetaphlanProfileCollection(profile_df)
+        extractor = MetaphlanProfileParser(profile_df)
         all_samples = list(extractor.samples())
         print(f"Splitting {len(all_samples)} samples found in project.")
 

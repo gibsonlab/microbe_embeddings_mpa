@@ -4,7 +4,7 @@ from typing import *
 import torch
 from torch import autocast
 from gem.ml import MetaphlanDataLoader, SGBAbundancePredictionModel
-from gem.datasets.mpa import MetaphlanDatasetMemmapped
+from gem.datasets.mpa import MetaphlanPreembeddedDatasetMemmapped
 
 
 def create_test_config() -> Dict:
@@ -30,7 +30,7 @@ def test_model_memmap_input(memmap_tensor_sample_dir: Path):
     Test the model with pre-computed memmap tensor input (3_train/3_memmap_*.sh)
     """
     test_sample_ids = ["SAMEA7041133", "SAMEA7041172"]
-    test_dset = MetaphlanDatasetMemmapped(test_sample_ids)
+    test_dset = MetaphlanPreembeddedDatasetMemmapped(test_sample_ids)
     test_dset.load_memmap_tensors(memmap_tensor_sample_dir)
 
     model_cfg = create_test_config()

@@ -1,9 +1,9 @@
 from pathlib import Path
-from gem.datasets.mpa.embeddings import MetaphlanMarkerEmbedding
+from gem.datasets.mpa.embeddings import MetaphlanMarkerPrecomputedEmbedding
 
 
 def test_embeddings():
-    test_embed = MetaphlanMarkerEmbedding(
+    test_embed = MetaphlanMarkerPrecomputedEmbedding(
         marker_embedding_memmap_dir=Path("/data/cctm/youn/metaphlan_dset/embeddings/phylophlan_markers/evo/memmap"),
     )
 

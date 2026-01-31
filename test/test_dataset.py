@@ -4,9 +4,9 @@ import pandas as pd
 import torch
 
 from gem.ml import MetaphlanDataLoader
-from gem.datasets.mpa.embeddings import MetaphlanMarkerEmbedding
-from gem.datasets.mpa.dataset import MetaphlanDataset
-from gem.ml.dataloader.collate import BufferedCollator
+from gem.datasets.mpa.embeddings import MetaphlanMarkerPrecomputedEmbedding
+from gem.datasets.mpa.dataset import MetaphlanPreembeddedDataset
+from gem.ml.dataloader_preembedded.collate import BufferedCollator
 
 
 def generate_test_profile() -> pd.DataFrame:
@@ -17,8 +17,8 @@ def generate_test_profile() -> pd.DataFrame:
 
 
 def test_dataset(marker_embedding_basedir: Path):
-    test_embed = MetaphlanMarkerEmbedding(marker_embedding_basedir=marker_embedding_basedir)
-    test_dset = MetaphlanDataset(
+    test_embed = MetaphlanMarkerPrecomputedEmbedding(marker_embedding_basedir=marker_embedding_basedir)
+    test_dset = MetaphlanPreembeddedDataset(
         generate_test_profile(),
         test_embed,
     )
@@ -47,8 +47,8 @@ def test_dataset(marker_embedding_basedir: Path):
 
         
 def test_collator(marker_embedding_basedir: Path):
-    test_embed = MetaphlanMarkerEmbedding(marker_embedding_basedir=marker_embedding_basedir)
-    test_dset = MetaphlanDataset(
+    test_embed = MetaphlanMarkerPrecomputedEmbedding(marker_embedding_basedir=marker_embedding_basedir)
+    test_dset = MetaphlanPreembeddedDataset(
         generate_test_profile(),
         test_embed,
     )
@@ -97,8 +97,8 @@ def test_collator(marker_embedding_basedir: Path):
 
 
 def test_dataloader(marker_embedding_basedir: Path):
-    test_embed = MetaphlanMarkerEmbedding(marker_embedding_basedir=marker_embedding_basedir)
-    test_dset = MetaphlanDataset(
+    test_embed = MetaphlanMarkerPrecomputedEmbedding(marker_embedding_basedir=marker_embedding_basedir)
+    test_dset = MetaphlanPreembeddedDataset(
         generate_test_profile(),
         test_embed,
     )

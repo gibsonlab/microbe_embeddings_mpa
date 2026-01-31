@@ -1,0 +1,4 @@
+# marker_embed_dim are determined by the dataset.
+sgb_model_dim: 64
+hidden_dim: 128
+use_sgb_pooling: False

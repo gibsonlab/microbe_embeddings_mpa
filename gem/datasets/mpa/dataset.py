@@ -7,12 +7,18 @@ import torch
 from torch import Tensor
 from torch.utils.data import Dataset
 
-from .abundance_profile import MetaphlanProfileCollection, MetaphlanProfile
-from .embeddings import MetaphlanMarkerEmbedding
+from ..abundance_profile import MetaphlanProfileParser, MetaphlanProfile
+from .embeddings import MetaphlanMarkerPrecomputedEmbedding
 from gem.util.timer import timer
 
 
-class AbstractMetaphlanDataset(Dataset, ABC):
+class AbstractMetaphlanPreembeddedDataset(Dataset, ABC):
+    """
+    A dataset which loads pre-computed embeddings of SGB markers.
+
+    The abstraction layer is here to allow for freedom in the file format / organization of the pre-embedded layers.
+    E.g. HDF5, memmapped tensors organized by SGBs, .pt files organized by marker IDs (which need to be organized into SGBs)
+    """
     @abstractmethod
     def __getitem__(self, idx: int) -> Tuple[str, Tensor, Tensor, Tensor, Tensor]:
         """
@@ -45,14 +51,14 @@ class AbstractMetaphlanDataset(Dataset, ABC):
         pass
 
 
-class MetaphlanDataset(AbstractMetaphlanDataset):
+class MetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedDataset):
     """
     PyTorch Dataset for microbiome data with SGB embeddings and abundance values.
     """
     def __init__(
             self,
             dataset_df: pd.DataFrame,
-            marker_embedding: MetaphlanMarkerEmbedding
+            marker_embedding: MetaphlanMarkerPrecomputedEmbedding
     ):
         """
         Initialize the microbiome dataset.
@@ -63,7 +69,7 @@ class MetaphlanDataset(AbstractMetaphlanDataset):
         """
         super().__init__()
         self.df = dataset_df
-        self.samples = list(MetaphlanProfileCollection(dataset_df).samples())
+        self.samples = list(MetaphlanProfileParser(dataset_df).samples())
 
         self.sample_indices = {sample.sample_id: idx for idx, sample in enumerate(self.samples)}
         self.marker_embedding = marker_embedding

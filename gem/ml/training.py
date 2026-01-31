@@ -6,27 +6,98 @@ import matplotlib.pyplot as plt
 
 import torch
 from torch import nn, GradScaler, autocast
+from torch.utils.data import DataLoader
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LRScheduler
 
-from gem.datasets.mpa import AbstractMetaphlanDataset, MetaphlanHDF5Dataset, HDF5BatchShuffledSampler
-from gem.ml.dataloader.data_loader import MetaphlanDataLoader
+from gem.datasets import AbstractMetaphlanPreembeddedDataset, MetaphlanHDF5PreembeddedDataset, OrganismGeneSequenceDataset
 from gem.util import timer
+
+
+def create_metaphlan_preembedded_hdf5_dloader(
+        dataset: MetaphlanHDF5PreembeddedDataset,
+        batch_size: int,
+        shuffle: bool,
+        rng: Optional[torch.Generator],
+        drop_last: bool,
+        num_workers: Optional[int] = 0,
+        prefetch_factor: int = 2,
+):
+    from gem.datasets.mpa import HDF5BatchShuffledSampler
+    from gem.ml.dataloader_preembedded.data_loader import MetaphlanDataLoader
+    sampler = HDF5BatchShuffledSampler(
+        data_source=dataset, batch_size=batch_size, shuffle=shuffle, rng_seed=rng.initial_seed() + 1,
+    )
+    dloader = MetaphlanDataLoader(
+        dataset=dataset,
+        batch_size=batch_size, num_workers=num_workers,
+        generator=rng, drop_last=drop_last, prefetch_factor=prefetch_factor,
+        persistent_workers=True, pin_memory=True,
+        shuffle=shuffle, sampler=sampler,
+    )
+
+
+def create_metaphlan_preembedded_generic_dloader(
+        dataset: AbstractMetaphlanPreembeddedDataset,
+        batch_size: int,
+        shuffle: bool,
+        rng: Optional[torch.Generator],
+        drop_last: bool,
+        num_workers: Optional[int] = 0,
+        prefetch_factor: int = 2,
+):
+    from gem.ml.dataloader_preembedded.data_loader import MetaphlanDataLoader
+    return MetaphlanDataLoader(
+        dataset=dataset,
+        batch_size=batch_size, num_workers=num_workers,
+        generator=rng, drop_last=drop_last, prefetch_factor=prefetch_factor,
+        persistent_workers=True, pin_memory=True,
+        shuffle=shuffle
+    )
+
+
+from .dataloader_dynamic.dataloader import GenomeEmbedding_Subclass
+def create_dynamic_embedding_dloader(
+        dataset: OrganismGeneSequenceDataset,
+        embedding_class: Type[GenomeEmbedding_Subclass],
+        embedding_kwargs: Dict[str, Any],
+        batch_size: int,
+        shuffle: bool,
+        rng: Optional[torch.Generator],
+        drop_last: bool,
+        worker_devices: List[torch.device],
+        num_workers: Optional[int] = 0,
+        prefetch_factor: int = 2,
+):
+    from gem.ml.dataloader_dynamic import create_dataloader_dynamic_embedding
+    create_dataloader_dynamic_embedding(
+        dataset,
+        embedding_class=embedding_class,
+        embedding_kwargs=embedding_kwargs,
+        worker_devices=worker_devices, num_workers=num_workers,
+        model_batch_size=batch_size,
+        shuffle=shuffle, generator=rng, drop_last=drop_last, prefetch_factor=prefetch_factor,
+    )
+
+
+def get_model_device(model: nn.Module) -> torch.device:
+    """
+    Checks the device of a PyTorch model.
+    """
+    params = model.parameters()
+    first_param = next(params)
+    return first_param.device
 
 
 def main_training_loop(
         model: nn.Module,
         optimizer: Optimizer,
         lr_scheduler: LRScheduler,
-        train_dset: AbstractMetaphlanDataset,
-        test_dset: AbstractMetaphlanDataset,
+        train_dloader: DataLoader,
+        test_dloader: DataLoader,
         loss_fn: Union[nn.Module, Callable],
         checkpoint_dir: Path,
-        batch_size: int = 5,
-        num_workers: Optional[int] = 0,
-        shuffle_dataset: bool = True,
         clip_gradient_norm_ub: Optional[float] = None,
-        prefetch_factor: int = 2,
         num_epochs: int = 5000,
         print_progress: bool = True,
         print_every: int = 5,
@@ -35,8 +106,7 @@ def main_training_loop(
         loss_plot_path: Optional[Path] = None,
         auto_mixed_precision: bool = False,
         rng_seed: int = 314159,
-        cuda_device_name: str = "cuda",
-        timer_profile: bool = False
+        timer_profile: bool = False,
 ):
     """
     Train an input model on the given dataset. Uses torch.optim.Adam by default.
@@ -45,62 +115,57 @@ def main_training_loop(
     :param model: The model to train. Should be designed to take a tensor of shape (*, MAX_NUM_SGBS, MAX_NUM_MARKERS, MARKER_EMBED_DIM) as input, and output (*, MAX_NUM_SGBS) which represents a batched vector of logits.
     :param optimizer: The torch.optim.Optimizer instance used to optimize.
     :param lr_scheduler: the torch.optim.lr_scheduler instance used to tune learning rates.
-    :param train_dset: The object that specifies the training dataset.
-    :param test_dset: The object that specifies the test dataset.
+    :param train_dloader: The DataLoader that batches the training dataset. Must have a torch.Generator specified during creation.
+    :param test_dloader: The DataLoader that batches the test dataset.
     :param loss_fn: The loss function to use for optimization.
-    :param num_workers: Pass-through for prefetch_factors for torch.utils.data.DataLoader. Specify the number of workers to load data in parallel. Note that a separate dataloader is created for train/test.
-    :param shuffle_dataset: Indicate whether to shuffle the training data.
+    :param checkpoint_dir: The directory to save the model checkpoints.
     :param clip_gradient_norm_ub: If specified and greater than zero, applies gradient clipping.
-    :param prefetch_factor: Pass-through for prefetch_factors for torch.utils.data.DataLoader.
-    :param batch_size: The size of each batch.
     :param num_epochs: The total number of epochs to train. (1 epoch is a full pass on the entire training dataset, after batching.)
     :param print_progress: Indicate whether to print loss values periodically to stdout. Specify `print_every` to change how often this occurs.
     :param print_every: Indicate how often to print progress as a debug message to stdout. Only relevant if `print_progress` is set to true.
     :param loss_plot_path: If provided, plots the training loss/test loss history. Test loss is only plotted if test_df is provided.
     :param rng_seed: The random generator seed to use for training. Specify for reproducibility. (default: 314159)
     :param auto_mixed_precision: Indicate whether to use torch's built-in auto-mixed precision mode.
-    :param cuda_device_name:
     """
 
     """ Initialization. """
-    scaler = GradScaler(cuda_device_name, enabled=auto_mixed_precision)
+    model_device = get_model_device(model)
+    scaler = GradScaler(str(model_device), enabled=auto_mixed_precision)
 
     print(f"Checkpoints saved to {checkpoint_dir} --> every {checkpoint_every} epochs")
     checkpoint_dir.mkdir(exist_ok=True, parents=True)
 
     """ Initialize dataset objects. """
-    data_rng = torch.Generator()
-    data_rng.manual_seed(rng_seed)
-    if isinstance(train_dset, MetaphlanHDF5Dataset):
-        sampler = HDF5BatchShuffledSampler(
-            data_source=train_dset, batch_size=batch_size, shuffle=shuffle_dataset, rng_seed=rng_seed,
-        )
-    else:
-        sampler = None
-    train_dloader = MetaphlanDataLoader(
-        dataset=train_dset,
-        batch_size=batch_size, num_workers=num_workers, pin_memory=True,
-        generator=data_rng, drop_last=False, prefetch_factor=prefetch_factor,
-        persistent_workers=True,
-        shuffle=shuffle_dataset, sampler=sampler,
-    )
-    # also set RNG seed for dropout reproducibility.
+    # data_rng = torch.Generator()
+    # data_rng.manual_seed(rng_seed)
+
+    # train_dloader = create_dloader(
+    #     dataset=train_dset,
+    #     batch_size=batch_size, num_workers=num_workers, drop_last=False, prefetch_factor=prefetch_factor,
+    #     rng=data_rng, shuffle=shuffle_dataset,
+    # )
+    # test_dloader = create_dloader(
+    #     dataset=test_dset,
+    #     batch_size=batch_size, num_workers=num_workers, drop_last=False, prefetch_factor=prefetch_factor,
+    #     rng=None, shuffle=False,
+    # )
+    training_data_rng: torch.Generator = train_dloader.generator
+    assert training_data_rng is not None, "Training dataset DataLoader must have a pre-seeded Generator instance provided."
+    assert isinstance(training_data_rng, torch.Generator), "Training dataset DataLoader must have a torch.Generator instance for generator. Got: {}".format(training_data_rng.__class__.__name__)
+    training_data_rng.manual_seed(rng_seed)
+
+    n_training_examples = len(train_dloader.dataset)
+    n_test_examples = len(test_dloader.dataset)
+
+    print(f"Training dataset size: {n_training_examples}")
+    print(f"Number of training batches: {len(train_dloader)}")
+    print(f"Test dataset size: {n_test_examples}")
+    print(f"Number of test batches: {len(test_dloader)}")
+
+    # also set global RNG seed for dropout reproducibility (maybe figure out how dropout RNG is controlled during training.)
     torch.manual_seed(rng_seed + 1)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(rng_seed + 1)
-
-    print(f"Training dataset size: {len(train_dset)}")
-    print(f"Number of training batches: {len(train_dloader)}")
-
-    test_dloader = MetaphlanDataLoader(
-        dataset=test_dset,
-        batch_size=batch_size, num_workers=num_workers, pin_memory=True,
-        generator=None, drop_last=False, prefetch_factor=prefetch_factor,
-        persistent_workers=True,
-        shuffle=False,
-    )
-    print(f"Test dataset size: {len(test_dset)}")
-    print(f"Number of test batches: {len(test_dloader)}")
 
     """ Training loop -- Optimize using batches. """
     print("NOTE: the first iteration of model evaluation may take considerably longer, due to compilation overhead.")
@@ -112,19 +177,19 @@ def main_training_loop(
                 collection = tqdm(test_dloader, total=len(test_dloader), desc="Test Loss Eval", unit="batch")
             else:
                 collection = test_dloader
-            for batch_idx, (test_sample_ids, test_batch_features, test_marker_mask, test_sgb_mask, test_y) in enumerate(collection):
+            for batch_idx, (test_sample_ids, test_batch_features, test_marker_mask, test_taxa_mask, test_y) in enumerate(collection):
                 with autocast(device_type='cuda', enabled=auto_mixed_precision, dtype=torch.bfloat16):
                     # note: bfloat16 historically has had better numerical stability, causing fewer NaN issues.
                     test_y_hat = model(
-                        test_batch_features.to(cuda_device_name, non_blocking=True),
-                        test_marker_mask.to(cuda_device_name, non_blocking=True),
-                        test_sgb_mask.to(cuda_device_name, non_blocking=True)
+                        test_batch_features.to(model_device, non_blocking=True),
+                        test_marker_mask.to(model_device, non_blocking=True),
+                        test_taxa_mask.to(model_device, non_blocking=True)
                     )
 
                     # assert test_y_hat.shape == test_y.shape, f"Neural Network output and ground truth have different shapes: {test_y_hat.shape} (NN) vs {test_y.shape} (truth)"
                     batch_loss = loss_fn(
                         nn.functional.log_softmax(test_y_hat, dim=-1),  # log pred probabilities
-                        torch.log(test_y.to(cuda_device_name, non_blocking=True))  # log target probabilities
+                        torch.log(test_y.to(model_device, non_blocking=True))  # log target probabilities
                     )
                     if torch.isnan(batch_loss).item():
                         # ========== Found NaN batch loss. Try to report current status and terminate training loop.
@@ -132,10 +197,10 @@ def main_training_loop(
                             print(f"Batch {batch_idx}, sample {i}: id {test_sample_ids[i]}")
                             sample_id = test_sample_ids[i]
                             feat_i = test_batch_features[i]
-                            sgb_mask_i = test_sgb_mask[i]
+                            taxa_mask_i = test_taxa_mask[i]
                             marker_mask_i = test_marker_mask[i]
                             y_hat_i = nn.functional.log_softmax(test_y_hat[i], dim=-1)
-                            yi = torch.log(test_y[i].to(cuda_device_name, non_blocking=True),)
+                            yi = torch.log(test_y[i].to(model_device, non_blocking=True),)
                             loss_i = loss_fn(
                                 torch.unsqueeze(y_hat_i, dim=0),
                                 torch.unsqueeze(yi, dim=0)
@@ -143,7 +208,7 @@ def main_training_loop(
                             if torch.any(torch.isnan(loss_i)):
                                 print("Found NaN loss (i = {}, sample = {})".format(i, sample_id))
                                 print("feat:", feat_i)
-                                print("sgb mask:", sgb_mask_i)
+                                print("taxa mask:", taxa_mask_i)
                                 print("marker mask:", marker_mask_i)
                                 print("y_hat_i (before log_softmax):", test_y_hat[i])
                                 print("y_hat_i:", y_hat_i)
@@ -152,7 +217,7 @@ def main_training_loop(
                                 raise Exception("NaN error!")
 
                 # divide by total dataset size, to contribute to the overall average estimate.
-                total_test_loss += batch_loss.item() * test_y.shape[0] / len(test_dloader.dataset)
+                total_test_loss += batch_loss.item() * test_y.shape[0] / n_test_examples
         return total_test_loss
 
     """ Try to resume from checkpoint file, if specified. """
@@ -160,16 +225,13 @@ def main_training_loop(
         print(f"Resuming from: {resume_from_checkpoint}")
         last_epoch, epoch_history, training_loss_history, test_loss_history = load_checkpoint(
             resume_from_checkpoint,
-            model, optimizer, lr_scheduler, scaler, data_rng
+            model, optimizer, lr_scheduler, scaler, training_data_rng
         )
         print(f"Last completed epoch = {last_epoch}")
         start_epoch = last_epoch + 1
         current_lr = lr_scheduler.get_last_lr()[0]
     else:
-        test_dset.track_runtime = True
         print(f"Initial Test Loss: {_compute_test_loss(show_pbar=True)}")
-        test_dset.track_runtime = False
-
         epoch_history = []
         training_loss_history = []
         test_loss_history = []
@@ -182,25 +244,26 @@ def main_training_loop(
         initial=start_epoch-1,
         total=num_epochs
     )
+    epoch = None  # make sure variable exists at least once, for safety
     for epoch in pbar:
         epoch_training_loss = 0.0
         model.train()
-        for batch_idx, (training_sample_ids, training_batch_features, training_marker_mask, training_sgb_mask, training_y) in enumerate(train_dloader):
+        for batch_idx, (training_sample_ids, training_batch_features, training_marker_mask, training_taxa_mask, training_y) in enumerate(train_dloader):
             optimizer.zero_grad()
 
             with autocast(device_type='cuda', enabled=auto_mixed_precision, dtype=torch.bfloat16):
                 with timer("Model-With-Grad ({}/{})".format(batch_idx+1, len(train_dloader)), enabled=timer_profile):
                     training_y_hat = model(
-                        training_batch_features.to(cuda_device_name, non_blocking=True),
-                        training_marker_mask.to(cuda_device_name, non_blocking=True),
-                        training_sgb_mask.to(cuda_device_name, non_blocking=True),
+                        training_batch_features.to(model_device, non_blocking=True),
+                        training_marker_mask.to(model_device, non_blocking=True),
+                        training_taxa_mask.to(model_device, non_blocking=True),
                     )
 
                 # assert training_y_hat.shape == training_y.shape, f"Neural Network output and ground truth have different shapes: {training_y_hat.shape} (NN) vs {training_y.shape} (truth)"
                 with timer("Loss-With-Grad ({}/{})".format(batch_idx+1, len(train_dloader)), enabled=timer_profile):
                     training_loss = loss_fn(
                         nn.functional.log_softmax(training_y_hat, dim=-1),  # log pred probabilities
-                        torch.log(training_y.to(cuda_device_name, non_blocking=True))  # log target probabilities
+                        torch.log(training_y.to(model_device, non_blocking=True))  # log target probabilities
                     )
 
             with timer("Backward-Update", enabled=timer_profile):
@@ -215,7 +278,7 @@ def main_training_loop(
                 current_lr = lr_scheduler.get_last_lr()[0]
 
             # print("cleaning up.")
-            epoch_training_loss += training_loss.item() * training_y.shape[0] / len(train_dloader.dataset)
+            epoch_training_loss += training_loss.item() * training_y.shape[0] / n_training_examples
 
         # option implementation
         if epoch % print_every == 0:
@@ -238,7 +301,7 @@ def main_training_loop(
             """ Save the model and optimizer states. """
             filepath = checkpoint_dir / f"checkpoint_{epoch}.pt"
             save_checkpoint(
-                epoch, model, optimizer, lr_scheduler, scaler, data_rng,
+                epoch, model, optimizer, lr_scheduler, scaler, training_data_rng,
                 epoch_history, training_loss_history, test_loss_history,
                 filepath,
             )
@@ -253,12 +316,13 @@ def main_training_loop(
         plt.savefig(loss_plot_path, bbox_inches="tight")
 
     # finally, save the final checkpoint file.
-    filepath = checkpoint_dir / f"checkpoint_{epoch}.pt"
-    save_checkpoint(
-        epoch, model, optimizer, lr_scheduler, scaler, data_rng,
-        epoch_history, training_loss_history, test_loss_history,
-        filepath,
-    )
+    if epoch is not None:
+        filepath = checkpoint_dir / f"checkpoint_{epoch}.pt"
+        save_checkpoint(
+            epoch, model, optimizer, lr_scheduler, scaler, training_data_rng,
+            epoch_history, training_loss_history, test_loss_history,
+            filepath,
+        )
 
 
 def save_checkpoint(

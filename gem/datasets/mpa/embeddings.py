@@ -53,7 +53,7 @@ def load_models_joblib(model_dir: Path):
     return ipca, scaler
 
 
-class MetaphlanMarkerEmbedding:
+class MetaphlanMarkerPrecomputedEmbedding:
     """
     A class which encapsulates pre-computed embeddings (step 2: 2_embed/compute_embeddings.py) which automatically
     stores all marker embeddings in a sharded manner.

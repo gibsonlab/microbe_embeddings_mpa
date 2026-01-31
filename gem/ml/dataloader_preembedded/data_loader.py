@@ -3,7 +3,7 @@ from typing import Callable, Optional
 import torch
 from torch.utils.data import DataLoader, Sampler
 
-from gem.datasets.mpa import AbstractMetaphlanDataset
+from gem.datasets.mpa import AbstractMetaphlanPreembeddedDataset
 from .collate import collate_fn_dynamic_alloc
 
 
@@ -45,7 +45,7 @@ class ContiguousBatchSampler(Sampler):
 class MetaphlanDataLoader(DataLoader):
     def __init__(
             self,
-            dataset: AbstractMetaphlanDataset,
+            dataset: AbstractMetaphlanPreembeddedDataset,
             batch_size: int = 32,
             num_workers: int = 0,
             pin_memory: bool = False,
