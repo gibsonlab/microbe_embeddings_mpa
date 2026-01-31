@@ -28,6 +28,7 @@ class MultiGPUEmbeddingCollateFn:
         self.embedding_kwargs = embedding_kwargs
         self.model_batch_size = model_batch_size
         self.device_array = device_array
+        print("Worker device array: {}".format(device_array))
 
         # Will be initialized per worker
         self.device = None

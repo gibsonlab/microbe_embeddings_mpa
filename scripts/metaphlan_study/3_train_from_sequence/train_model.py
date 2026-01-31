@@ -243,20 +243,27 @@ def parse_cuda_device_ids(cuda_device_ids: str) -> List[torch.device]:
 
 def main():
     args = parse_args()
+
+    """ Load dataset. """
+    print("Loading dataset files.")
     train_df = pd.read_csv(args.train, sep='\t', index_col="SampleID")
     test_df = pd.read_csv(args.test, sep='\t', index_col="SampleID")
+    print(f"Train: {args.train} ({len(train_df)} samples)")
+    print(f"Test: {args.test} ({len(test_df)} samples)")
+
     train_profile_parser = MetaphlanProfileParser(train_df)
     test_profile_parser = MetaphlanProfileParser(test_df)
     seed = args.seed
 
+    """ Load Taxa Marker Gene database. """
+    print("Loading Taxa Marker Gene database.")
     marker_sequence_dir = Path(args.marker_sequence_dir)
     json_index_path = marker_sequence_dir / "markers.fna"
     marker_fasta_path = marker_sequence_dir / "sgb_marker_index.json.zst"
     db = MetaphlanTaxaDatabase(json_index_path=json_index_path, fasta_path=marker_fasta_path)
 
     """ Create datasets. """
-    print(f"Train: {args.train} ({len(train_df)} samples)")
-    print(f"Test: {args.test} ({len(test_df)} samples)")
+    print("Creating Dataset objects.")
     train_dset = OrganismGeneSequenceDataset(db, train_profile_parser)
     test_dset = OrganismGeneSequenceDataset(db, test_profile_parser)
 
@@ -276,12 +283,14 @@ def main():
     print("Using CUDA devices: {}".format(cuda_devices))
 
     """ Initialize DataLoaders. """
+    print("Initializing DataLoader objects.")
     train_rng = torch.Generator()
     train_rng_seed = seed + 2
     train_rng.manual_seed(train_rng_seed)
 
     # Create one instance of Evo (per worker) to share amongst train/test dataloaders.
     embedding_class, embedding_kwargs = generate_embedding_initializers(args.embedding_model_name)
+    print("Embedding: {}  --> {}".format(embedding_class.__name__, embedding_kwargs))
     embedding_collate_fn = MultiGPUEmbeddingCollateFn(embedding_class, embedding_kwargs, worker_devices)
 
     data_batch_size = args.batch_size
