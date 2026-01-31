@@ -40,6 +40,7 @@ echo "batch_size=${batch_size}" | tee -a $metadata
 echo "seed=${seed}" | tee -a $metadata
 echo "===================="
 
+export HF_HOME="/data/cctm/youn/huggingface_cache"
 python train_model.py \
   --model-version "EPC" \
   --embedding-model "${model_name}:${hyena_layers}" \
