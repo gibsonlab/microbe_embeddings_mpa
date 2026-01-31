@@ -28,7 +28,9 @@ class MultiGPUEmbeddingCollateFn:
         self.embedding_kwargs = embedding_kwargs
         self.model_batch_size = model_batch_size
         self.device_array = device_array
-        print("Worker device array: {}".format(device_array))
+        print("Worker device array: {}".format(
+            ",".join(str(dev) for dev in device_array)
+        ))
 
         # Will be initialized per worker
         self.device = None
@@ -46,12 +48,12 @@ class MultiGPUEmbeddingCollateFn:
         if worker_info is None:
             # Single-process data loading (num_workers=0)
             self.device = self.FALLBACK_DEVICE
-            print(f"No workers being used for embeddings. Using fallback device {self.device}")
+            print(f"No workers being used for embeddings. Using fallback device {self.device} for embedding model {self.embedding_class.__name__}")
         else:
             # Multi-process data loading
             worker_id = worker_info.id
             self.device = self.device_array[worker_id]
-            print(f"Worker {worker_id} initializing on {self.device}")
+            print(f"Worker {worker_id} initializing on {self.device} with embedding model {self.embedding_class.__name__}")
 
         # Initialize the embedding model on this worker's GPU
         if 'device' in self.embedding_kwargs:

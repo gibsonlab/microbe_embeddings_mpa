@@ -280,7 +280,9 @@ def main():
         model_cuda_device = cuda_devices[0]
         num_workers = len(cuda_devices) - 1
         worker_devices = cuda_devices[1:]
-    print("Using CUDA devices: {}".format(cuda_devices))
+    print("Using CUDA devices: {}".format(
+        ",".join(str(dev) for dev in cuda_devices)
+    ))
 
     """ Initialize DataLoaders. """
     print("Initializing DataLoader objects.")
@@ -309,7 +311,7 @@ def main():
 
     """ Create model configuration. """
     print("Loading model once to infer the target embedding dimension...")
-    embedding_example = embedding_class(**embedding_kwargs, device="cpu")
+    embedding_example = embedding_class(**embedding_kwargs, device=torch.device("cpu"))
     embed_dim = embedding_example.embed_dim()
     del embedding_example
     print(f"Got embedding dimension = {embed_dim}")
