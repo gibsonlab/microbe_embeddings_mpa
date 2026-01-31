@@ -45,7 +45,7 @@ class EvoWrapper(GenomeEmbedding):
             ))
 
         n_layers = len(self.striped_hyena_model.blocks)
-        print("[evo] Loaded Hyena Model which has {} blocks.".format(n_layers))
+        print("[evo] Loaded Hyena Model which has {} blocks. Embedding is output of block #{}".format(n_layers, num_hyena_layers))
         self.tokenizer = tokenizer
 
     def device(self) -> torch.device:

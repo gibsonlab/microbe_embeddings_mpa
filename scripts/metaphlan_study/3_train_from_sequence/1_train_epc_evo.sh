@@ -57,6 +57,7 @@ python train_model.py \
   --seed "$seed" \
   --prefetch-factor 2 \
   --checkpoint-every 10 \
-  --cuda-devices "0,1" \
+  --minibatch-embed-size 32 \
+  --cuda-devices "0,1"
 
 echo "Done."
