@@ -44,7 +44,7 @@ class MetaphlanTaxaDatabase(BacterialTaxaDatabase):
         self.catalogue: Dict[str, BacterialTaxa] = {}
 
         print(f"Loading marker sequence catalog from {json_index_path}")
-        for sgb_id_numeric_str, seq_record_ids in tqdm(sgb_marker_index.items(), desc='Marker-DB', unit='SGB'):
+        for sgb_id_numeric_str, seq_record_ids in tqdm(sgb_marker_index.items(), desc='Marker-DB', unit=' SGB'):
             # remember to attach the "SGB" prefix!
             sgb_id = f'SGB{sgb_id_numeric_str}'
             self.catalogue[sgb_id] = [str(fasta[seq_id]) for seq_id in seq_record_ids]
