@@ -48,12 +48,14 @@ class EvoWrapper(GenomeEmbedding):
         self.hyena_layers = hyena_model.blocks[:num_hyena_layers]
         self.tokenizer = tokenizer
 
-        for model_component in [self.preembedding_layer] + self.hyena_layers:
+        for model_component in [self.preembedding_layer] + list(self.hyena_layers):
             model_component.to(device)
             model_component.eval()
 
-        for post_layer in hyena_model.blocks[num_hyena_layers:]:
-            del post_layer
+        if num_hyena_layers < len(hyena_model.blocks):
+            print("[evo] Discarding layers #{} onwards.".format(num_hyena_layers + 1))
+            for post_layer in hyena_model.blocks[num_hyena_layers:]:
+                del post_layer
 
     def device(self) -> torch.device:
         return self.device
