@@ -6,15 +6,15 @@ from .profile import AbundanceProfile, AbundanceProfileParser
 
 
 class MetaphlanProfile(AbundanceProfile):
-    def __init__(self, sample_id: str, sgb_ids: List[str], abundances: np.ndarray):
-        super().__init__(sample_id, sgb_ids, abundances)
+    def __init__(self, sample_id: str, taxa_ids: List[str], abundances: np.ndarray):
+        super().__init__(sample_id, taxa_ids, abundances)
 
         # Quirk: sometimes there are SGB groups instead of SGBs, e.g. "SGB1498_group".
         # Here, let's handle these simply as SGB1498 by removing the suffix.
         suffix = "_group"
         suffix_len = len(suffix)
-        self.sgb_ids_raw = sgb_ids
-        self.sgb_ids = [sgb[:-suffix_len] if sgb.endswith(suffix) else sgb for sgb in self.sgb_ids_raw]
+        self.taxa_ids_raw = taxa_ids
+        self.taxa_ids = [sgb[:-suffix_len] if sgb.endswith(suffix) else sgb for sgb in self.taxa_ids_raw]
 
 
 class MetaphlanProfileParser(AbundanceProfileParser):

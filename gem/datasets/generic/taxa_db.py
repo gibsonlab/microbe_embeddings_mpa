@@ -15,14 +15,6 @@ class BacterialTaxaDatabase(ABC):
 
 
 """ Implementations below """
-
-def detach_suffix(x: str, suffix: str) -> str:
-    if x.endswith(suffix):
-        return x[:-len(suffix)]
-    else:
-        return x
-
-
 class MetaphlanTaxaDatabase(BacterialTaxaDatabase):
     def __init__(self, json_index_path: Path, fasta_path: Path):
         """
@@ -48,9 +40,6 @@ class MetaphlanTaxaDatabase(BacterialTaxaDatabase):
 
         print(f"Loading marker sequence catalog from {json_index_path}")
         for sgb_id_numeric_str, seq_record_ids in sgb_marker_index.items():
-            # detach any _group prefix
-            sgb_id_numeric_str = detach_suffix(sgb_id_numeric_str, "_group")
-
             # remember to attach the "SGB" prefix!
             sgb_id = f'SGB{sgb_id_numeric_str}'
             self.catalogue[sgb_id] = [str(fasta[seq_id]) for seq_id in seq_record_ids]
