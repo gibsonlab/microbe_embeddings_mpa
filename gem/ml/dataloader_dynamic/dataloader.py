@@ -19,16 +19,16 @@ class MultiGPUEmbeddingCollateFn:
             embedding_class: Type[GenomeEmbedding_Subclass],
             embedding_kwargs: Dict[str, Any],
             device_array: List[Union[str, torch.device]],
-            model_batch_size=512,
+            minibatch_size=512,
     ):
         """
         :param embedding_class: The class or factory function to create GenomeEmbedding
-        :param model_batch_size: Batch size for model inference
+        :param minibatch_size: Batch size for model embedding
         :param device_array: List of cuda devices to use.
         """
         self.embedding_class = embedding_class
         self.embedding_kwargs = embedding_kwargs
-        self.model_batch_size = model_batch_size
+        self.model_minibatch_size = minibatch_size
         self.device_array = device_array
         print("Worker device array: {}".format(
             ",".join(str(dev) for dev in device_array)
@@ -108,8 +108,8 @@ class MultiGPUEmbeddingCollateFn:
             with torch.no_grad():
                 embeddings_list = []
 
-                for i in range(0, len(all_genes), self.model_batch_size):
-                    minibatch_genes = all_genes[i:i + self.model_batch_size]
+                for i in range(0, len(all_genes), self.model_minibatch_size):
+                    minibatch_genes = all_genes[i:i + self.model_minibatch_size]
                     minibatch_embeddings = self.embedding.embed_batch(minibatch_genes)
                     embeddings_list.append(minibatch_embeddings)
 
@@ -132,12 +132,12 @@ def create_dataloader_dynamic_embedding(
         embedding_kwargs: Dict[str, Any],
         worker_devices: List[torch.device],
         data_batch_size: int,
-        model_batch_size: int = 512,  # the batch size for pretrained embeddings
+        model_minibatch_size: int = 10,  # the batch size for pretrained embeddings
         **dataloader_kwargs
 ):
     return DataLoader(
         dataset,
-        collate_fn=MultiGPUEmbeddingCollateFn(embedding_class, embedding_kwargs, worker_devices, model_batch_size),
+        collate_fn=MultiGPUEmbeddingCollateFn(embedding_class, embedding_kwargs, worker_devices, model_minibatch_size),
         batch_size=data_batch_size,
         num_workers=len(worker_devices),
         persistent_workers=True,

@@ -293,7 +293,7 @@ def main():
     # Create one instance of Evo (per worker) to share amongst train/test dataloaders.
     embedding_class, embedding_kwargs = generate_embedding_initializers(args.embedding_model_name)
     print("Embedding: {}  --> {}".format(embedding_class.__name__, embedding_kwargs))
-    embedding_collate_fn = MultiGPUEmbeddingCollateFn(embedding_class, embedding_kwargs, worker_devices)
+    embedding_collate_fn = MultiGPUEmbeddingCollateFn(embedding_class, embedding_kwargs, worker_devices, minibatch_size=10)
 
     data_batch_size = args.batch_size
     shuffle_dataset = True
