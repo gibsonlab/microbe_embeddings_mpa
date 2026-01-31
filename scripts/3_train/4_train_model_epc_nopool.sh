@@ -31,7 +31,7 @@ learning_rate=0.0001
 batch_size=10
 seed=12345
 
-outdir="/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/trained_model/${model_name}_d${pca_dim}_epc/sgbpool_epoch${n_epochs}_kl"
+outdir="/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/trained_model/${model_name}_d${pca_dim}_epc/nopool_epoch${n_epochs}_kl"
 mkdir -p ${outdir}
 
 metadata="$outdir/metadata.txt"
