@@ -119,7 +119,7 @@ def collate_fn_stack(
 
 def collate_fn_dynamic_alloc(
         batch: List[Tuple[str, Tensor, Tensor, Tensor, Tensor]]
-) -> Tuple[str, Tensor, Tensor, Tensor, Tensor]:
+) -> Tuple[List[str], Tensor, Tensor, Tensor, Tensor]:
     """Minimizes allocations while being multiprocessing-safe"""
     batch_size = len(batch)
 
@@ -135,7 +135,7 @@ def collate_fn_dynamic_alloc(
 
     with timer("Collate:Allocate", enabled=False):
         # Single allocation with torch.empty (faster than zeros if you fill everything)
-        sample_ids = []
+        sample_ids: List[str] = []
         f_batch = torch.zeros(batch_size, S_max, M_max, embed_dim, dtype=f_dtype, device=device)
         m_batch = torch.zeros(batch_size, S_max, M_max, dtype=torch.bool, device=device)
         s_batch = torch.zeros(batch_size, S_max, dtype=torch.bool, device=device)

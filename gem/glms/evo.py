@@ -37,6 +37,11 @@ class EvoWrapper(GenomeEmbedding):
         self.device = device
         self.striped_hyena_model = model
         self.num_hyena_layers = num_hyena_layers
+        if num_hyena_layers > len(self.striped_hyena_model.blocks):
+            raise Exception("Evo model has {} hyena blocks, can't specify num_hyena_layers={}".format(
+                len(self.striped_hyena_model.blocks),
+                num_hyena_layers
+            ))
 
         n_layers = len(self.striped_hyena_model.blocks)
         print("[evo] Loaded Hyena Model which has {} blocks.".format(n_layers))
@@ -46,7 +51,8 @@ class EvoWrapper(GenomeEmbedding):
         return self.device
 
     def embed_dim(self) -> int:
-        raise NotImplementedError("TODO!")
+        # hard-coded!
+        return 4096
 
     def tokenize_single(self, sequence: str, max_seq_length: Optional[int] = None) -> Tensor:
         tokenized_ids = self.tokenizer.tokenize(sequence)
@@ -93,10 +99,13 @@ class EvoWrapper(GenomeEmbedding):
         ).to(self.device)
         hyena_output = self.run_hyena(input_ids)
 
+        # DEBUG
+        print("Got hyena output shape: {}, sequence_lengths = {}".format(hyena_output.shape, [len(s) for s in seqs]))
+
         return torch.stack([
-            seq_hyena_output[len(seq) - 1, :]
+            seq_hyena_output[len(seq) - 1, :]  # take the last token's embedding vector (the index may differ depending on the sequence)
             for seq, seq_hyena_output in zip(seqs, hyena_output)
-        ], axis=0)
+        ], dim=0)
 
     def embed_empty_sequence(self) -> Tensor:
         input_ids = torch.tensor([np.uint8(self.tokenizer.eos)], dtype=torch.int)  # length 1 of "EOS" id.

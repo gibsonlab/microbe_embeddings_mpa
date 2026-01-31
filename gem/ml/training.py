@@ -75,7 +75,7 @@ def create_dynamic_embedding_dloader(
         embedding_class=embedding_class,
         embedding_kwargs=embedding_kwargs,
         worker_devices=worker_devices, num_workers=num_workers,
-        model_batch_size=batch_size,
+        data_batch_size=batch_size,
         shuffle=shuffle, generator=rng, drop_last=drop_last, prefetch_factor=prefetch_factor,
     )
 
@@ -136,19 +136,6 @@ def main_training_loop(
     checkpoint_dir.mkdir(exist_ok=True, parents=True)
 
     """ Initialize dataset objects. """
-    # data_rng = torch.Generator()
-    # data_rng.manual_seed(rng_seed)
-
-    # train_dloader = create_dloader(
-    #     dataset=train_dset,
-    #     batch_size=batch_size, num_workers=num_workers, drop_last=False, prefetch_factor=prefetch_factor,
-    #     rng=data_rng, shuffle=shuffle_dataset,
-    # )
-    # test_dloader = create_dloader(
-    #     dataset=test_dset,
-    #     batch_size=batch_size, num_workers=num_workers, drop_last=False, prefetch_factor=prefetch_factor,
-    #     rng=None, shuffle=False,
-    # )
     training_data_rng: torch.Generator = train_dloader.generator
     assert training_data_rng is not None, "Training dataset DataLoader must have a pre-seeded Generator instance provided."
     assert isinstance(training_data_rng, torch.Generator), "Training dataset DataLoader must have a torch.Generator instance for generator. Got: {}".format(training_data_rng.__class__.__name__)

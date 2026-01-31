@@ -53,6 +53,9 @@ class MultiGPUEmbeddingCollateFn:
             print(f"Worker {worker_id} initializing on {self.device}")
 
         # Initialize the embedding model on this worker's GPU
+        if 'device' in self.embedding_kwargs:
+            print("[WARNING] embedding_kwargs contains 'device' kwarg, but this should be automatically specified per worker.")
+            del self.embedding_kwargs['device']
         self.embedding: GenomeEmbedding = self.embedding_class(device=self.device, **self.embedding_kwargs)
         self.embed_dim = self.embedding.embed_dim()
 
@@ -111,12 +114,15 @@ def create_dataloader_dynamic_embedding(
         embedding_class: Type[GenomeEmbedding_Subclass],
         embedding_kwargs: Dict[str, Any],
         worker_devices: List[torch.device],
-        model_batch_size: int = 512,
+        data_batch_size: int,
+        model_batch_size: int = 512,  # the batch size for pretrained embeddings
         **dataloader_kwargs
 ):
     return DataLoader(
         dataset,
         collate_fn=MultiGPUEmbeddingCollateFn(embedding_class, embedding_kwargs, worker_devices, model_batch_size),
+        batch_size=data_batch_size,
         num_workers=len(worker_devices),
+        persistent_workers=True,
         **dataloader_kwargs
     )

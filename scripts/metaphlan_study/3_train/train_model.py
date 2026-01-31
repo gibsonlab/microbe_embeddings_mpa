@@ -7,8 +7,9 @@ import json
 import pandas as pd
 import torch
 from torch import optim
+from torch.utils.data import DataLoader
 
-from gem.datasets.mpa import AbstractMetaphlanPreembeddedDataset, MetaphlanPreembeddedDatasetMemmapped
+from gem.datasets.mpa import MetaphlanPreembeddedDatasetMemmapped
 from gem.ml import *
 from gem.ml.models import *
 
@@ -40,39 +41,34 @@ def train_and_save_model(
         model_cfg: Dict,
         model_save_dir: Path,
         loss_name: str,
-        train_dset: AbstractMetaphlanPreembeddedDataset,
-        test_dset: AbstractMetaphlanPreembeddedDataset,
+        train_dloader: DataLoader,
+        test_dloader: DataLoader,
         n_epochs: int,
-        shuffle_dataset: bool,
         lr: float = 0.0001,
         print_every: int = 5,
-        batch_size: int = 10,
-        batch_prefetch_factor: int = 2,
         train_rng_seed: int = 314159,
-        num_workers: int = 4,
         auto_mixed_precision: bool = False,
         cuda_device_name: str = "cuda",
         checkpoint_every: int = 50,
         load_checkpoint_file: Optional[Path] = None,
         timer_profile: bool = False,
-        # specify whether to store sample-specific SGB embeddings to disk (not RAM).
 ):
     """
     :param model_version:
     :param model_cfg:
     :param model_save_dir:
     :param loss_name:
-    :param train_dset:
-    :param test_dset:
+    :param train_dloader:
+    :param test_dloader:
     :param n_epochs:
     :param lr:
     :param print_every:
-    :param batch_size:
-    :param batch_prefetch_factor:
     :param train_rng_seed:
-    :param num_workers:
     :param auto_mixed_precision:
     :param cuda_device_name:
+    :param checkpoint_every:
+    :param load_checkpoint_file:
+    :param timer_profile:
     """
 
     """ loss function """
@@ -129,7 +125,6 @@ def train_and_save_model(
 
     """ output files -- preparation """
     loss_plot_path = model_save_dir / "loss_history.pdf"
-    model_save_path = model_save_dir / "model_weights.pt"
     model_config_path = model_save_dir / "model_config.json"
 
     """ invoke main training loop. """
@@ -141,10 +136,7 @@ def train_and_save_model(
         train_dloader=train_dloader,
         test_dloader=test_dloader,
         loss_fn=loss_fn,
-        num_workers=num_workers,
-        batch_size=batch_size,
         num_epochs=n_epochs,
-        shuffle_dataset=shuffle_dataset,
         clip_gradient_norm_ub=clip_grad_norm_ub,
         print_progress=True,
         print_every=print_every,
@@ -154,14 +146,10 @@ def train_and_save_model(
         loss_plot_path=loss_plot_path,
         auto_mixed_precision=auto_mixed_precision,
         rng_seed=train_rng_seed,
-        prefetch_factor=batch_prefetch_factor,
         timer_profile=timer_profile,
     )
 
     """ save model to file. """
-    # torch.save(torch_embedding_model.state_dict(), model_save_path)
-    # logger.info(f"Wrote model parameters to {model_save_path}")
-
     with open(model_config_path, "wt") as out_f:
         rng = model_cfg['init_rng']
         model_init_seed = rng.initial_seed()
@@ -215,6 +203,8 @@ def parse_args() -> argparse.Namespace:
 
 def main():
     args = parse_args()
+
+    seed = args.seed
     train_df = pd.read_csv(args.train, sep='\t', index_col="SampleID")
     test_df = pd.read_csv(args.test, sep='\t', index_col="SampleID")
 
@@ -229,8 +219,22 @@ def main():
     train_dset.load_memmap_tensors(memmap_tensor_sample_dir)
     test_dset.load_memmap_tensors(memmap_tensor_sample_dir)
 
+    """ Create dataloaders. """
+    from gem.ml.training import create_metaphlan_preembedded_generic_dloader
+    train_rng = torch.Generator()
+    train_rng.manual_seed(seed + 2)
+    train_dloader = create_metaphlan_preembedded_generic_dloader(
+        train_dset,
+        batch_size=args.batch_size, shuffle=not args.sequential_train, rng=train_rng,
+        drop_last=False, num_workers=args.num_workers, prefetch_factor=args.batch_prefetch_factor,
+    )
+    test_dloader = create_metaphlan_preembedded_generic_dloader(
+        test_dset,
+        batch_size=args.batch_size, shuffle=False, rng=None,
+        drop_last=False, num_workers=args.num_workers, prefetch_factor=args.batch_prefetch_factor,
+    )
+
     """ Create model configuration. """
-    seed = args.seed
     model_cfg = load_model_config(
         config_file=Path(args.model_cfg_path),
         rng_seed=seed + 1,
@@ -253,6 +257,7 @@ def main():
     else:
         resume_from_checkpoint_path = None
 
+
     train_and_save_model(
         model_version=model_version,
         model_cfg=model_cfg,
@@ -260,16 +265,12 @@ def main():
         load_checkpoint_file=resume_from_checkpoint_path,
         checkpoint_every=args.checkpoint_every,
         loss_name=args.loss_name,
-        train_dset=train_dset,
-        test_dset=test_dset,
+        train_dloader=train_dloader,
+        test_dloader=test_dloader,
         n_epochs=args.n_epochs,
-        shuffle_dataset=not args.sequential_train,
         lr=args.lr,
         print_every=args.print_every,
-        batch_size=args.batch_size,
-        batch_prefetch_factor=args.batch_prefetch_factor,
         train_rng_seed=seed + 2,
-        num_workers=args.num_workers,
         auto_mixed_precision=args.use_auto_mixed_precision,
         cuda_device_name=args.cuda_device_name,
         timer_profile=False,

@@ -7,9 +7,11 @@ import json
 import pandas as pd
 import torch
 from torch import optim
+from torch.utils.data import DataLoader
 
 from gem.datasets import OrganismGeneSequenceDataset, MetaphlanTaxaDatabase, MetaphlanProfileParser
 from gem.ml import *
+from gem.ml.dataloader_dynamic.dataloader import GenomeEmbedding_Subclass
 from gem.ml.models import *
 
 import sys
@@ -36,41 +38,56 @@ def load_model_config(config_file: Path, marker_embed_dim: int, rng_seed: int) -
         return config_dict
 
 
+def generate_embedding_initializers(model_name: str) -> Tuple[Type[GenomeEmbedding_Subclass], Dict]:
+    if model_name == "evo":
+        from gem.glms import EvoWrapper
+        print("Using the default number of layers (n=32) from Evo's Hyena architecture.")
+        return EvoWrapper, dict(num_hyena_layers=32)
+    elif model_name.startswith("evo:"):
+        from gem.glms import EvoWrapper
+        tokens = model_name.split(":")
+        assert len(tokens) == 2, "Incorrect model name syntax. Expected 'evo:<n_layers>', but got {} instead.".format(model_name)
+        num_hyena_layers = int(tokens[-1])
+        return EvoWrapper, dict(num_hyena_layers=num_hyena_layers)
+    elif model_name == "evo2":
+        raise NotImplementedError("Evo2 is not yet implemented for this training script.")
+    elif model_name == "dnabert-s":
+        from gem.glms import DNABertSWrapper
+        return DNABertSWrapper, dict()
+    else:
+        raise ValueError(f"Unsupported model name '{model_name}'")
+
+
 def train_and_save_model(
         model_version: str,
         model_cfg: Dict,
+        model_device: torch.device,
         model_save_dir: Path,
         loss_name: str,
-        train_dset: OrganismGeneSequenceDataset,
-        test_dset: OrganismGeneSequenceDataset,
+        train_dloader: DataLoader,
+        test_dloader: DataLoader,
         n_epochs: int,
-        shuffle_dataset: bool,
-        cuda_devices: List[torch.device],
         lr: float = 0.0001,
         print_every: int = 5,
-        batch_size: int = 10,
-        batch_prefetch_factor: int = 2,
         train_rng_seed: int = 314159,
         auto_mixed_precision: bool = False,
         checkpoint_every: int = 50,
         load_checkpoint_file: Optional[Path] = None,
-        timer_profile: bool = False,
-        # specify whether to store sample-specific SGB embeddings to disk (not RAM).
 ):
     """
     :param model_version:
     :param model_cfg:
+    :param model_device:
     :param model_save_dir:
     :param loss_name:
-    :param train_dset:
-    :param test_dset:
+    :param train_dloader:
+    :param test_dloader:
     :param n_epochs:
     :param lr:
     :param print_every:
-    :param batch_size:
-    :param batch_prefetch_factor:
     :param train_rng_seed:
-    :param cuda_devices:
+    :param checkpoint_every:
+    :param load_checkpoint_file:
     :param auto_mixed_precision:
     """
 
@@ -94,27 +111,15 @@ def train_and_save_model(
     else:
         raise ValueError(f"Unsupported loss name '{loss_name}'")
 
-    """ Divide up CUDA devices. """
-    if len(cuda_devices) == 0:
-        raise ValueError("No CUDA devices specified.")
-    elif len(cuda_devices) == 1:
-        main_cuda_device = cuda_devices[0]
-        num_workers = 0
-        worker_devices = []
-    else:
-        main_cuda_device = cuda_devices[0]
-        num_workers = len(cuda_devices) - 1
-        worker_devices = cuda_devices[1:]
-
     """ Create model. """
     ## ======== Model & Optimizer instantiation. ========
-    print("Training using cuda device: {}".format(main_cuda_device))
+    print("Training using cuda device: {}".format(model_device))
     if model_version == "V1":
-        torch_embedding_model = SGBAbundancePredictionModel(**model_cfg).to(main_cuda_device)
+        torch_embedding_model = SGBAbundancePredictionModel(**model_cfg).to(model_device)
     elif model_version == "V2":
-        torch_embedding_model = SGBAbundanceLayeredPredictionModel(**model_cfg).to(main_cuda_device)
+        torch_embedding_model = SGBAbundanceLayeredPredictionModel(**model_cfg).to(model_device)
     elif model_version == "EPC":
-        torch_embedding_model = SGBEmbedPoolConcatPredictionModel(**model_cfg).to(main_cuda_device)
+        torch_embedding_model = SGBEmbedPoolConcatPredictionModel(**model_cfg).to(model_device)
     else:
         raise ValueError(f"Unsupported model_version `{model_version}`")
 
@@ -140,7 +145,6 @@ def train_and_save_model(
 
     """ output files -- preparation """
     loss_plot_path = model_save_dir / "loss_history.pdf"
-    model_save_path = model_save_dir / "model_weights.pt"
     model_config_path = model_save_dir / "model_config.json"
 
     """ invoke main training loop. """
@@ -149,31 +153,15 @@ def train_and_save_model(
         model=torch_embedding_model,
         optimizer=optimizer,
         lr_scheduler=scheduler,
-        train_dset=train_dset,
-        test_dset=test_dset,
-        loss_fn=loss_fn,
-        num_workers=num_workers,
-        batch_size=batch_size,
-        num_epochs=n_epochs,
-        shuffle_dataset=shuffle_dataset,
-        clip_gradient_norm_ub=clip_grad_norm_ub,
-        print_progress=True,
-        print_every=print_every,
-        checkpoint_every=checkpoint_every,
-        checkpoint_dir=checkpoint_dir,
-        resume_from_checkpoint=load_checkpoint_file,
-        loss_plot_path=loss_plot_path,
-        auto_mixed_precision=auto_mixed_precision,
-        rng_seed=train_rng_seed,
-        cuda_device=main_cuda_device,
-        prefetch_factor=batch_prefetch_factor,
-        timer_profile=timer_profile,
+        train_dloader=train_dloader, test_dloader=test_dloader,
+        loss_fn=loss_fn, num_epochs=n_epochs, clip_gradient_norm_ub=clip_grad_norm_ub,
+        print_progress=True, print_every=print_every,
+        checkpoint_every=checkpoint_every, checkpoint_dir=checkpoint_dir,
+        resume_from_checkpoint=load_checkpoint_file, loss_plot_path=loss_plot_path,
+        auto_mixed_precision=auto_mixed_precision, rng_seed=train_rng_seed, timer_profile=False,
     )
 
-    """ save model to file. """
-    # torch.save(torch_embedding_model.state_dict(), model_save_path)
-    # logger.info(f"Wrote model parameters to {model_save_path}")
-
+    """ save model config file. """
     with open(model_config_path, "wt") as out_f:
         rng = model_cfg['init_rng']
         model_init_seed = rng.initial_seed()
@@ -190,13 +178,18 @@ def train_and_save_model(
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("-v", "--model-version", dest="model_version", required=True, type=str)
+    parser.add_argument("-e", "--embedding-model", dest="embedding_model_name", required=True, type=str,
+                        help="Name of the embedding model to use. Currently supported: 'dnabert-s', 'evo'. "
+                             "For evo, specify the number of hyena layers to use (layers 1 thru k, k <= 32) using the format 'evo:<n_layers>'."
+                             "For example, 'evo:5' uses the first 5 layers to produce an embedding.")
     parser.add_argument("-train", "--train", dest="train", required=True, type=str)
     parser.add_argument("-test", "--test", dest="test", required=True, type=str)
     parser.add_argument("-c", "--model-config", dest="model_cfg_path", required=True, type=str)
     parser.add_argument("-o", "--out-dir", dest="model_save_dir", required=True, type=str)
     parser.add_argument("-loss", "--loss", dest="loss_name", required=True, type=str,
                         help="Name of loss function. Either 'kl' or 'mse'")
-    parser.add_argument() # todo specify json and fasta files
+    parser.add_argument("-markers", "--marker-sequence-dir", dest="marker_sequence_dir", required=True, type=str,
+                        help="Path to the preprocessed FASTA index files (from 1_preprocess pipeline)")
 
     parser.add_argument("-epochs", "--epochs", dest="n_epochs", type=int, required=True)
     parser.add_argument("-lr", "--learning-rate", dest="lr", type=float, required=True)
@@ -254,25 +247,67 @@ def main():
     test_df = pd.read_csv(args.test, sep='\t', index_col="SampleID")
     train_profile_parser = MetaphlanProfileParser(train_df)
     test_profile_parser = MetaphlanProfileParser(test_df)
-    db = MetaphlanTaxaDatabase(json_index_path=, fasta_path=)
+    seed = args.seed
+
+    marker_sequence_dir = Path(args.marker_sequence_dir)
+    json_index_path = marker_sequence_dir / "markers.fna"
+    marker_fasta_path = marker_sequence_dir / "sgb_marker_index.json.zst"
+    db = MetaphlanTaxaDatabase(json_index_path=json_index_path, fasta_path=marker_fasta_path)
 
     """ Create datasets. """
     print(f"Train: {args.train} ({len(train_df)} samples)")
     print(f"Test: {args.test} ({len(test_df)} samples)")
-    train_dset = OrganismGeneSequenceDataset(db, profile_parser)
-    test_dset = OrganismGeneSequenceDataset(db, profile_parser)
+    train_dset = OrganismGeneSequenceDataset(db, train_profile_parser)
+    test_dset = OrganismGeneSequenceDataset(db, test_profile_parser)
 
-    memmap_tensor_sample_dir = Path(args.memmap_tensor_sample_dir)
-    print(f"Loading memmapped sample tensors from {memmap_tensor_sample_dir}")
-    train_dset.load_memmap_tensors(memmap_tensor_sample_dir)
-    test_dset.load_memmap_tensors(memmap_tensor_sample_dir)
+    """ Divide up CUDA devices. """
+    cuda_devices = parse_cuda_device_ids(args.cuda_device_ids)
+    assert len(cuda_devices) > 0, "Unexpected error: parsed zero CUDA devices."
+    if len(cuda_devices) == 0:
+        raise ValueError("No CUDA devices specified.")
+    elif len(cuda_devices) == 1:
+        model_cuda_device = cuda_devices[0]
+        num_workers = 0
+        worker_devices = []
+    else:
+        model_cuda_device = cuda_devices[0]
+        num_workers = len(cuda_devices) - 1
+        worker_devices = cuda_devices[1:]
+
+    """ Initialize DataLoaders. """
+    train_rng = torch.Generator()
+    train_rng_seed = seed + 2
+    train_rng.manual_seed(train_rng_seed)
+
+    # Create one instance of Evo (per worker) to share amongst train/test dataloaders.
+    embedding_class, embedding_kwargs = generate_embedding_initializers(args.embedding_model_name)
+    embedding_collate_fn = MultiGPUEmbeddingCollateFn(embedding_class, embedding_kwargs, worker_devices)
+
+    data_batch_size = args.batch_size
+    shuffle_dataset = True
+    batch_prefetch_factor = args.batch_prefetch_factor
+    train_dloader = DataLoader(
+        dataset=train_dset, collate_fn=embedding_collate_fn,
+        batch_size=data_batch_size, shuffle=shuffle_dataset, generator=train_rng, drop_last=False,
+        num_workers=num_workers, prefetch_factor=batch_prefetch_factor, persistent_workers=True,
+    )
+    test_dloader = DataLoader(
+        dataset=test_dset, collate_fn=embedding_collate_fn,
+        batch_size=data_batch_size, shuffle=False, generator=None, drop_last=False,
+        num_workers=num_workers, prefetch_factor=batch_prefetch_factor, persistent_workers=True,
+    )
 
     """ Create model configuration. """
-    seed = args.seed
+    print("Loading model once to infer the target embedding dimension...")
+    embedding_example = embedding_class(**embedding_kwargs, device="cpu")
+    embed_dim = embedding_example.embed_dim()
+    del embedding_example
+    print(f"Got embedding dimension = {embed_dim}")
+
     model_cfg = load_model_config(
         config_file=Path(args.model_cfg_path),
         rng_seed=seed + 1,
-        marker_embed_dim=train_dset.embed_feature_dim(),
+        marker_embed_dim=embed_dim,
     )
     model_save_dir = Path(args.model_save_dir)
     model_save_dir.mkdir(exist_ok=True, parents=True)
@@ -291,27 +326,22 @@ def main():
     else:
         resume_from_checkpoint_path = None
 
-    cuda_devices = parse_cuda_device_ids(args.cuda_device_ids)
-    assert len(cuda_devices) > 0, "Unexpected error: parsed zero CUDA devices."
+    train_rng_seed = 314159
     train_and_save_model(
         model_version=model_version,
         model_cfg=model_cfg,
+        model_device=model_cuda_device,
         model_save_dir=model_save_dir,
-        load_checkpoint_file=resume_from_checkpoint_path,
-        checkpoint_every=args.checkpoint_every,
         loss_name=args.loss_name,
-        train_dset=train_dset,
-        test_dset=test_dset,
+        train_dloader=train_dloader,
+        test_dloader=test_dloader,
         n_epochs=args.n_epochs,
-        shuffle_dataset=True,
         lr=args.lr,
         print_every=args.print_every,
-        batch_size=args.batch_size,
-        batch_prefetch_factor=args.batch_prefetch_factor,
-        train_rng_seed=seed + 2,
-        cuda_devices=cuda_devices,
+        train_rng_seed=train_rng_seed,
         auto_mixed_precision=args.use_auto_mixed_precision,
-        timer_profile=False,
+        checkpoint_every=args.checkpoint_every,
+        load_checkpoint_file=resume_from_checkpoint_path,
     )
 
 
