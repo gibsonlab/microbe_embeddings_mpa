@@ -3,7 +3,7 @@ from typing import Callable, Optional
 import torch
 from torch.utils.data import DataLoader, Sampler
 
-from gem.mpa import AbstractMetaphlanDataset
+from gem.datasets.mpa import AbstractMetaphlanDataset
 from .collate import collate_fn_dynamic_alloc
 
 

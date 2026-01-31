@@ -3,10 +3,10 @@ from pathlib import Path
 from tqdm import tqdm
 
 import pandas as pd
-from gem.mpa.dataset_memmap_large import fetch_preallocated_tdict, parse_sample_ids_memmap
+from gem.datasets.mpa.dataset_memmap_large import fetch_preallocated_tdict, parse_sample_ids_memmap
 from tensordict import TensorDict
 
-from gem.mpa import MetaphlanDataset, MetaphlanMarkerEmbedding
+from gem.datasets.mpa import MetaphlanDataset, MetaphlanMarkerEmbedding
 
 
 def populate_memmap_tdict(

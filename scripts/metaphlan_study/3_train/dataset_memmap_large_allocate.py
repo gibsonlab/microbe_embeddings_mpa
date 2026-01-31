@@ -3,9 +3,9 @@ from pathlib import Path
 
 import pandas as pd
 import torch
-from gem.mpa.dataset_memmap_large import allocate_big_memmap_tdict
+from gem.datasets.mpa.dataset_memmap_large import allocate_big_memmap_tdict
 
-from gem.mpa import MetaphlanProfileExtractor, MetaphlanMarkerEmbedding
+from gem.datasets.mpa import MetaphlanProfileCollection, MetaphlanMarkerEmbedding
 
 
 def parse_args():
@@ -24,7 +24,7 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
     dataset_df_full = pd.read_csv(args.dataset_tsv, sep='\t', index_col="SampleID")
-    all_samples = list(MetaphlanProfileExtractor(dataset_df_full).samples())
+    all_samples = list(MetaphlanProfileCollection(dataset_df_full).samples())
 
     marker_embedding = MetaphlanMarkerEmbedding(
         marker_embedding_basedir=Path(args.marker_embedding_basedir),

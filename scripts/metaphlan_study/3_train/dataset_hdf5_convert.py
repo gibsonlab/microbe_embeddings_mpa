@@ -18,7 +18,7 @@ from pathlib import Path
 
 import h5py
 import pandas as pd
-from gem.mpa import MetaphlanDatasetMemmapped
+from gem.datasets.mpa import MetaphlanDatasetMemmapped
 from tqdm import tqdm
 
 

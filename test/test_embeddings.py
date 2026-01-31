@@ -1,5 +1,5 @@
 from pathlib import Path
-from gem.mpa.embeddings import MetaphlanMarkerEmbedding
+from gem.datasets.mpa.embeddings import MetaphlanMarkerEmbedding
 
 
 def test_embeddings():

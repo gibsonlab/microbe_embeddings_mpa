@@ -4,7 +4,7 @@ import pandas as pd
 
 from tqdm import tqdm
 import torch
-from gem.mpa import *
+from gem.datasets.mpa import *
 from gem.ml.dataloader import MetaphlanDataLoader
 
 import time

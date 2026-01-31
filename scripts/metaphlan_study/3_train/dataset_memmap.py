@@ -17,8 +17,8 @@ import argparse
 from pathlib import Path
 
 import pandas as pd
-from gem.mpa import MetaphlanMarkerEmbedding, MetaphlanProfileExtractor
-from gem.mpa import perform_allocation, MetaphlanDataset
+from gem.datasets.mpa import MetaphlanMarkerEmbedding, MetaphlanProfileCollection
+from gem.datasets.mpa import perform_allocation, MetaphlanDataset
 
 
 def parse_args():
@@ -78,7 +78,7 @@ if __name__ == "__main__":
         ipca_batch_size=args.ipca_batch_size,
     )
 
-    all_samples = list(MetaphlanProfileExtractor(dataset_df_full).samples())
+    all_samples = list(MetaphlanProfileCollection(dataset_df_full).samples())
     max_num_markers = max(
         marker_embedding.num_markers(sgb_id)
         for sample in all_samples

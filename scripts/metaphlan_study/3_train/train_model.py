@@ -8,7 +8,7 @@ import pandas as pd
 import torch
 from torch import optim
 
-from gem.mpa import AbstractMetaphlanDataset, MetaphlanDatasetMemmapped
+from gem.datasets.mpa import AbstractMetaphlanDataset, MetaphlanDatasetMemmapped
 from gem.ml import *
 from gem.ml.models import *
 

@@ -4,8 +4,8 @@ import pandas as pd
 import torch
 
 from gem.ml import MetaphlanDataLoader
-from gem.mpa.embeddings import MetaphlanMarkerEmbedding
-from gem.mpa.dataset import MetaphlanDataset
+from gem.datasets.mpa.embeddings import MetaphlanMarkerEmbedding
+from gem.datasets.mpa.dataset import MetaphlanDataset
 from gem.ml.dataloader.collate import BufferedCollator
 
 

@@ -9,7 +9,7 @@ from torch import nn, GradScaler, autocast
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LRScheduler
 
-from gem.mpa import AbstractMetaphlanDataset, MetaphlanHDF5Dataset, HDF5BatchShuffledSampler
+from gem.datasets.mpa import AbstractMetaphlanDataset, MetaphlanHDF5Dataset, HDF5BatchShuffledSampler
 from gem.ml.dataloader.data_loader import MetaphlanDataLoader
 from gem.util import timer
 

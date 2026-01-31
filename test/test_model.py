@@ -4,7 +4,7 @@ from typing import *
 import torch
 from torch import autocast
 from gem.ml import MetaphlanDataLoader, SGBAbundancePredictionModel
-from gem.mpa import MetaphlanDatasetMemmapped
+from gem.datasets.mpa import MetaphlanDatasetMemmapped
 
 
 def create_test_config() -> Dict:

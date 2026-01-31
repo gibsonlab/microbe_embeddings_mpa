@@ -7,7 +7,7 @@ import torch
 from torch import Tensor
 from torch.utils.data import Dataset
 
-from .abundance_profile import MetaphlanProfileExtractor, MetaphlanProfile
+from .abundance_profile import MetaphlanProfileCollection, MetaphlanProfile
 from .embeddings import MetaphlanMarkerEmbedding
 from gem.util.timer import timer
 
@@ -63,7 +63,7 @@ class MetaphlanDataset(AbstractMetaphlanDataset):
         """
         super().__init__()
         self.df = dataset_df
-        self.samples = list(MetaphlanProfileExtractor(dataset_df).samples())
+        self.samples = list(MetaphlanProfileCollection(dataset_df).samples())
 
         self.sample_indices = {sample.sample_id: idx for idx, sample in enumerate(self.samples)}
         self.marker_embedding = marker_embedding

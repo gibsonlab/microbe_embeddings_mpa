@@ -11,8 +11,14 @@ from .base import GenomeEmbedding
 class EvoWrapper(GenomeEmbedding):
     def __init__(
             self,
+            num_hyena_layers: int = 32,
             device: str = 'cuda:0',
     ):
+        """
+        :param num_hyena_layers: number of hyena layers to use. The final embedding output is the output of the k-th layer (k = num_hyena_layers).
+        Default = 32. Note: evo1 pre-trained model is exactly 32 hyena layers.
+        :param device: device to use
+        """
         evo_model = Evo('evo-1-131k-base')
         model, tokenizer = evo_model.model, evo_model.tokenizer
 
@@ -30,10 +36,17 @@ class EvoWrapper(GenomeEmbedding):
         model.eval()  # huggingface spec: switch to evaluation mode
         self.device = device
         self.striped_hyena_model = model
+        self.num_hyena_layers = num_hyena_layers
 
         n_layers = len(self.striped_hyena_model.blocks)
         print("[evo] Loaded Hyena Model which has {} blocks.".format(n_layers))
         self.tokenizer = tokenizer
+
+    def device(self) -> torch.device:
+        return self.device
+
+    def embed_dim(self) -> int:
+        raise NotImplementedError("TODO!")
 
     def tokenize_single(self, sequence: str, max_seq_length: Optional[int] = None) -> Tensor:
         tokenized_ids = self.tokenizer.tokenize(sequence)
@@ -51,7 +64,7 @@ class EvoWrapper(GenomeEmbedding):
             # original code:
             # x, _ = self.striped_hyena_model.stateless_forward(x)  # todo: figure out if padding is required for this context.
             """
-            for _, block in enumerate(self.striped_hyena_model.blocks[:-1]):  # all but last layer.
+            for _, block in enumerate(self.striped_hyena_model.blocks[:self.num_hyena_layers]):
                 """
                 Note: padding_mask is not required here; the evo model is autoregressive.
                 This means that the embedding of ("A") is always the prefix of the embedding ("AC"). 

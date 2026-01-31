@@ -36,6 +36,11 @@ class DNABertSWrapper(GenomeEmbedding):
 
         # self.pad_id = tokenizer.convert_tokens_to_ids(tokenizer.pad_token)  # added whenever padding is required.
         # self.sep_id = tokenizer.convert_tokens_to_ids(tokenizer.sep_token)  # added at the end of each sequence.
+    def device(self) -> torch.device:
+        return self.device
+
+    def embed_dim(self) -> int:
+        raise NotImplementedError("TODO!")
 
     def embed_sequence(self, x: str) -> Tensor:
         """

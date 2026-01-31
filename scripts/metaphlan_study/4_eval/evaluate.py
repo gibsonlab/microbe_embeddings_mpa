@@ -2,19 +2,16 @@ from typing import *
 from pathlib import Path
 import json
 import gc
-import math
 
 from tqdm import tqdm
 import torch
 from torch import Tensor, nn
 
-from Bio import Phylo
 import numpy as np
 import scipy
 import pandas as pd
-import gem
 
-from gem.mpa import MetaphlanProfile, MetaphlanDataset, AbstractMetaphlanDataset, MetaphlanDatasetMemmapped, MetaphlanProfileExtractor
+from gem.datasets.mpa import AbstractMetaphlanDataset, MetaphlanDatasetMemmapped, MetaphlanProfileCollection
 from gem.ml import SGBAbundancePredictionModel, SGBAbundanceLayeredPredictionModel, safe_kl_div_loss
 
 
@@ -50,10 +47,6 @@ class UniformAbundancePredictor(BaselinePredictor):
         pred = pred / np.sum(pred)
         pred = self.add_padding_1d(pred, max_sgbs)
         return pred
-
-
-
-from collections import defaultdict
 
 
 class TreeNode:
@@ -366,7 +359,7 @@ class NearestNeighborAveragingPredictor(BaselinePredictor):
     """
     def __init__(self, sgb_phylogenetic_tree_file: Path, train_df: pd.DataFrame):
         assert train_df.shape[0] > 0
-        profile_df = MetaphlanProfileExtractor(train_df).sgb_profile_df
+        profile_df = MetaphlanProfileCollection(train_df).sgb_profile_df
         zero_cols = profile_df.columns[(profile_df == 0).all()]
         profile_df = profile_df.drop(columns=zero_cols)
         profile_df = profile_df.rename(columns=lambda x: x[:-6] if x.endswith('_group') else x)
@@ -568,7 +561,7 @@ def evaluate_baseline_model(
         sample_id, _, _, sgb_padding_mask, _ = dset_object[_idx]
         subset_df = dset_df.loc[dset_df.index == sample_id]
         assert subset_df.shape[0] == 1, f"Expected 1 sample matching ID {sample_id}, got: {subset_df.shape[0]}"
-        extractor = MetaphlanProfileExtractor(subset_df)
+        extractor = MetaphlanProfileCollection(subset_df)
         target_sample = next(iter(extractor.samples()))
         
         abunds = baseline_method.predict_abundances(target_sample.sgb_ids, len(target_sample.sgb_ids))
