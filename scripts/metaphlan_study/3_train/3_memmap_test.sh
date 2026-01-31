@@ -12,11 +12,11 @@ set -e
 
 
 if [ $# -eq 0 ]; then
-  echo "Error: model_name is required"
-  echo "Usage: $0 <model_name>"
+  echo "Error: embedding_model is required"
+  echo "Usage: $0 <embedding_model>"
   exit 1
 fi
-model_name="$1"
+embedding_model="$1"
 
 
 TSV_FILE=/data/cctm/youn/metaphlan_dset/model_training/test.tsv
@@ -50,8 +50,8 @@ echo "Memory-mapping: Test set [Rows $start_row ~ $end_row] (inclusive)"
 pca_dim=200
 python dataset_memmap.py \
   --dataset-tsv "$TSV_FILE" \
-  --embedding-dir "/data/cctm/youn/metaphlan_dset/embeddings/phylophlan_markers/${model_name}" \
-  --memmap-dir "/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples/${model_name}_d${pca_dim}" \
+  --embedding-dir "/data/bwh-comppath-seq/youn/metaphlan_dset/embeddings/phylophlan_markers/dna/${embedding_model}" \
+  --memmap-dir "/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples/dna/${embedding_model}_d${pca_dim}" \
   --threads 6 \
   --start $start_row \
   --end $end_row \

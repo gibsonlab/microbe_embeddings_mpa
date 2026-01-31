@@ -20,7 +20,7 @@ model_name="$1"
 pca_dim=200
 
 # point to the proper pretrained model embeddings
-embeddings_memmap="/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples/${model_name}_d${pca_dim}"
+embeddings_memmap="/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples/dna/${model_name}_d${pca_dim}"
 
 
 training_set="/data/cctm/youn/metaphlan_dset/model_training/train.tsv"
@@ -31,7 +31,7 @@ learning_rate=0.0001
 batch_size=10
 seed=12345
 
-outdir="/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/trained_model/${model_name}_d${pca_dim}/epc_pool_kl"
+outdir="/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/trained_model/dna/${model_name}_d${pca_dim}/epc_pool_kl"
 mkdir -p ${outdir}
 
 metadata="$outdir/metadata.txt"

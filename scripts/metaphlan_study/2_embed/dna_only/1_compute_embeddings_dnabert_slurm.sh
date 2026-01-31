@@ -50,7 +50,7 @@ fi
 if [ $start_idx -le $M ]; then
     echo "Job $k processing items $start_idx to $end_idx (inclusive)"
 
-    outdir=/data/cctm/youn/metaphlan_dset/embeddings/phylophlan_markers/dnabert-s/part${k}
+    outdir="/data/bwh-comppath-seq/youn/metaphlan_dset/embeddings/phylophlan_markers/dna/dnabert-s/part${k}"
     breadcrumb=$outdir/.embed.DONE
     if [ -f "$breadcrumb" ]; then
         echo "Task array index ${k} was already finished previously."
