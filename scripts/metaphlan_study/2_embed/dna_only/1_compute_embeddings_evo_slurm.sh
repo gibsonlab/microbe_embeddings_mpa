@@ -2,7 +2,7 @@
 #SBATCH --partition=bwh_comppath_all
 #SBATCH --array=1-8
 #SBATCH --ntasks=1
-#SBATCH --gres=gpu:1
+#SBATCH --gpus-per-task=1
 #SBATCH --mem=12G
 #SBATCH --cpus-per-task=4
 #SBATCH --time=5-00:00:00
