@@ -76,11 +76,11 @@ class MultiGPUEmbeddingCollateFn:
         b = len(batch)
 
         # Find max dimensions
-        S = max(len(sample) for sample in batch)
+        S = max(len(sample_taxa) for (_, sample_taxa) in batch)
         G = max(
-            max(len(taxa_genes) for taxa_genes in sample)
-            if sample else 0
-            for sample in batch
+            max(len(taxa_genes) for taxa_genes in sample_taxa)
+            if sample_taxa else 0
+            for (_, sample_taxa) in batch
         )
 
         # things to output
