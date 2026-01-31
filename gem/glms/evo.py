@@ -33,7 +33,8 @@ class EvoWrapper(GenomeEmbedding):
             torch.cuda.empty_cache()
 
         model.to(device)
-        model.eval()  # huggingface spec: switch to evaluation mode
+        model.eval()  # ensure running on "eval" mode without gradient calculation
+
         self.device = device
         self.striped_hyena_model = model
         self.num_hyena_layers = num_hyena_layers

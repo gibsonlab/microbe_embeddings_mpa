@@ -200,6 +200,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("-pf", "--prefetch-factor", dest="batch_prefetch_factor", required=False, type=int, default=2)
     parser.add_argument("-resume", "--resume-from", dest="resume_from_path", required=False, type=str, default=None)
     parser.add_argument("-checkpoint", "--checkpoint-every", dest="checkpoint_every", required=False, type=int, default=20)
+    parser.add_argument("-mb", "--minibatch-embed-size", dest="embed_minibatch_size", required=False, type=int, default=128)
     parser.add_argument(
         "-amp", "--use-auto-mixed-precision", dest="use_auto_mixed_precision",
         action="store_true", default=False
@@ -293,7 +294,7 @@ def main():
     # Create one instance of Evo (per worker) to share amongst train/test dataloaders.
     embedding_class, embedding_kwargs = generate_embedding_initializers(args.embedding_model_name)
     print("Embedding: {}  --> {}".format(embedding_class.__name__, embedding_kwargs))
-    embedding_collate_fn = MultiGPUEmbeddingCollateFn(embedding_class, embedding_kwargs, worker_devices, minibatch_size=10)
+    embedding_collate_fn = MultiGPUEmbeddingCollateFn(embedding_class, embedding_kwargs, worker_devices, minibatch_size=args.embed_minibatch_size)
 
     data_batch_size = args.batch_size
     shuffle_dataset = True

@@ -29,7 +29,8 @@ class DNABertSWrapper(GenomeEmbedding):
             torch.cuda.empty_cache()
 
         model.to(device)
-        model.eval()
+        model.eval()  # ensure running on "eval" mode without gradient calculation
+
         self.device = device
         self.model = model
         self.tokenizer = tokenizer
