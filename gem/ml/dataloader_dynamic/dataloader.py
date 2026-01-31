@@ -127,5 +127,6 @@ def create_dataloader_dynamic_embedding(
         batch_size=data_batch_size,
         num_workers=len(worker_devices),
         persistent_workers=True,
+        multiprocessing_context='spawn',
         **dataloader_kwargs
     )

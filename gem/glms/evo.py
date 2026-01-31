@@ -100,9 +100,6 @@ class EvoWrapper(GenomeEmbedding):
         ).to(self.device)
         hyena_output = self.run_hyena(input_ids)
 
-        # DEBUG
-        print("Got hyena output shape: {}, sequence_lengths = {}".format(hyena_output.shape, [len(s) for s in seqs]))
-
         return torch.stack([
             seq_hyena_output[len(seq) - 1, :]  # take the last token's embedding vector (the index may differ depending on the sequence)
             for seq, seq_hyena_output in zip(seqs, hyena_output)

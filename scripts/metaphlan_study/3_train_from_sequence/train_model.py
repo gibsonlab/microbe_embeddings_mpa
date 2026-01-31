@@ -299,12 +299,12 @@ def main():
     shuffle_dataset = True
     batch_prefetch_factor = args.batch_prefetch_factor
     train_dloader = DataLoader(
-        dataset=train_dset, collate_fn=embedding_collate_fn,
+        dataset=train_dset, collate_fn=embedding_collate_fn, multiprocessing_context='spawn',
         batch_size=data_batch_size, shuffle=shuffle_dataset, generator=train_rng, drop_last=False,
         num_workers=num_workers, prefetch_factor=batch_prefetch_factor, persistent_workers=True,
     )
     test_dloader = DataLoader(
-        dataset=test_dset, collate_fn=embedding_collate_fn,
+        dataset=test_dset, collate_fn=embedding_collate_fn, multiprocessing_context='spawn',
         batch_size=data_batch_size, shuffle=False, generator=None, drop_last=False,
         num_workers=num_workers, prefetch_factor=batch_prefetch_factor, persistent_workers=True,
     )
