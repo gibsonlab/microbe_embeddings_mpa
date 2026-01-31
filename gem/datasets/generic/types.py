@@ -1,5 +1,5 @@
-from typing import List
+from typing import List, Tuple
 
 Gene = str
 BacterialTaxa = List[Gene]
-Sample = List[BacterialTaxa]
+Sample = Tuple[str, List[BacterialTaxa]]

@@ -1,6 +1,8 @@
 from typing import *
 
 import torch
+from sklearn.utils import assert_all_finite
+from torch import Tensor
 from torch.utils.data import DataLoader
 
 from gem.glms import GenomeEmbedding
@@ -62,7 +64,7 @@ class MultiGPUEmbeddingCollateFn:
         self.embedding: GenomeEmbedding = self.embedding_class(device=self.device, **self.embedding_kwargs)
         self.embed_dim = self.embedding.embed_dim()
 
-    def __call__(self, batch: List[Sample]) -> torch.Tensor:
+    def __call__(self, batch: List[Tuple[Sample, Tensor]]) -> Tuple[List[str], Tensor, Tensor, Tensor, Tensor]:
         """
         Returns:
             Tensor of shape (b, S, G, e) on the worker's assigned GPU
@@ -75,42 +77,53 @@ class MultiGPUEmbeddingCollateFn:
 
         # Find max dimensions
         S = max(len(sample) for sample in batch)
-        G = max(max(len(organism) for organism in sample) if sample else 0
-                for sample in batch)
+        G = max(
+            max(len(taxa_genes) for taxa_genes in sample)
+            if sample else 0
+            for sample in batch
+        )
+
+        # things to output
+        sample_ids = []
+        abundance_tensors = []
+        m_batch = torch.zeros((b, S, G), dtype=torch.bool)  # this doesn't need to be created on the worker device.
+        s_batch = torch.zeros((b, S), dtype=torch.bool)  # this doesn't need to be created on the worker device.
 
         # Collect all gene strings with positions
         all_genes = []
         positions = []
 
-        print("Got batch: {batch}".format(batch))
-        for batch_idx, sample in enumerate(batch):
-            for organism_idx, organism in enumerate(sample):
-                for gene_idx, gene in enumerate(organism):
+        for sample_idx_in_batch, ((sample_id, sample_taxa), abundance_targets) in enumerate(batch):
+            sample_ids.append(sample_id)
+            abundance_tensors.append(abundance_targets)
+            s_batch[sample_idx_in_batch, :len(sample_taxa)] = True
+            for taxa_idx, taxa_genes in enumerate(sample_taxa):
+                m_batch[sample_idx_in_batch, taxa_idx, :len(taxa_genes)] = True
+                for gene_idx, gene in enumerate(taxa_genes):
                     all_genes.append(gene)
-                    positions.append((batch_idx, organism_idx, gene_idx))
+                    positions.append((sample_idx_in_batch, taxa_idx, gene_idx))
 
         # Batch process through model on this worker's GPU
-        if all_genes:
+        if len(all_genes) > 0:
             with torch.no_grad():
                 embeddings_list = []
 
                 for i in range(0, len(all_genes), self.model_batch_size):
-                    batch_genes = all_genes[i:i + self.model_batch_size]
-                    batch_embeddings = self.embedding.embed_batch(batch_genes)
-                    embeddings_list.append(batch_embeddings)
+                    minibatch_genes = all_genes[i:i + self.model_batch_size]
+                    minibatch_embeddings = self.embedding.embed_batch(minibatch_genes)
+                    embeddings_list.append(minibatch_embeddings)
 
-                all_embeddings = torch.cat(embeddings_list, dim=0)
+                embedded_genes_flattened = torch.cat(embeddings_list, dim=0)
         else:
-            all_embeddings = torch.zeros((0, self.embed_dim), device=self.device)
+            embedded_genes_flattened = torch.zeros((0, self.embed_dim), device=self.device)
 
-        # Initialize output tensor on this worker's GPU
-        output = torch.zeros((b, S, G, self.embed_dim), device=self.device)
+        # Initialize output tensor on this worker's GPU, and fill in embeddings in the correct order.
+        f_batch = torch.zeros((b, S, G, self.embed_dim), device=self.device)
+        for emb, (sample_idx_in_batch, taxa_idx, gene_idx) in zip(embedded_genes_flattened, positions):
+            f_batch[sample_idx_in_batch, taxa_idx, gene_idx] = emb
 
-        # Fill in embeddings
-        for emb, (batch_idx, organism_idx, gene_idx) in zip(all_embeddings, positions):
-            output[batch_idx, organism_idx, gene_idx] = emb
-
-        return output
+        t_batch = torch.stack(abundance_tensors, dim=0)
+        return sample_ids, f_batch, m_batch, s_batch, t_batch
 
 
 def create_dataloader_dynamic_embedding(

@@ -23,7 +23,7 @@ def parse_all_samples(db, profile_parser, dtype: torch.dtype) -> Iterator[Tuple[
             for taxa_id, abundance in zip(profile.taxa_ids, profile.abundances)
             if taxa_id in db
         ], dtype=dtype)
-        yield organisms_subset, targets / targets.sum()
+        yield (profile.sample_id, organisms_subset), targets / targets.sum()
 
 
 class OrganismGeneSequenceDataset(Dataset):
