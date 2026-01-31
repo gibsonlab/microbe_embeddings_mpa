@@ -104,11 +104,13 @@ class MultiGPUEmbeddingCollateFn:
                     positions.append((sample_idx_in_batch, taxa_idx, gene_idx))
 
         # Batch process through model on this worker's GPU
+        print("Number of genes to embed: {}".format(len(all_genes)))
         if len(all_genes) > 0:
             with torch.no_grad():
                 embeddings_list = []
 
                 for i in range(0, len(all_genes), self.model_minibatch_size):
+                    print("embedding genes = {} ~ {}".format(i, i + self.model_minibatch_size))
                     minibatch_genes = all_genes[i:i + self.model_minibatch_size]
                     minibatch_embeddings = self.embedding.embed_batch(minibatch_genes)
                     embeddings_list.append(minibatch_embeddings)
