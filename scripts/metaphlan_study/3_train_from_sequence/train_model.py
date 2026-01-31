@@ -273,6 +273,7 @@ def main():
         model_cuda_device = cuda_devices[0]
         num_workers = len(cuda_devices) - 1
         worker_devices = cuda_devices[1:]
+    print("Using CUDA devices: {}".format(cuda_devices))
 
     """ Initialize DataLoaders. """
     train_rng = torch.Generator()

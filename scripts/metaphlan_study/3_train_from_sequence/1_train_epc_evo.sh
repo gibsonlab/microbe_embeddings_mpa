@@ -29,6 +29,7 @@ batch_size=10
 seed=12345
 
 outdir="/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/trained_model/${model_name}_hyena${hyena_layers}/epc_sgbpool_epoch${n_epochs}_kl"
+echo "Model will be saved to: ${outdir}"
 mkdir -p ${outdir}
 
 metadata="$outdir/metadata.txt"
