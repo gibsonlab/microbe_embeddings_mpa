@@ -26,9 +26,15 @@ class MetaphlanTaxaDatabase(BacterialTaxaDatabase):
         :param json_index_path: A path to the ZST-compressed JSON index file.
         :param fasta_path: A path to a pre-existing FASTA file containing the raw marker sequences.
         """
-        print("json_index_path: ", json_index_path)
-        with zstd.open(json_index_path, "rt") as f:
-            sgb_marker_index = json.load(f)
+        try:
+            with zstd.open(json_index_path, "rt") as f:
+                sgb_marker_index = json.load(f)
+        except Exception as e:
+            print("Fatal error while reading sequence index file {json_index_path}: {cause}".format(
+                json_index_path=json_index_path,
+                cause=str(e)
+            ))
+
 
         fasta = Fasta(fasta_path)
         self.catalogue: Dict[str, BacterialTaxa] = {}
