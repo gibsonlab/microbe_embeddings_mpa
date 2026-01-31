@@ -258,8 +258,8 @@ def main():
     """ Load Taxa Marker Gene database. """
     print("Loading Taxa Marker Gene database.")
     marker_sequence_dir = Path(args.marker_sequence_dir)
-    json_index_path = marker_sequence_dir / "markers.fna"
-    marker_fasta_path = marker_sequence_dir / "sgb_marker_index.json.zst"
+    json_index_path = marker_sequence_dir / "sgb_marker_index.json.zst"
+    marker_fasta_path = marker_sequence_dir / "markers.fna"
     db = MetaphlanTaxaDatabase(json_index_path=json_index_path, fasta_path=marker_fasta_path)
 
     """ Create datasets. """
