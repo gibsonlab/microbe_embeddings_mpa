@@ -57,6 +57,6 @@ python train_model.py \
   --seed "$seed" \
   --prefetch-factor 2 \
   --checkpoint-every 10 \
-  --cuda-devices "0,1,2,3,4,5,6,7" \
+  --cuda-devices "0" \
 
 echo "Done."

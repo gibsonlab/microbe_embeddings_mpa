@@ -82,6 +82,7 @@ class MultiGPUEmbeddingCollateFn:
         all_genes = []
         positions = []
 
+        print("Got batch: {batch}".format(batch))
         for batch_idx, sample in enumerate(batch):
             for organism_idx, organism in enumerate(sample):
                 for gene_idx, gene in enumerate(organism):
