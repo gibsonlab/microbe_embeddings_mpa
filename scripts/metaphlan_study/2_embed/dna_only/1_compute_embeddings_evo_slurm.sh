@@ -6,9 +6,9 @@
 #SBATCH --mem=12G
 #SBATCH --cpus-per-task=4
 #SBATCH --time=5-00:00:00
-#SBATCH --job-name=mpa_embed_dnabert
-#SBATCH --output=logs/embed_dnabert_%A_%a.out
-#SBATCH --error=logs/embed_dnabert_%A_%a.err
+#SBATCH --job-name=mpa_embed_evo:5
+#SBATCH --output=logs/embed_evo:5_%A_%a.out
+#SBATCH --error=logs/embed_evo:5_%A_%a.err
 
 # Note: this is a Slurm script, meant to be run on ErisXDL compute nodes with 8 A100s.
 
@@ -21,6 +21,9 @@ FASTA_FILE=/data/cctm/youn/metaphlan_dset/phylophlan_data/processed/dna_only/mar
 
 HF_TOKEN=$(cat $HF_TOKEN_FILE)
 HF_HOME="/data/cctm/youn/huggingface_cache"
+
+EVO_CHECKPOINT="evo-1-8k-base"
+NUM_HYENA_LAYERS=5
 
 
 TOTAL_SGBS=$(wc -l < $SGB_SUBSET_FILE)   # Total items (replace with your value)
@@ -50,7 +53,7 @@ fi
 if [ $start_idx -le $M ]; then
     echo "Job $k processing items $start_idx to $end_idx (inclusive)"
 
-    outdir=/data/cctm/youn/metaphlan_dset/embeddings/phylophlan_markers/dnabert-s/part${k}
+    outdir="/data/bwh-comppath-seq/youn/metaphlan_dset/embeddings/phylophlan_markers/${EVO_CHECKPOINT}_hyena${NUM_HYENA_LAYERS}/part${k}"
     breadcrumb=$outdir/.embed.DONE
     if [ -f "$breadcrumb" ]; then
         echo "Task array index ${k} was already finished previously."
@@ -60,8 +63,8 @@ if [ $start_idx -le $M ]; then
 
       HF_HOME=$HF_HOME \
       HF_TOKEN=$HF_TOKEN \
-      python compute_embeddings.py \
-        --model "dnabert-s" \
+      python ../compute_embeddings.py \
+        --model "${EVO_CHECKPOINT}:${NUM_HYENA_LAYERS}" \
         --fasta "$FASTA_FILE" \
         --sgb-list "$SGB_SUBSET_FILE" \
         --sgb-index-file "$SGB_INDEX_FILE" \

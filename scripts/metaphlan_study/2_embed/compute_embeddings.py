@@ -9,6 +9,7 @@ from typing import *
 from pathlib import Path
 import json
 
+from numpy.lib.recfunctions import assign_fields_by_name
 from torch.cuda import OutOfMemoryError
 from tqdm import tqdm
 import h5py
@@ -159,8 +160,18 @@ def do_job(
         out_dir: Path,
         shard_size: int,
 ):
-    if model_name == 'evo':
-        model_fn = lambda: EvoWrapper(device=torch.device('cuda'), num_hyena_layers=32, checkpoint_name='evo-1-131k-base')
+    if model_name.startswith("evo-1"):
+        tokens = model_name.split(":")
+        if len(tokens) == 1:
+            evo_checkpoint_name = tokens[0]
+            num_hyena_layers = 32
+        elif len(tokens) == 2:
+            evo_checkpoint_name = tokens[0]
+            num_hyena_layers = int(tokens[-1])
+        else:
+            raise RuntimeError("Incorrect model name syntax. Expected '<evo_checkpoint_name>:<n_layers>', but got {} instead.".format(model_name))
+
+        model_fn = lambda: EvoWrapper(device=torch.device('cuda'), num_hyena_layers=num_hyena_layers, checkpoint_name=evo_checkpoint_name)
     elif model_name == 'dnabert-s':
         model_fn = lambda: DNABertSWrapper(device=torch.device('cuda'))
     else:

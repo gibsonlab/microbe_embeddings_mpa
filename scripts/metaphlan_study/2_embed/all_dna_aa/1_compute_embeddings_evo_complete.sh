@@ -11,7 +11,10 @@ HF_HOME="/data/cctm/youn/huggingface_cache"
 TOTAL_SGBS=$(wc -l < $SGB_SUBSET_FILE)   # Total items (replace with your value)
 
 
-outdir=/data/cctm/youn/metaphlan_dset/embeddings/phylophlan_markers/evo/complete
+EVO_CHECKPOINT="evo-1-131k-base"
+NUM_HYENA_LAYERS=32
+
+outdir="/data/cctm/youn/metaphlan_dset/embeddings/phylophlan_markers/${EVO_CHECKPOINT}_hyena${NUM_HYENA_LAYERS}/complete"
 breadcrumb=$outdir/.embed.DONE
 if [ -f "$breadcrumb" ]; then
     echo "Task already finished previously."
@@ -21,8 +24,8 @@ else
 
   HF_HOME=$HF_HOME \
   HF_TOKEN=$HF_TOKEN \
-  python compute_embeddings.py \
-    --model "evo" \
+  python ../compute_embeddings.py \
+    --model "${EVO_CHECKPOINT}:${NUM_HYENA_LAYERS}" \
     --fasta "$FASTA_FILE" \
     --sgb-list "$SGB_SUBSET_FILE" \
     --sgb-index-file "$SGB_INDEX_FILE" \

@@ -39,16 +39,19 @@ def load_model_config(config_file: Path, marker_embed_dim: int, rng_seed: int) -
 
 
 def generate_embedding_initializers(model_name: str) -> Tuple[Type[GenomeEmbedding_Subclass], Dict]:
-    if model_name == "evo":
-        from gem.glms import EvoWrapper
-        print("Using the default number of layers (n=32) from Evo's Hyena architecture.")
-        return EvoWrapper, dict(num_hyena_layers=32)
-    elif model_name.startswith("evo:"):
-        from gem.glms import EvoWrapper
+    if model_name.startswith("evo-1"):
         tokens = model_name.split(":")
-        assert len(tokens) == 2, "Incorrect model name syntax. Expected 'evo:<n_layers>', but got {} instead.".format(model_name)
-        num_hyena_layers = int(tokens[-1])
-        return EvoWrapper, dict(num_hyena_layers=num_hyena_layers)
+        if len(tokens) == 1:
+            evo_checkpoint_name = tokens[0]
+            num_hyena_layers = 32
+        elif len(tokens) == 2:
+            evo_checkpoint_name = tokens[0]
+            num_hyena_layers = int(tokens[-1])
+        else:
+            raise RuntimeError("Incorrect model name syntax. Expected '<evo_checkpoint_name>:<n_layers>', but got {} instead.".format(model_name))
+
+        from gem.glms import EvoWrapper
+        return EvoWrapper, dict(num_hyena_layers=num_hyena_layers, checkpoint_name=evo_checkpoint_name)
     elif model_name == "evo2":
         raise NotImplementedError("Evo2 is not yet implemented for this training script.")
     elif model_name == "dnabert-s":
