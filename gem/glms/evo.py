@@ -51,8 +51,8 @@ class EvoWrapper(GenomeEmbedding):
         return self.device
 
     def embed_dim(self) -> int:
-        # hard-coded!
-        return 4096
+        example = self.embed_empty_sequence()
+        return example.shape[-1]
 
     def tokenize_single(self, sequence: str, max_seq_length: Optional[int] = None) -> Tensor:
         tokenized_ids = self.tokenizer.tokenize(sequence)
@@ -85,8 +85,9 @@ class EvoWrapper(GenomeEmbedding):
         input_ids = torch.tensor(input_ids, dtype=torch.int)
         input_ids = input_ids.to(self.device).unsqueeze(0)
         seq_len = len(nucleotides)
-        return self.run_hyena(input_ids)[
-            0, seq_len - 1, :]  # Note: the "-1" here indicates the indexing of the particular slice UP TO the last character of the sequence.
+
+        # Note: the "-1" here indicates the indexing of the particular slice UP TO the last character of the sequence.
+        return self.run_hyena(input_ids)[0, seq_len - 1, :]
 
     def embed_batch(self, seqs: List[str]) -> Tensor:
         max_seq_length = max(len(seq) for seq in seqs)
@@ -110,5 +111,4 @@ class EvoWrapper(GenomeEmbedding):
     def embed_empty_sequence(self) -> Tensor:
         input_ids = torch.tensor([np.uint8(self.tokenizer.eos)], dtype=torch.int)  # length 1 of "EOS" id.
         input_ids = input_ids.to(self.device).unsqueeze(0)
-        return self.run_hyena(input_ids)[
-            0, 0, :]  # Note: the "-1" here indicates the indexing of the particular slice UP TO the last character of the sequence.
+        return self.run_hyena(input_ids)[0, 0, :]

@@ -40,8 +40,8 @@ class DNABertSWrapper(GenomeEmbedding):
         return self.device
 
     def embed_dim(self) -> int:
-        # hard-coded!
-        return 768
+        example = self.embed_empty_sequence()
+        return example.shape[-1]
 
     def embed_sequence(self, x: str) -> Tensor:
         """
