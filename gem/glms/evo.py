@@ -76,7 +76,6 @@ class EvoWrapper(GenomeEmbedding):
 
     def run_hyena(self, input_ids: Tensor) -> Tensor:
         with torch.no_grad():
-            self.evo2_model
             x = self.preembedding_layer.embed(input_ids)
             for _, block in enumerate(self.hyena_layers):
                 """
