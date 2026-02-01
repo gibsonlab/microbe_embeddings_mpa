@@ -53,15 +53,22 @@ class Evo2Wrapper(GenomeEmbedding):
                 num_hyena_layers
             ))
 
-        evo2_model.model.eval()
         n_total_layers = len(hyena_model.blocks)
         print("[evo2] Loaded Hyena Model which has {} blocks. Embedding is output of block #{}".format(n_total_layers, num_hyena_layers))
 
-        self.evo2_model = evo2_model
+        # The actual Evo model.
+        self.preembedding_layer = hyena_model.embedding_layer
+        self.hyena_layers = hyena_model.blocks[:num_hyena_layers]
         self.tokenizer = tokenizer
 
-        self.num_hyena_layers = num_hyena_layers
-        self.target_layer_name = f'blocks.{self.num_hyena_layers-1}'  # run blocks 0 through (self.num_hyena_layers-1)
+        for model_component in [self.preembedding_layer] + list(self.hyena_layers):
+            model_component.to(device)
+            model_component.eval()
+
+        if num_hyena_layers < len(hyena_model.blocks):
+            print("[evo] Discarding layers #{} onwards.".format(num_hyena_layers + 1))
+            for post_layer in hyena_model.blocks[num_hyena_layers:]:
+                del post_layer
 
     def device(self) -> torch.device:
         return self.device
@@ -70,24 +77,30 @@ class Evo2Wrapper(GenomeEmbedding):
         example = self.embed_empty_sequence()
         return example.shape[-1]
 
-    def tokenize_single(self, sequence: str, max_seq_length: Optional[int] = None) -> List[int]:
+    def tokenize_single(self, sequence: str, max_seq_length: Optional[int] = None) -> Tensor:
         tokenized_ids = self.tokenizer.tokenize(sequence)
         if max_seq_length is not None:
             tokenized_ids += [self.tokenizer.pad_id] * (max_seq_length - len(sequence))
         return tokenized_ids
 
     def run_hyena(self, input_ids: Tensor) -> Tensor:
-        """
-        Unlike evo-1, we can use the built-in "return_embeddings=True" feature here.
-        """
         with torch.no_grad():
-            _, embeddings = self.evo2_model(input_ids, return_embeddings=True, layer_names=[self.target_layer_name])
-            return embeddings[self.target_layer_name]
+            # note: StripedHyena2 seems to have changed the VocabParallelEmbedding implementation detail.
+            # Now, it extends nn.Module instead of nn.Embedding, and does not implement the embed() method.
+            x = self.preembedding_layer.forward(input_ids)
+            for _, block in enumerate(self.hyena_layers):
+                """
+                Note: padding_mask is not required here; the evo model is autoregressive.
+                This means that the embedding of ("A") is always the prefix of the embedding ("AC"). 
+                Equal up to bfloat16 precision, of course.
+                """
+                x, _ = block(x, inference_params=None, padding_mask=None)
+            return x
 
     def embed_sequence(self, nucleotides: str) -> Tensor:
         input_ids = self.tokenize_single(nucleotides)
         input_ids = torch.tensor(input_ids, dtype=torch.int)
-        input_ids = input_ids.unsqueeze(0).to(self.device)
+        input_ids = input_ids.to(self.device).unsqueeze(0)
         seq_len = len(nucleotides)
 
         # Note: the "-1" here indicates the indexing of the particular slice UP TO the last character of the sequence.
