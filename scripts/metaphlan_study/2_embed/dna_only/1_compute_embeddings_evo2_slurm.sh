@@ -87,9 +87,9 @@ if [ $start_idx -le $M ]; then
 
       singularity exec --nv \
         --bind "${HF_HOME}:/hf_home" \
-        --bind "${FASTA_FILE}:/workdir/sequences.fasta" \
-        --bind "${SGB_SUBSET_FILE}:/workdir/sgb_subset.txt" \
-        --bind "${SGB_INDEX_FILE}:/workdir/sgb_marker_index.json.zst" \
+        --bind "${FASTA_FILE}:/tmp/sequences.fasta" \
+        --bind "${SGB_SUBSET_FILE}:/tmp/sgb_subset.txt" \
+        --bind "${SGB_INDEX_FILE}:/tmp/sgb_marker_index.json.zst" \
         --bind "${outdir}:/out_dir" \
         --bind "${PROJECT_ROOT_DIR}:/lib" \
         --bind "${PARENT_DIR}:/script_home" \
