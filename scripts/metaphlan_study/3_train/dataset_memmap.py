@@ -81,7 +81,7 @@ if __name__ == "__main__":
     max_num_markers = max(
         marker_embedding.num_markers(sgb_id)
         for sample in all_samples
-        for sgb_id in sample.sgb_ids
+        for sgb_id in sample.taxa_ids
         if marker_embedding.contains_sgb(sgb_id)
     )
 
