@@ -18,6 +18,7 @@ HF_TOKEN_FILE=/data/cctm/youn/metaphlan_dset/hf_token.txt
 SGB_SUBSET_FILE=/data/cctm/youn/metaphlan_dset/dataset/MetaPhlAn4_paper_profile_SGBs.txt
 SGB_INDEX_FILE=/data/cctm/youn/metaphlan_dset/phylophlan_data/processed/dna_only/sgb_marker_index.json.zst
 FASTA_FILE=/data/cctm/youn/metaphlan_dset/phylophlan_data/processed/dna_only/markers.fna
+FASTA_INDEX_FILE=/data/cctm/youn/metaphlan_dset/phylophlan_data/processed/dna_only/markers.fna.fai
 APPTAINER_IMAGE=/data/cctm/youn/docker_images/evo2_gem.sif
 
 HF_TOKEN=$(cat $HF_TOKEN_FILE)
@@ -89,7 +90,8 @@ if [ $start_idx -le $M ]; then
       singularity exec --nv \
         --bind "./evo2-7b-1m.NO_FP8.yml:${container_local_evo2_config}" \
         --bind "${HF_HOME}:/hf_home" \
-        --bind "${FASTA_FILE}:/tmp/sequences.fasta" \
+        --bind "${FASTA_FILE}:/tmp/markers.fna" \
+        --bind "${FASTA_INDEX_FILE}:/tmp/markers.fna.fai" \
         --bind "${SGB_SUBSET_FILE}:/tmp/sgb_subset.txt" \
         --bind "${SGB_INDEX_FILE}:/tmp/sgb_marker_index.json.zst" \
         --bind "${outdir}:/out_dir" \
