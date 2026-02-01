@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --partition=bwh_comppath_all
-#SBATCH --array=1-8
+#SBATCH --array=1-24
 #SBATCH --ntasks=1
 #SBATCH --gpus=1
-#SBATCH --mem=12G
+#SBATCH --mem=20G
 #SBATCH --cpus-per-task=4
 #SBATCH --time=1-00:00:00
 #SBATCH --job-name=mpa_embed_evo2
