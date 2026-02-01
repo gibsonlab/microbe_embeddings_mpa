@@ -29,9 +29,9 @@ def disable_fp8_from_configuration(checkpoint_name: str):
     if checkpoint_name not in checkpoint_config:
         raise KeyError(f"Evo2 checkpoint '{checkpoint_name}' does not have any known mappings to a YAML config.")
     checkpoint_fname = checkpoint_config[checkpoint_name]
-    config_path = evo2_package_dir / checkpoint_fname
+    config_path = evo2_package_dir / "configs" / checkpoint_fname
 
-    if config_path.exists():
+    if not config_path.exists():
         raise FileNotFoundError(f"Evo2 checkpoint configuration file {checkpoint_name} -> {config_path} does not exist!")
 
     print("Target configuration file: {}".format(config_path))
