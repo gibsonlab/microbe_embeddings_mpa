@@ -91,9 +91,9 @@ if [ $start_idx -le $M ]; then
         --bind "${SGB_SUBSET_FILE}:/tmp/sgb_subset.txt" \
         --bind "${SGB_INDEX_FILE}:/tmp/sgb_marker_index.json.zst" \
         --bind "${outdir}:/out_dir" \
-        --bind "${PROJECT_ROOT_DIR}:/lib" \
+        --bind "${PROJECT_ROOT_DIR}:/project_base" \
         --bind "${PARENT_DIR}:/script_home" \
-        --env "PYTHONPATH=/lib" \
+        --env "PYTHONPATH=/project_base" \
         --env "HF_HOME=/hf_home" \
         --env "HF_TOKEN=${HF_TOKEN}" \
         --pwd /script_home \
