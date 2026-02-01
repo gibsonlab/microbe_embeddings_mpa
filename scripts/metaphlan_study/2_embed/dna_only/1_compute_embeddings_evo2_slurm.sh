@@ -24,7 +24,7 @@ HF_TOKEN=$(cat $HF_TOKEN_FILE)
 HF_HOME="/data/cctm/youn/huggingface_cache"
 
 EVO2_CHECKPOINT="evo2_7b"
-NUM_HYENA_LAYERS=26
+NUM_HYENA_LAYERS=10
 
 
 TOTAL_SGBS=$(wc -l < $SGB_SUBSET_FILE)   # Total items (replace with your value)

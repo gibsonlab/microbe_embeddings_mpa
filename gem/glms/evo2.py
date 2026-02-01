@@ -77,7 +77,9 @@ class Evo2Wrapper(GenomeEmbedding):
 
     def run_hyena(self, input_ids: Tensor) -> Tensor:
         with torch.no_grad():
-            x = self.preembedding_layer.embed(input_ids)
+            # note: StripedHyena2 seems to have changed the VocabParallelEmbedding implementation detail.
+            # Now, it extends nn.Module instead of nn.Embedding, and does not implement the embed() method.
+            x = self.preembedding_layer.forward(input_ids)
             for _, block in enumerate(self.hyena_layers):
                 """
                 Note: padding_mask is not required here; the evo model is autoregressive.
