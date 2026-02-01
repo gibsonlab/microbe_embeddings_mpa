@@ -1,14 +1,14 @@
 #!/bin/bash
 #SBATCH --partition=bwh_comppath_all
-#SBATCH --array=1-8
+#SBATCH --array=1-24
 #SBATCH --ntasks=1
 #SBATCH --gpus=1
-#SBATCH --mem=12G
+#SBATCH --mem=20G
 #SBATCH --cpus-per-task=4
-#SBATCH --time=5-00:00:00
-#SBATCH --job-name=mpa_embed_evo:5
-#SBATCH --output=logs/embed_evo_hyena5_%A_%a.out
-#SBATCH --error=logs/embed_evo_hyena5_%A_%a.err
+#SBATCH --time=1-00:00:00
+#SBATCH --job-name=mpa_embed_evo
+#SBATCH --output=logs/embed_evo_%A_%a.out
+#SBATCH --error=logs/embed_evo_%A_%a.err
 
 # Note: this is a Slurm script, meant to be run on ErisXDL compute nodes with 8 A100s.
 
