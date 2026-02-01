@@ -67,6 +67,8 @@ find_gem_project_dir() {
     echo "No ancestor directory containing 'gem' folder found" >&2
     return 1
 }
+
+PARENT_DIR="$(dirname "$PWD")"
 PROJECT_ROOT_DIR=$(find_gem_project_dir)
 echo "Apptainer will bind the project root directory: ${PROJECT_ROOT_DIR}"
 
@@ -83,7 +85,6 @@ if [ $start_idx -le $M ]; then
       mkdir -p "$outdir"
       echo "Destination output: $outdir"
 
-      PARENT_DIR = "$(dirname "$PWD")"
       singularity exec --nv \
         --bind "${HF_HOME}:/hf_home" \
         --bind "${FASTA_FILE}:/markers/sequences.fasta" \
