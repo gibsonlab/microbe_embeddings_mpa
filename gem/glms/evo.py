@@ -66,7 +66,7 @@ class EvoWrapper(GenomeEmbedding):
         example = self.embed_empty_sequence()
         return example.shape[-1]
 
-    def tokenize_single(self, sequence: str, max_seq_length: Optional[int] = None) -> Tensor:
+    def tokenize_single(self, sequence: str, max_seq_length: Optional[int] = None) -> List[int]:
         tokenized_ids = self.tokenizer.tokenize(sequence)
         if max_seq_length is not None:
             tokenized_ids += [self.tokenizer.pad_id] * (max_seq_length - len(sequence))
@@ -85,9 +85,9 @@ class EvoWrapper(GenomeEmbedding):
             return x
 
     def embed_sequence(self, nucleotides: str) -> Tensor:
-        input_ids = self.tokenize_single(nucleotides, max_seq_length=len(nucleotides))
+        input_ids = self.tokenize_single(nucleotides)
         input_ids = torch.tensor(input_ids, dtype=torch.int)
-        input_ids = input_ids.to(self.device).unsqueeze(0)
+        input_ids = input_ids.unsqueeze(0).to(self.device)
         seq_len = len(nucleotides)
 
         # Note: the "-1" here indicates the indexing of the particular slice UP TO the last character of the sequence.
