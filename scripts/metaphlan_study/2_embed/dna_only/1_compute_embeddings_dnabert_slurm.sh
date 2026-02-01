@@ -5,7 +5,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --mem=12G
 #SBATCH --cpus-per-task=4
-#SBATCH --time=5-00:00:00
+#SBATCH --time=1-00:00:00
 #SBATCH --job-name=mpa_embed_dnabert
 #SBATCH --output=logs/embed_dnabert_%A_%a.out
 #SBATCH --error=logs/embed_dnabert_%A_%a.err

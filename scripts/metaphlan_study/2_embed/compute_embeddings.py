@@ -193,7 +193,7 @@ def do_job(
         sgb_marker_index = json.load(f)
 
     logger.info(f"Subset contains {len(sgb_subset)} SGBs.")
-    logger.info(f"Handling subset index {start_idx} through {end_idx}.")
+    logger.info(f"Handling subset index {start_idx} through {end_idx-1} (inclusive).")
     compute_embedding(
         sgb_subset=sgb_subset[start_idx:end_idx],
         sgb_marker_index=sgb_marker_index,
