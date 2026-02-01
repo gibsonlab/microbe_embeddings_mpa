@@ -90,10 +90,10 @@ if [ $start_idx -le $M ]; then
       singularity exec --nv \
         --bind "./evo2-7b-1m.NO_FP8.yml:${container_local_evo2_config}" \
         --bind "${HF_HOME}:/hf_home" \
-        --bind "${FASTA_FILE}:/tmp/markers.fna" \
-        --bind "${FASTA_INDEX_FILE}:/tmp/markers.fna.fai" \
-        --bind "${SGB_SUBSET_FILE}:/tmp/sgb_subset.txt" \
-        --bind "${SGB_INDEX_FILE}:/tmp/sgb_marker_index.json.zst" \
+        --bind "${FASTA_FILE}:/markers.fna" \
+        --bind "${FASTA_INDEX_FILE}:/markers.fna.fai" \
+        --bind "${SGB_SUBSET_FILE}:/sgb_subset.txt" \
+        --bind "${SGB_INDEX_FILE}:/sgb_marker_index.json.zst" \
         --bind "${outdir}:/out_dir" \
         --bind "${PROJECT_ROOT_DIR}:/project_base" \
         --bind "${PARENT_DIR}:/script_home" \
@@ -104,9 +104,9 @@ if [ $start_idx -le $M ]; then
         "${APPTAINER_IMAGE}" \
         python compute_embeddings.py \
           --model "${EVO2_CHECKPOINT}:${NUM_HYENA_LAYERS}" \
-          --fasta "/tmp/sequences.fasta" \
-          --sgb-list "/tmp/sgb_subset.txt" \
-          --sgb-index-file "/tmp/sgb_marker_index.json.zst" \
+          --fasta "/markers.fna" \
+          --sgb-list "/sgb_subset.txt" \
+          --sgb-index-file "/sgb_marker_index.json.zst" \
           --start "$start_idx" \
           --end "$end_idx" \
           --batch-size 15 \

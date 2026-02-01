@@ -125,9 +125,6 @@ def compute_embedding_shard(
         for batch_idx, _i in enumerate(range(0, n_seqs_shard, batch_size)):
             marker_ids_batch = marker_id_subset[_i:_i + batch_size]
             marker_seqs = [str(fasta[m_id]) for m_id in marker_ids_batch]
-            print("got marker seqs: {}".format(
-                marker_seqs
-            ))
             try:
                 batch_embeddings = embedding_model.embed_batch(marker_seqs, **embed_kwargs).cpu().float().numpy()  # shape (batch_len, embed_dim)
                 for marker_id, marker_embedding in zip(marker_ids_batch, batch_embeddings):  # each marker gets its own hdf5 entry.
