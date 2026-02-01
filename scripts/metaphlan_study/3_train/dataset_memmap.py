@@ -17,8 +17,7 @@ import argparse
 from pathlib import Path
 
 import pandas as pd
-from gem.datasets.mpa import MetaphlanMarkerPrecomputedEmbedding, MetaphlanProfileParser
-from gem.datasets.mpa import perform_allocation, MetaphlanPreembeddedDataset
+from gem.datasets import MetaphlanMarkerPrecomputedEmbedding, perform_allocation, MetaphlanPreembeddedDataset, MetaphlanProfileParser
 
 
 def parse_args():
