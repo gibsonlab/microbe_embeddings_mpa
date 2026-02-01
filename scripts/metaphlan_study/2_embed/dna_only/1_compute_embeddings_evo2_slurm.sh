@@ -100,9 +100,9 @@ if [ $start_idx -le $M ]; then
         "${APPTAINER_IMAGE}" \
         python compute_embeddings.py \
           --model "${EVO2_CHECKPOINT}:${NUM_HYENA_LAYERS}" \
-          --fasta "/markers/sequences.fasta" \
-          --sgb-list "/markers/sgb_subset.txt" \
-          --sgb-index-file "/markers/sgb_marker_index.json.zst" \
+          --fasta "/tmp/sequences.fasta" \
+          --sgb-list "/tmp/sgb_subset.txt" \
+          --sgb-index-file "/tmp/sgb_marker_index.json.zst" \
           --start "$start_idx" \
           --end "$end_idx" \
           --batch-size 20 \
