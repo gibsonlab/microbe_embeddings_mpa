@@ -323,8 +323,9 @@ def main():
     # embedding_example = embedding_class(**embedding_kwargs, device=torch.device("cpu"))
     # embed_dim = embedding_example.embed_dim()
     # del embedding_example
+
     # DEBUG:
-    print("DEBUG!")
+    print("* =============================== DEBUG!")
     embed_dim = 4096
     print(f"Got embedding dimension = {embed_dim}")
 
