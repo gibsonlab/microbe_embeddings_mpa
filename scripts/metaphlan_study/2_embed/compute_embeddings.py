@@ -139,7 +139,8 @@ def compute_embedding_shard(
                             print(f"CUDA OOM: {e}")
                             raise
                         else:
-                            logger.error("For some reason, was unable to embed marker {marker_id} -- Skipping. Error message: %s",e)
+                            logger.exception(f"For some reason, was unable to embed marker {marker_id}. Error message: %s",e)
+                            raise
                     else:
                         h5_file.create_dataset(marker_id, data=marker_embedding, compression='lzf')
 
