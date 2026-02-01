@@ -107,7 +107,7 @@ if [ $start_idx -le $M ]; then
           --sgb-index-file "/tmp/sgb_marker_index.json.zst" \
           --start "$start_idx" \
           --end "$end_idx" \
-          --batch-size 20 \
+          --batch-size 15 \
           --out-dir "/out_dir" \
           --shard-size 50000
       echo "Done."
