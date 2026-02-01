@@ -16,6 +16,7 @@ class Evo2Wrapper(GenomeEmbedding):
             self,
             num_hyena_layers: int,
             device: torch.device,
+            use_fp8: bool = False,
             checkpoint_name: str = 'evo-1-8k-base',
     ):
         """
@@ -24,8 +25,13 @@ class Evo2Wrapper(GenomeEmbedding):
         :param device: device to use
         """
         print(f"Using Evo2 checkpoint '{checkpoint_name}'")
-        evo_model = Evo2(checkpoint_name)
-        hyena_model, tokenizer = evo_model.model, evo_model.tokenizer
+        evo2_model = Evo2(checkpoint_name)
+
+        if not use_fp8:
+            print("[evo2] Disabling fp8 computation.")
+        evo2_model.model.config.use_fp8 = use_fp8
+
+        hyena_model, tokenizer = evo2_model.model, evo2_model.tokenizer
 
         ### not needed, StripedHyena already in bfloat16 mode for weights.
         # if half_precision:
@@ -46,7 +52,7 @@ class Evo2Wrapper(GenomeEmbedding):
             ))
 
         n_total_layers = len(hyena_model.blocks)
-        print("[evo] Loaded Hyena Model which has {} blocks. Embedding is output of block #{}".format(n_total_layers, num_hyena_layers))
+        print("[evo2] Loaded Hyena Model which has {} blocks. Embedding is output of block #{}".format(n_total_layers, num_hyena_layers))
 
         # The actual Evo model.
         self.preembedding_layer = hyena_model.embedding_layer
