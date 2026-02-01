@@ -1,4 +1,10 @@
 #!/bin/bash
+#SBATCH --partition=bwh_comppath_long
+#SBATCH --ntasks=1
+#SBATCH --mem=100G
+#SBATCH --cpus-per-task=40
+#SBATCH --time=2-00:00:00
+#SBATCH --job-name=pca_dim_reduce
 set -e
 
 if [ $# -eq 0 ]; then
