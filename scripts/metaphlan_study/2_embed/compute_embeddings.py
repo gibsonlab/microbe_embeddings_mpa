@@ -9,16 +9,13 @@ from typing import *
 from pathlib import Path
 import json
 
-from numpy.lib.recfunctions import assign_fields_by_name
-from torch.cuda import OutOfMemoryError
 from tqdm import tqdm
 import h5py
 from pyfaidx import Fasta
 import torch
 import zstandard as zstd
 
-from gem.glms import GenomeEmbedding, EvoWrapper, DNABertSWrapper
-
+from gem.glms import GenomeEmbedding
 
 logging.basicConfig(
     level=logging.INFO,
@@ -171,8 +168,24 @@ def do_job(
         else:
             raise RuntimeError("Incorrect model name syntax. Expected '<evo_checkpoint_name>:<n_layers>', but got {} instead.".format(model_name))
 
+        from gem.glms.evo import EvoWrapper
         model_fn = lambda: EvoWrapper(device=torch.device('cuda'), num_hyena_layers=num_hyena_layers, checkpoint_name=evo_checkpoint_name)
+    elif model_name.startswith("evo2"):
+        tokens = model_name.split(":")
+        if len(tokens) == 1:
+            evo2_checkpoint_name = tokens[0]
+            num_hyena_layers = 32
+        elif len(tokens) == 2:
+            evo2_checkpoint_name = tokens[0]
+            num_hyena_layers = int(tokens[-1])
+        else:
+            raise RuntimeError("Incorrect model name syntax. Expected '<evo2_checkpoint_name>:<n_layers>', but got {} instead.".format(model_name))
+
+        from gem.glms.evo2 import Evo2Wrapper
+        model_fn = lambda: Evo2Wrapper(device=torch.device('cuda'), num_hyena_layers=num_hyena_layers, checkpoint_name=evo2_checkpoint_name)
+
     elif model_name == 'dnabert-s':
+        from gem.glms.dnabert import DNABertSWrapper
         model_fn = lambda: DNABertSWrapper(device=torch.device('cuda'))
     else:
         raise ValueError("Unknown model name {}".format(model_name))

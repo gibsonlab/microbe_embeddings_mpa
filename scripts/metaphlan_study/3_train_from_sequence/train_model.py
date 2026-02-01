@@ -50,12 +50,12 @@ def generate_embedding_initializers(model_name: str) -> Tuple[Type[GenomeEmbeddi
         else:
             raise RuntimeError("Incorrect model name syntax. Expected '<evo_checkpoint_name>:<n_layers>', but got {} instead.".format(model_name))
 
-        from gem.glms import EvoWrapper
+        from gem.glms.evo import EvoWrapper
         return EvoWrapper, dict(num_hyena_layers=num_hyena_layers, checkpoint_name=evo_checkpoint_name)
     elif model_name == "evo2":
         raise NotImplementedError("Evo2 is not yet implemented for this training script.")
     elif model_name == "dnabert-s":
-        from gem.glms import DNABertSWrapper
+        from gem.glms.dnabert import DNABertSWrapper
         return DNABertSWrapper, dict()
     else:
         raise ValueError(f"Unsupported model name '{model_name}'")
