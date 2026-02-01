@@ -77,7 +77,7 @@ class MetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedDataset):
         self.global_max_num_markers = max(
             self.marker_embedding.num_markers(sgb_id)
             for sample in self.samples
-            for sgb_id in sample.sgb_ids
+            for sgb_id in sample.taxa_ids
             if self.marker_embedding.contains_sgb(sgb_id)
         )
 
@@ -103,10 +103,10 @@ class MetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedDataset):
             - sgb_padding: Boolean-valued Tensor of shape (num_sgbs) indicating which SGBs are padding placeholders.
             - targets: Tensor of shape (num_sgbs,) with abundance values
         """
-        num_sgbs = len(sample.sgb_ids)
+        num_sgbs = len(sample.taxa_ids)
         max_num_markers = max(
             self.marker_embedding.num_markers(sgb_id)
-            for sgb_id in sample.sgb_ids
+            for sgb_id in sample.taxa_ids
             if self.marker_embedding.contains_sgb(sgb_id)
         )
         with timer(f"sample initialization: {sample.sample_id}", enabled=False):
@@ -116,10 +116,10 @@ class MetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedDataset):
             marker_padding_mask = torch.zeros((num_sgbs, max_num_markers), dtype=torch.bool)
             sgb_padding_mask = torch.zeros(num_sgbs, dtype=torch.bool)
 
-        sgb_ids = sample.sgb_ids
+        sgb_ids = sample.taxa_ids
         targets = torch.zeros(num_sgbs, dtype=features.dtype)
         with timer(f"sample embedding loop over SGB: {sample.sample_id}", enabled=False):
-            for i, (sgb_id, sgb_abund) in enumerate(zip(sample.sgb_ids, sample.abundances)):
+            for i, (sgb_id, sgb_abund) in enumerate(zip(sample.taxa_ids, sample.abundances)):
                 try:
                     # these are numpy arrays! need to convert to torch tensors.
                     embedding, mask = self.marker_embedding.convert_sgb(sgb_id, max_num_markers)
@@ -143,7 +143,7 @@ class MetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedDataset):
         return self.EMBED_DTYPE
 
     def max_num_sgbs(self) -> int:
-        return max(len(sample.sgb_ids) for sample in self.samples)
+        return max(len(sample.taxa_ids) for sample in self.samples)
 
     def max_num_markers(self) -> int:
         return self.global_max_num_markers
