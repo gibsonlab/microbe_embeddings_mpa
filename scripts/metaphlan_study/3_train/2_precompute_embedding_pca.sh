@@ -5,6 +5,8 @@
 #SBATCH --cpus-per-task=40
 #SBATCH --time=2-00:00:00
 #SBATCH --job-name=pca_dim_reduce
+#SBATCH --output=logs/pca_dim_reduce_%J.out
+#SBATCH --error=logs/pca_dim_reduce_%J.err
 set -e
 
 if [ $# -eq 0 ]; then
