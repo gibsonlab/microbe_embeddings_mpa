@@ -78,6 +78,8 @@ class Evo2Wrapper(GenomeEmbedding):
         return example.shape[-1]
 
     def tokenize_single(self, sequence: str, max_seq_length: Optional[int] = None) -> Tensor:
+        if len(sequence) == 0:
+            raise ValueError("tokenizing an empty sequence is not allowed.")
         tokenized_ids = self.tokenizer.tokenize(sequence)
         if max_seq_length is not None:
             tokenized_ids += [self.tokenizer.pad_id] * (max_seq_length - len(sequence))
