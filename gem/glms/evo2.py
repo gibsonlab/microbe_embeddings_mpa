@@ -1,11 +1,46 @@
 from typing import *
+from pathlib import Path
+import importlib.util
+import yaml
 
 import numpy as np
 import torch
 from torch import Tensor
-from evo2 import Evo2
 
 from .base import GenomeEmbedding
+
+
+checkpoint_config = {
+    "evo2_7b": "evo2-7b-1m.yml",
+    "evo2_40b": "evo2-40b-1m.yml",
+    "evo2_7b_base": "evo2-7b-8k.yml",
+    "evo2_40b_base": "evo2-40b-8k.yml",
+    "evo2_1b_base": "evo2-1b-8k.yml",
+}
+
+
+def disable_fp8_from_configuration(checkpoint_name: str):
+    print("Disabling evo2 FP8 calculations.")
+    evo2_spec = importlib.util.find_spec('evo2')
+    evo2_package_dir = evo2_spec.submodule_search_locations[0]
+    print(f"Found evo2 package directory: {evo2_package_dir}")
+
+    evo2_package_dir = Path(evo2_package_dir)
+    if checkpoint_name not in checkpoint_config:
+        raise KeyError(f"Evo2 checkpoint '{checkpoint_name}' does not have any known mappings to a YAML config.")
+    checkpoint_fname = checkpoint_config[checkpoint_name]
+    config_path = evo2_package_dir / checkpoint_fname
+
+    if config_path.exists():
+        raise FileNotFoundError(f"Evo2 checkpoint configuration file {checkpoint_name} -> {config_path} does not exist!")
+
+    print("Target configuration file: {}".format(config_path))
+    with open(config_path, 'r') as f:
+        config = yaml.safe_load(f)
+    config['use_fp8_input_projections'] = False
+
+    with open(config_path, "w") as f:
+        yaml.dump(config, f, default_flow_style=False)
 
 
 class Evo2Wrapper(GenomeEmbedding):
@@ -16,20 +51,22 @@ class Evo2Wrapper(GenomeEmbedding):
             self,
             num_hyena_layers: int,
             device: torch.device,
-            use_fp8: bool = False,
-            checkpoint_name: str = 'evo-1-8k-base',
+            disable_fp8: bool = True,
+            checkpoint_name: str = 'evo2_7b',
     ):
         """
         :param num_hyena_layers: number of hyena layers to use. The final embedding output is the output of the k-th layer (k = num_hyena_layers).
         Note: evo1 pre-trained model is exactly 32 hyena layers.
         :param device: device to use
         """
-        print(f"Using Evo2 checkpoint '{checkpoint_name}'")
-        evo2_model = Evo2(checkpoint_name)
+        # note: fp8 is disabled directly through the configuration files!!
+        # e.g. /usr/local/lib/python3.12/dist-packages/evo2/configs/evo2-7b-8k.yml
+        if disable_fp8:
+            disable_fp8_from_configuration(checkpoint_name)
 
-        if not use_fp8:
-            print("[evo2] Disabling fp8 computation.")
-        evo2_model.model.config.use_fp8 = use_fp8
+        print(f"Using Evo2 checkpoint '{checkpoint_name}'")
+        from evo2 import Evo2
+        evo2_model = Evo2(checkpoint_name)
 
         hyena_model, tokenizer = evo2_model.model, evo2_model.tokenizer
 
