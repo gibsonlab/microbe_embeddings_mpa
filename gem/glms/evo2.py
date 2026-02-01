@@ -10,39 +10,6 @@ from torch import Tensor
 from .base import GenomeEmbedding
 
 
-checkpoint_config = {
-    "evo2_7b": "evo2-7b-1m.yml",
-    "evo2_40b": "evo2-40b-1m.yml",
-    "evo2_7b_base": "evo2-7b-8k.yml",
-    "evo2_40b_base": "evo2-40b-8k.yml",
-    "evo2_1b_base": "evo2-1b-8k.yml",
-}
-
-
-def disable_fp8_from_configuration(checkpoint_name: str):
-    print("Disabling evo2 FP8 calculations.")
-    evo2_spec = importlib.util.find_spec('evo2')
-    evo2_package_dir = evo2_spec.submodule_search_locations[0]
-    print(f"Found evo2 package directory: {evo2_package_dir}")
-
-    evo2_package_dir = Path(evo2_package_dir)
-    if checkpoint_name not in checkpoint_config:
-        raise KeyError(f"Evo2 checkpoint '{checkpoint_name}' does not have any known mappings to a YAML config.")
-    checkpoint_fname = checkpoint_config[checkpoint_name]
-    config_path = evo2_package_dir / "configs" / checkpoint_fname
-
-    if not config_path.exists():
-        raise FileNotFoundError(f"Evo2 checkpoint configuration file {checkpoint_name} -> {config_path} does not exist!")
-
-    print("Target configuration file: {}".format(config_path))
-    with open(config_path, 'r') as f:
-        config = yaml.safe_load(f)
-    config['use_fp8_input_projections'] = False
-
-    with open(config_path, "w") as f:
-        yaml.dump(config, f, default_flow_style=False)
-
-
 class Evo2Wrapper(GenomeEmbedding):
     """
     Externally, looks the same as EvoWrapper (evo-1 wrapper), but initializes Evo2 instead.
@@ -51,7 +18,6 @@ class Evo2Wrapper(GenomeEmbedding):
             self,
             num_hyena_layers: int,
             device: torch.device,
-            disable_fp8: bool = True,
             checkpoint_name: str = 'evo2_7b',
     ):
         """
@@ -61,8 +27,7 @@ class Evo2Wrapper(GenomeEmbedding):
         """
         # note: fp8 is disabled directly through the configuration files!!
         # e.g. /usr/local/lib/python3.12/dist-packages/evo2/configs/evo2-7b-8k.yml
-        if disable_fp8:
-            disable_fp8_from_configuration(checkpoint_name)
+        # To turn off fp8, directly modify that configuration file outside of Python.
 
         print(f"Using Evo2 checkpoint '{checkpoint_name}'")
         from evo2 import Evo2

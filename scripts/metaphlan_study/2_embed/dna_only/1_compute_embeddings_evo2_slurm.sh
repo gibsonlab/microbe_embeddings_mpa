@@ -85,7 +85,9 @@ if [ $start_idx -le $M ]; then
       mkdir -p "$outdir"
       echo "Destination output: $outdir"
 
+      container_local_evo2_config=/usr/local/lib/python3.12/dist-packages/evo2/configs/evo2-7b-1m.yml
       singularity exec --nv \
+        --bind "./evo2-7b-1m.NO_FP8.yml:${container_local_evo2_config}" \
         --bind "${HF_HOME}:/hf_home" \
         --bind "${FASTA_FILE}:/tmp/sequences.fasta" \
         --bind "${SGB_SUBSET_FILE}:/tmp/sgb_subset.txt" \
