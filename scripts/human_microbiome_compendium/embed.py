@@ -34,6 +34,11 @@ def main(
     """
     asv_seqs = load_fasta_dict(asv_fasta_file)
     embed_create_fn = embedding_model_initializer(model_name)
+
+    hdf5_parent_dir = hdf5_output_path.parent
+    if not hdf5_parent_dir.exists():
+        print("Creating directory: {hdf5_parent_dir}")
+        hdf5_parent_dir.mkdir(parents=True)
     precompute_embeddings(asv_seqs, embed_create_fn, hdf5_output_path, embed_batch_size, cuda_devices)
 
 
