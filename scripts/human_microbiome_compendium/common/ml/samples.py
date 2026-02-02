@@ -105,7 +105,7 @@ class MicrobiomeProject:
         sample_subset_table_in_proj = sample_subset_table.loc[
             sample_subset_table['project'] == project_id
         ]
-        sample_id_subset = set(str(srs_id) for srs_id in sample_subset_table_in_proj['srs'])
+        sample_id_subset = [str(srs_id) for srs_id in sample_subset_table_in_proj['srs']]
         for sample_id in sample_id_subset:
             assert sample_id.startswith("DRS") or sample_id.startswith("SRS") or sample_id.startswith(
                 "ERS"), f"In {project_id}, expected sample ID to start with `DRS`, `SRS` or `ERS`. Got: {sample_id}"
@@ -128,4 +128,4 @@ class MicrobiomeProject:
                         asv_count = int(float(abund_token))
                         if asv_count > 0:
                             sample_obj.set_count(asv_id, asv_count)
-        return list(samples.values())
+        return [samples[s_id] for s_id in sample_id_subset]
