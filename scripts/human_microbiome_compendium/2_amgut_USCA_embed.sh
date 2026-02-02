@@ -30,7 +30,7 @@ find_gem_project_dir() {
     echo "No ancestor directory containing 'gem' folder found" >&2
     return 1
 }
-PARENT_DIR="$(dirname "$PWD")"
+SCRIPT_DIR="$(pwd)"
 PROJECT_ROOT_DIR=$(find_gem_project_dir)
 HF_TOKEN_FILE=/data/cctm/youn/metaphlan_dset/hf_token.txt
 HF_TOKEN=$(cat $HF_TOKEN_FILE)
@@ -47,7 +47,7 @@ if [[ $model_name == evo2* ]]; then
         --bind "./evo2-7b-1m.NO_FP8.yml:${container_local_evo2_config}" \
         --bind "${HF_HOME}:/hf_home" \
         --bind "${PROJECT_ROOT_DIR}:/project_base" \
-        --bind "${PARENT_DIR}:/script_home" \
+        --bind "${SCRIPT_DIR}:/script_home" \
         --bind "${ASV_SEQ_PROCESSING_DIR}/asv_sequences.post_filter.fasta:/seqs.fasta" \
         --bind "${EMBEDDING_DIR}:/out_dir" \
         --env "HF_HOME=/hf_home" \
