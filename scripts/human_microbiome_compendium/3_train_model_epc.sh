@@ -20,7 +20,7 @@ model_name="$1"
 
 # point to the proper pretrained model embeddings
 DATA_DIR=/data/bwh-comppath-seq/youn/human_microbiome_compendium/american_gut_USCA/
-EMBEDDINGS_DIR="${DATA_DIR}/embeddings/"
+EMBEDDINGS_DIR="${DATA_DIR}/embeddings"
 embeddings_file="${EMBEDDINGS_DIR}/${model_name}.h5"
 if ! [ -f "${embeddings_file}" ]; then
   echo "Embeddings for model not found: ${embeddings_file}"
