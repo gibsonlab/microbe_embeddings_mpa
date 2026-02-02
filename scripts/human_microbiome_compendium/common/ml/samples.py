@@ -96,32 +96,37 @@ class MicrobiomeProject:
     @staticmethod
     def all_samples(
             project_id: str,
-            microbiome_sequencing_dir: Path,
-            sample_metadata_table: pd.DataFrame
+            abundance_table_dir: Path,
+            sample_subset_table: pd.DataFrame
     ) -> List[MicrobiomeSample]:
         samples: List[MicrobiomeSample] = []
-        with zstd.open(microbiome_sequencing_dir / f"{project_id}.txt.zst", "rt") as f:
-            header_line = f.readline()
-            assert header_line.startswith(
-                "asv\t"), f"Expected file to start with the header: `asv\\t`. Got: {header_line}"
 
-            tokens = header_line.strip().split("\t")[1:]
-            for sample_id in tokens:
-                assert sample_id.startswith("DRS") or sample_id.startswith("SRS") or sample_id.startswith(
-                    "ERS"), f"In {project_id}, expected sample ID to start with `DRS`, `SRS` or `ERS`. Got: {sample_id}"
-                samples.append(MicrobiomeSample(sample_id, sample_metadata_table))
+        # Parse the large abundance table. (this contains more samples than we want)
+        with zstd.open(abundance_table_dir / f"{project_id}.txt.zst", "rt") as abund_file:
+            abundance_df = pd.read_csv(abund_file, sep='\t', index_col='asv')
 
-            for line_idx, line in enumerate(f):
-                tokens = line.strip().split("\t")
-                asv_id = tokens[0]
-                assert asv_id.startswith(
-                    "ASV"), f"In {project_id}, line {line_idx + 1}, expected asv ID to start with `ASV`. Got: {asv_id}"
+        # Create the Abundance profile objects.
+        sample_subset_table_in_proj = sample_subset_table.loc[
+            sample_subset_table['project'] == project_id
+        ]
+        sample_id_subset = set(str(srs_id) for srs_id in sample_subset_table_in_proj['srs'])
+        for sample_id in sample_id_subset:
+            assert sample_id.startswith("DRS") or sample_id.startswith("SRS") or sample_id.startswith(
+                "ERS"), f"In {project_id}, expected sample ID to start with `DRS`, `SRS` or `ERS`. Got: {sample_id}"
 
-                assert len(tokens) == len(
-                    samples) + 1, f"In {project_id}, line {line_idx + 1}, expected line to have {len(samples) + 1} columns. Got: {len(tokens)}"
-                for value_str, sample_obj in zip(tokens[1:], samples):
-                    if value_str == "0.0":
-                        continue
-                    else:
-                        sample_obj.set_count(asv_id, int(float(value_str)))
+            sample_obj = MicrobiomeSample(sample_id, sample_subset_table)
+            samples.append(sample_obj)
+
+            assert sample_id in abundance_df.columns, f"Sample {sample_id} not found in project {project_id} abundance table."
+            abundance_full: pd.Series = abundance_df[sample_id]
+            for asv_id, asv_count in abundance_full.items():
+                asv_id = str(asv_id)
+                asv_count = int(float(asv_count))
+                print(f"DEBUG: {asv_id}: {asv_count}")
+
+                if asv_count == 0.:
+                    continue
+                else:
+                    sample_obj.set_count(asv_id, asv_count)
+            raise Exception("debug - stop here")
         return samples
