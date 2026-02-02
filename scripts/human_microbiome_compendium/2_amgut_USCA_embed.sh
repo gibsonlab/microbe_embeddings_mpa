@@ -56,7 +56,7 @@ if [[ $model_name == evo2* ]]; then
         --env "HF_TOKEN=${HF_TOKEN}" \
         "${APPTAINER_IMAGE}" \
         python embed.py \
-          --asv_fasta_file "" \
+          --asv_fasta_file "/seqs.fasta" \
           --hdf5_output_path "${EMBEDDING_DIR}/${model_name}.h5" \
           --model_name "${model_name}" \
           --embed_batch_size 20 \
