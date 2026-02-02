@@ -25,6 +25,8 @@ embeddings_file="${EMBEDDINGS_DIR}/${model_name}.h5"
 if ! [ -f "${embeddings_file}" ]; then
   echo "Embeddings for model not found: ${embeddings_file}"
   exit 1
+else
+  echo "Embeddings file: ${embeddings_file}"
 fi
 
 training_set="${DATA_DIR}/train.tsv"
