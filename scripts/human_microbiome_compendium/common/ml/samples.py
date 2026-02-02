@@ -128,4 +128,4 @@ class MicrobiomeProject:
                         asv_count = int(float(abund_token))
                         if asv_count > 0:
                             sample_obj.set_count(asv_id, asv_count)
-        return samples
+        return list(samples.values())
