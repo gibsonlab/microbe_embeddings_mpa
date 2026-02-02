@@ -29,9 +29,10 @@ class AbundanceProfileParser(ABC):
     Generic class which extracts profiles one by one.
     """
     @abstractmethod
-    def __len__(self):
+    def __len__(self) -> int:
         raise NotImplementedError()
 
+    @abstractmethod
     def samples(self) -> Iterator[AbundanceProfile]:
         raise NotImplementedError()
     

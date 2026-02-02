@@ -27,7 +27,7 @@ class MetaphlanProfileParser(AbundanceProfileParser):
             columns=lambda _col: _col.split("|")[-1][len("t__"):]
         )
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.sgb_profile_df.shape[0]
 
     def samples(self) -> Iterator[MetaphlanProfile]:
