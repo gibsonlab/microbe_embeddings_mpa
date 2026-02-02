@@ -109,7 +109,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--hdf5_output_path", type=str, required=True)
     parser.add_argument("--model_name", type=str, required=True)
     parser.add_argument("--embed_batch_size", type=int, required=True)
-    parser.add_argument("--cuda_devices", type=str, required=True)
+    parser.add_argument("--cuda_device_ids", type=str, required=True)
     return parser.parse_args()
 
 
