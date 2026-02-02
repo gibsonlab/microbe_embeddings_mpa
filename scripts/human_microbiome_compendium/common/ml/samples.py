@@ -122,11 +122,11 @@ class MicrobiomeProject:
             for asv_id, asv_count in abundance_full.items():
                 asv_id = str(asv_id)
                 asv_count = int(float(asv_count))
-                print(f"DEBUG: {asv_id}: {asv_count}")
 
-                if asv_count == 0.:
+                if asv_count == 0:
                     continue
                 else:
+                    print(f"DEBUG: {asv_id}: {asv_count}")
                     sample_obj.set_count(asv_id, asv_count)
             raise Exception("debug - stop here")
         return samples
