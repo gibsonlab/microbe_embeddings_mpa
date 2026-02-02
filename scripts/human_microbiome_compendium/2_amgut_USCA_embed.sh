@@ -17,7 +17,12 @@ mkdir -p "${EMBEDDING_DIR}"
 if [[ $model_name == evo2* ]]; then
     APPTAINER_IMAGE=/data/cctm/youn/docker_images/evo2_gem.sif
     echo "Evo2 model detected. Running using Apptainer (${APPTAINER_IMAGE})."
+
+    # this path is built-into the apptainer image.
+    container_local_evo2_config=/usr/local/lib/python3.12/dist-packages/evo2/configs/evo2-7b-1m.yml
+
     singularity exec --nv \
+        --bind "./evo2-7b-1m.NO_FP8.yml:${container_local_evo2_config}" \
         --bind "${HF_HOME}:/hf_home" \
         --bind "${PROJECT_ROOT_DIR}:/project_base" \
         --bind "${PARENT_DIR}:/script_home" \
