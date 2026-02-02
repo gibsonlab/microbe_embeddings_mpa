@@ -99,11 +99,7 @@ class MicrobiomeProject:
             abundance_table_dir: Path,
             sample_subset_table: pd.DataFrame
     ) -> List[MicrobiomeSample]:
-        samples: List[MicrobiomeSample] = []
-
-        # Parse the large abundance table. (this contains more samples than we want)
-        with zstd.open(abundance_table_dir / f"{project_id}.txt.zst", "rt") as abund_file:
-            abundance_df = pd.read_csv(abund_file, sep='\t', index_col='asv')
+        samples: Dict[str, MicrobiomeSample] = []
 
         # Create the Abundance profile objects.
         sample_subset_table_in_proj = sample_subset_table.loc[
@@ -114,20 +110,38 @@ class MicrobiomeProject:
             assert sample_id.startswith("DRS") or sample_id.startswith("SRS") or sample_id.startswith(
                 "ERS"), f"In {project_id}, expected sample ID to start with `DRS`, `SRS` or `ERS`. Got: {sample_id}"
 
-            sample_obj = MicrobiomeSample(sample_id, sample_subset_table)
-            samples.append(sample_obj)
+            samples[sample_id] = MicrobiomeSample(sample_id, sample_subset_table)
 
-            assert sample_id in abundance_df.columns, f"Sample {sample_id} not found in project {project_id} abundance table."
-            abundance_full: pd.Series = abundance_df[sample_id]
-            print(f"project: {project_id}, sample: {sample_id}")
-            for asv_id, asv_count in abundance_full.items():
-                asv_id = str(asv_id)
-                asv_count = int(float(asv_count))
+        # Parse the large abundance table. (this contains more samples than we want)
+        with zstd.open(abundance_table_dir / f"{project_id}.txt.zst", "rt") as abund_file:
+            header_line = abund_file.readline()
+            assert header_line.startswith("asv\t"), f"Unrecognized format for abundance table: {project_id}"
 
-                if asv_count == 0:
-                    continue
-                else:
-                    print(f"DEBUG: {asv_id}: {asv_count}")
-                    sample_obj.set_count(asv_id, asv_count)
+            abund_sample_order = header_line.strip().split("\t")[1:]
+            for row in abund_file:
+                tokens = row.strip().split("\t")
+                asv_id = tokens[0]
+                assert len(abund_sample_order) == len(tokens) - 1, "Mismatch in the number of abundance tokens!"
+                for sample_id, abund_token in zip(abund_sample_order, tokens[1:]):
+                    if sample_id in samples:
+                        sample_obj = samples[sample_id]
+                        asv_count = int(float(abund_token))
+                        if asv_count > 0:
+                            print(f"DEBUG: {asv_id}: {asv_count}")
+                            sample_obj.set_count(asv_id, asv_count)
+
+
+            # assert sample_id in abundance_df.columns, f"Sample {sample_id} not found in project {project_id} abundance table."
+            # abundance_full: pd.Series = abundance_df[sample_id]
+            # print(f"project: {project_id}, sample: {sample_id}")
+            # for asv_id, asv_count in abundance_full.items():
+            #     asv_id = str(asv_id)
+            #     asv_count = int(float(asv_count))
+            #
+            #     if asv_count == 0:
+            #         continue
+            #     else:
+            #         print(f"DEBUG: {asv_id}: {asv_count}")
+            #         sample_obj.set_count(asv_id, asv_count)
             raise Exception("debug - stop here")
         return samples
