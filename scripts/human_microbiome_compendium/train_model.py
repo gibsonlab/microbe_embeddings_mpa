@@ -202,8 +202,8 @@ def main():
     seed = args.seed
     abundance_table_dir = Path(args.abundance_table_dir)
     embedding_h5_path = Path(args.embedding_h5_path)
-    train_df = pd.read_csv(args.train, sep='\t', index_col="SampleID")
-    test_df = pd.read_csv(args.test, sep='\t', index_col="SampleID")
+    train_df = pd.read_csv(args.train, sep='\t')
+    test_df = pd.read_csv(args.test, sep='\t')
 
     """ Create datasets. """
     train_rng = torch.Generator()
