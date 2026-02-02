@@ -11,15 +11,16 @@
 # Note: this is a Slurm script, meant to be run on ErisXDL compute nodes with GPUs.
 set -e
 
-if [ $# -eq 0 ]; then
-  echo "Error: model_name is required"
-  echo "Usage: $0 <model_name>"
+if ! [ $# -eq 2 ]; then
+  echo "Error: model_name and dataset is required"
+  echo "Usage: $0 <model_name> <dataset>"
   exit 1
 fi
 model_name="$1"
+dataset_name="$2"
 
 # point to the proper pretrained model embeddings
-DATA_DIR=/data/bwh-comppath-seq/youn/human_microbiome_compendium/american_gut_USCA/
+DATA_DIR="/data/bwh-comppath-seq/youn/human_microbiome_compendium/${dataset_name}"
 EMBEDDINGS_DIR="${DATA_DIR}/embeddings/"
 embeddings_file="${EMBEDDINGS_DIR}/${model_name}.h5"
 if ! [ -f "${embeddings_file}" ]; then
@@ -37,7 +38,7 @@ learning_rate=0.0001
 batch_size=10
 seed=12345
 
-outdir="${DATA_DIR}/${model_name}/epc_nopool_kl"
+outdir="${DATA_DIR}/trained_models/${model_name}/epc_nopool_kl"
 mkdir -p ${outdir}
 
 metadata="$outdir/metadata.txt"

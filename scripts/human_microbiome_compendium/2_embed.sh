@@ -1,15 +1,16 @@
 #!/bin/bash
 set -e
 
-if [ $# -eq 0 ]; then
-  echo "Error: model_name is required"
-  echo "Usage: $0 <model_name>"
+if ! [ $# -eq 2 ]; then
+  echo "Error: model_name and dataset is required"
+  echo "Usage: $0 <model_name> <dataset>"
   exit 1
 fi
 model_name="$1"
+dataset_name="$2"
 
 # generate this file/folder by running the step 1 notebook.
-NOTEBOOK_CACHE="__tmp/american_gut_USCA"
+NOTEBOOK_CACHE="__tmp/${dataset_name}"
 ASV_SEQ_PROCESSING_DIR="${NOTEBOOK_CACHE}/asv_16s_processing"
 EMBEDDING_DIR="${NOTEBOOK_CACHE}/embeddings"
 mkdir -p "${EMBEDDING_DIR}"
