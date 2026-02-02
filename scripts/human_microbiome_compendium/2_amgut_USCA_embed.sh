@@ -12,6 +12,7 @@ model_name="$1"
 NOTEBOOK_CACHE="__tmp/american_gut_USCA"
 ASV_SEQ_PROCESSING_DIR="${NOTEBOOK_CACHE}/asv_16s_processing"
 EMBEDDING_DIR="${NOTEBOOK_CACHE}/embeddings"
+mkdir -p "${EMBEDDING_DIR}"
 
 python embed.py \
   --asv_fasta_file "${ASV_SEQ_PROCESSING_DIR}/asv_sequences.post_filter.fasta" \
