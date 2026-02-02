@@ -100,7 +100,7 @@ if [ $start_idx -le $M ]; then
         --env "PYTHONPATH=/project_base" \
         --env "HF_HOME=/hf_home" \
         --env "HF_TOKEN=${HF_TOKEN}" \
-        --pwd /script_home \
+        --pwd "/script_home" \
         "${APPTAINER_IMAGE}" \
         python compute_embeddings.py \
           --model "${EVO2_CHECKPOINT}:${NUM_HYENA_LAYERS}" \

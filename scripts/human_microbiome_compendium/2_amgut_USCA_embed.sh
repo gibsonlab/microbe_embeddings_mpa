@@ -14,10 +14,32 @@ ASV_SEQ_PROCESSING_DIR="${NOTEBOOK_CACHE}/asv_16s_processing"
 EMBEDDING_DIR="${NOTEBOOK_CACHE}/embeddings"
 mkdir -p "${EMBEDDING_DIR}"
 
-python embed.py \
-  --asv_fasta_file "${ASV_SEQ_PROCESSING_DIR}/asv_sequences.post_filter.fasta" \
-  --hdf5_output_path "${EMBEDDING_DIR}/${model_name}.h5" \
-  --model_name "${model_name}" \
-  --embed_batch_size 20 \
-  --cuda_device_ids "0"
+if [[ $model_name == evo2* ]]; then
+    APPTAINER_IMAGE=/data/cctm/youn/docker_images/evo2_gem.sif
+    echo "Evo2 model detected. Running using Apptainer (${APPTAINER_IMAGE})."
+    singularity exec --nv \
+        --bind "${HF_HOME}:/hf_home" \
+        --bind "${PROJECT_ROOT_DIR}:/project_base" \
+        --bind "${PARENT_DIR}:/script_home" \
+        --bind "${ASV_SEQ_PROCESSING_DIR}/asv_sequences.post_filter.fasta:/seqs.fasta" \
+        --bind "${EMBEDDING_DIR}:/out_dir" \
+        --env "HF_HOME=/hf_home" \
+        --env "PYTHONPATH=/project_base" \
+        --pwd "/script_home" \
+        --env "HF_TOKEN=${HF_TOKEN}" \
+        "${APPTAINER_IMAGE}" \
+        python embed.py \
+          --asv_fasta_file "" \
+          --hdf5_output_path "${EMBEDDING_DIR}/${model_name}.h5" \
+          --model_name "${model_name}" \
+          --embed_batch_size 20 \
+          --cuda_device_ids "0"
+else
+    python embed.py \
+      --asv_fasta_file "seqs.fasta" \
+      --hdf5_output_path "/out_dir/${model_name}.h5" \
+      --model_name "${model_name}" \
+      --embed_batch_size 20 \
+      --cuda_device_ids "0"
+fi
 echo "Done."
