@@ -130,19 +130,4 @@ class MicrobiomeProject:
                             if "ERS5796433" == sample_id:
                                 print(f"DEBUG: {sample_id}, {asv_id}: {asv_count}")
                             sample_obj.set_count(asv_id, asv_count)
-
-
-            # assert sample_id in abundance_df.columns, f"Sample {sample_id} not found in project {project_id} abundance table."
-            # abundance_full: pd.Series = abundance_df[sample_id]
-            # print(f"project: {project_id}, sample: {sample_id}")
-            # for asv_id, asv_count in abundance_full.items():
-            #     asv_id = str(asv_id)
-            #     asv_count = int(float(asv_count))
-            #
-            #     if asv_count == 0:
-            #         continue
-            #     else:
-            #         print(f"DEBUG: {asv_id}: {asv_count}")
-            #         sample_obj.set_count(asv_id, asv_count)
-        raise Exception("DEBUG")
         return samples
