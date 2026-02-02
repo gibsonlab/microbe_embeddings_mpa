@@ -81,11 +81,11 @@ class MicrobiomeProject:
     def __init__(
             self,
             project_id: str,
-            microbiome_sequencing_dir: Path,
+            abundance_table_dir: Path,
             sample_metadata_table: pd.DataFrame
     ):
         self.project_id = project_id
-        self.samples = self.all_samples(project_id, microbiome_sequencing_dir, sample_metadata_table)
+        self.samples = self.all_samples(project_id, abundance_table_dir, sample_metadata_table)
 
     def __str__(self) -> str:
         return "Project[{}]".format(self.project_id)

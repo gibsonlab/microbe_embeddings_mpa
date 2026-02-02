@@ -152,6 +152,13 @@ class MetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedDataset):
         return self.marker_embedding.embedding_dim
 
     def true_abundance_profile(self, idx: int) -> Tensor:
-        abunds = self.samples[idx].abundances
-        abunds = abunds / np.sum(abunds)
-        return torch.from_numpy(abunds)
+        sample = self.samples[idx]
+        sgb_ids = sample.taxa_ids
+        num_sgbs = len(sgb_ids)
+        targets = torch.zeros(num_sgbs, dtype=self.EMBED_DTYPE)
+        for i, (sgb_id, sgb_abund) in enumerate(zip(sample.taxa_ids, sample.abundances)):
+            if self.marker_embedding.contains_sgb(sgb_id):
+                targets[i] = sgb_abund
+
+        targets = targets / targets.sum()
+        return targets

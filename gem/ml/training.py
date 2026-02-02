@@ -181,7 +181,7 @@ def main_training_loop(
                     if torch.isnan(batch_loss).item():
                         # ========== Found NaN batch loss. Try to report current status and terminate training loop.
                         for i in range(0, len(test_sample_ids)):
-                            print(f"Batch {batch_idx}, sample {i}: id {test_sample_ids[i]}")
+                            print(f"Batch {batch_idx}, sample {i}")
                             sample_id = test_sample_ids[i]
                             feat_i = test_batch_features[i]
                             taxa_mask_i = test_taxa_mask[i]
@@ -235,7 +235,7 @@ def main_training_loop(
     for epoch in pbar:
         epoch_training_loss = 0.0
         model.train()
-        for batch_idx, (training_sample_ids, training_batch_features, training_marker_mask, training_taxa_mask, training_y) in enumerate(train_dloader):
+        for batch_idx, (_, training_batch_features, training_marker_mask, training_taxa_mask, training_y) in enumerate(train_dloader):
             optimizer.zero_grad()
 
             with autocast(device_type='cuda', enabled=auto_mixed_precision, dtype=torch.bfloat16):
