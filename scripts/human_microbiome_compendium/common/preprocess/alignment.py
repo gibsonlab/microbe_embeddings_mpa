@@ -3,7 +3,7 @@ import subprocess
 from pathlib import Path
 
 
-def run_mafft(in_fasta: Path, out_fasta: Path):
+def run_mafft(in_fasta: Path, out_fasta: Path, mafft_cmd: str = 'mafft'):
     """ Run the alignment. """
     if not out_fasta.exists():
         # Check if input file exists
@@ -13,7 +13,7 @@ def run_mafft(in_fasta: Path, out_fasta: Path):
         # Check if MAFFT is installed
         try:
             subprocess.run(
-                ["mafft", "--version"],
+                [mafft_cmd, "--version"],
                 capture_output=True,
                 check=True
             )
@@ -28,7 +28,7 @@ def run_mafft(in_fasta: Path, out_fasta: Path):
         try:
             with open(out_fasta, 'w') as out_file:
                 _ = subprocess.run(
-                    ["mafft", str(in_fasta)],
+                    [mafft_cmd, str(in_fasta)],
                     stdout=out_file,
                     stderr=subprocess.PIPE,
                     text=True,
