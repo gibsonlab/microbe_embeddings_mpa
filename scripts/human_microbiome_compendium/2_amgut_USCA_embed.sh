@@ -14,6 +14,28 @@ ASV_SEQ_PROCESSING_DIR="${NOTEBOOK_CACHE}/asv_16s_processing"
 EMBEDDING_DIR="${NOTEBOOK_CACHE}/embeddings"
 mkdir -p "${EMBEDDING_DIR}"
 
+# Bash function, which finds the project root directory.
+# This function repeatedly traverses upwards, until it finds an ancestor with the subdirectory "gem".
+find_gem_project_dir() {
+    local dir="$PWD"
+
+    while [ "$dir" != "/" ]; do
+        if [ -d "$dir/gem" ]; then
+            echo "$dir"
+            return 0
+        fi
+        dir="$(dirname "$dir")"
+    done
+
+    echo "No ancestor directory containing 'gem' folder found" >&2
+    return 1
+}
+PARENT_DIR="$(dirname "$PWD")"
+PROJECT_ROOT_DIR=$(find_gem_project_dir)
+HF_TOKEN_FILE=/data/cctm/youn/metaphlan_dset/hf_token.txt
+HF_TOKEN=$(cat $HF_TOKEN_FILE)
+HF_HOME="/data/cctm/youn/huggingface_cache"
+
 if [[ $model_name == evo2* ]]; then
     APPTAINER_IMAGE=/data/cctm/youn/docker_images/evo2_gem.sif
     echo "Evo2 model detected. Running using Apptainer (${APPTAINER_IMAGE})."
