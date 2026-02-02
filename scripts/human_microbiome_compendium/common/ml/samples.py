@@ -119,6 +119,7 @@ class MicrobiomeProject:
 
             assert sample_id in abundance_df.columns, f"Sample {sample_id} not found in project {project_id} abundance table."
             abundance_full: pd.Series = abundance_df[sample_id]
+            print(f"sample: {sample_id}")
             for asv_id, asv_count in abundance_full.items():
                 asv_id = str(asv_id)
                 asv_count = int(float(asv_count))
