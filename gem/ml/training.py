@@ -292,6 +292,7 @@ def main_training_loop(
                 epoch_history, training_loss_history, test_loss_history,
                 filepath,
             )
+    pbar.close()
 
     if loss_plot_path is not None:
         fig, ax = plt.subplots(1, 1)

@@ -107,6 +107,7 @@ def compute_embedding(
                 index_file.write(
                     "{}\t{}\n".format(marker_id, shard_idx)
                 )
+    pbar.close()
 
 
 def compute_embedding_shard(
