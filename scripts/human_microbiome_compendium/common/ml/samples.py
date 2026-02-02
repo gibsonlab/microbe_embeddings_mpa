@@ -144,4 +144,5 @@ class MicrobiomeProject:
             #     else:
             #         print(f"DEBUG: {asv_id}: {asv_count}")
             #         sample_obj.set_count(asv_id, asv_count)
+        raise Exception("DEBUG")
         return samples
