@@ -4,7 +4,7 @@
 #SBATCH --ntasks=1
 #SBATCH --mem=20G
 #SBATCH --cpus-per-task=4
-#SBATCH --time=5-00:00:00
+#SBATCH --time=1-00:00:00
 #SBATCH --job-name=memmap_test
 #SBATCH --output=logs/memmap_test_%A_%a.out
 #SBATCH --error=logs/memmap_test_%A_%a.err
