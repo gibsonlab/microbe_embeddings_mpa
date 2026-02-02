@@ -34,10 +34,6 @@ def main(
     """
     asv_seqs = load_fasta_dict(asv_fasta_file)
     embed_create_fn = embedding_model_initializer(model_name)
-
-    print("Using cuda devices: {}".format(
-        ",".join(str(dev) for dev in cuda_devices)
-    ))
     precompute_embeddings(asv_seqs, embed_create_fn, hdf5_output_path, embed_batch_size, cuda_devices)
 
 

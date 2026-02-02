@@ -18,5 +18,5 @@ python embed.py \
   --hdf5_output_path "${EMBEDDING_DIR}/${model_name}.h5" \
   --model_name "${model_name}" \
   --embed_batch_size 20 \
-  --cuda_devices "0,1,2,3,4,5,6,7"
+  --cuda_devices "0"
 echo "Done."

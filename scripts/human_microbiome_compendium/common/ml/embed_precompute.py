@@ -59,7 +59,13 @@ def precompute_embeddings(
     :param cuda_device_list: List of CUDA devices to use
     """
     asv_id_list = sorted(asv_seqs.keys())
+
+    print("Using cuda devices: {}".format(
+        ",".join(str(dev) for dev in cuda_device_list)
+    ))
+
     n_workers = len(cuda_device_list)
+    print("n_workers = {}".format(n_workers))
 
     # Create empty HDF5 file with pre-allocated structure
     with h5py.File(hdf5_output_path, 'w') as _:
