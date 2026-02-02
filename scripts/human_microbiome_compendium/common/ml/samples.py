@@ -127,7 +127,5 @@ class MicrobiomeProject:
                         sample_obj = samples[sample_id]
                         asv_count = int(float(abund_token))
                         if asv_count > 0:
-                            if "ERS5796433" == sample_id:
-                                print(f"DEBUG: {sample_id}, {asv_id}: {asv_count}")
                             sample_obj.set_count(asv_id, asv_count)
         return samples
