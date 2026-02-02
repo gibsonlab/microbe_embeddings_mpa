@@ -99,7 +99,7 @@ class MicrobiomeProject:
             abundance_table_dir: Path,
             sample_subset_table: pd.DataFrame
     ) -> List[MicrobiomeSample]:
-        samples: Dict[str, MicrobiomeSample] = []
+        samples: Dict[str, MicrobiomeSample] = dict()
 
         # Create the Abundance profile objects.
         sample_subset_table_in_proj = sample_subset_table.loc[
@@ -127,7 +127,7 @@ class MicrobiomeProject:
                         sample_obj = samples[sample_id]
                         asv_count = int(float(abund_token))
                         if asv_count > 0:
-                            print(f"DEBUG: {asv_id}: {asv_count}")
+                            print(f"DEBUG: {sample_id}, {asv_id}: {asv_count}")
                             sample_obj.set_count(asv_id, asv_count)
 
 
@@ -143,5 +143,5 @@ class MicrobiomeProject:
             #     else:
             #         print(f"DEBUG: {asv_id}: {asv_count}")
             #         sample_obj.set_count(asv_id, asv_count)
-            raise Exception("debug - stop here")
+                raise Exception("debug - stop here")
         return samples
