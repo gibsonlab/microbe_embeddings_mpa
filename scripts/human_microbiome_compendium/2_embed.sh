@@ -2,15 +2,18 @@
 set -e
 
 if ! [ $# -eq 2 ]; then
-  echo "Error: model_name and dataset is required"
-  echo "Usage: $0 <model_name> <dataset>"
+  echo "Error: embed_model_name and dataset are required"
+  echo "Usage: $0 <embed_model_name> <dataset>"
   exit 1
 fi
-model_name="$1"
+embed_model_name="$1"
 dataset_name="$2"
 
+echo "Performing embedding pre-calculation step for ${embed_model_name} on dataset ${dataset_name}"
+
 # generate this file/folder by running the step 1 notebook.
-NOTEBOOK_CACHE="__tmp/${dataset_name}"
+BASEDIR="/data/bwh-comppath-seq/youn/human_microbiome_compendium"
+NOTEBOOK_CACHE="${BASEDIR}/${dataset_name}"
 ASV_SEQ_PROCESSING_DIR="${NOTEBOOK_CACHE}/asv_16s_processing"
 EMBEDDING_DIR="${NOTEBOOK_CACHE}/embeddings"
 mkdir -p "${EMBEDDING_DIR}"
@@ -37,7 +40,7 @@ HF_TOKEN_FILE=/data/cctm/youn/metaphlan_dset/hf_token.txt
 HF_TOKEN=$(cat $HF_TOKEN_FILE)
 HF_HOME="/data/cctm/youn/huggingface_cache"
 
-if [[ $model_name == evo2* ]]; then
+if [[ $embed_model_name == evo2* ]]; then
     APPTAINER_IMAGE=/data/cctm/youn/docker_images/evo2_gem.sif
     echo "Evo2 model detected. Running using Apptainer (${APPTAINER_IMAGE})."
 
@@ -58,15 +61,19 @@ if [[ $model_name == evo2* ]]; then
         "${APPTAINER_IMAGE}" \
         python embed.py \
           --asv_fasta_file "/seqs.fasta" \
-          --hdf5_output_path "${EMBEDDING_DIR}/${model_name}.h5" \
-          --model_name "${model_name}" \
+          --hdf5_output_path "${EMBEDDING_DIR}/${embed_model_name}.h5" \
+          --model_name "${embed_model_name}" \
           --embed_batch_size 20 \
           --cuda_device_ids "0"
 else
+    echo "Embedding model: ${embed_model_name}"
+
+    HF_HOME=$HF_HOME \
+    HF_TOKEN=$HF_TOKEN \
     python embed.py \
-      --asv_fasta_file "seqs.fasta" \
-      --hdf5_output_path "/out_dir/${model_name}.h5" \
-      --model_name "${model_name}" \
+      --asv_fasta_file "${ASV_SEQ_PROCESSING_DIR}/asv_sequences.post_filter.fasta" \
+      --hdf5_output_path "${EMBEDDING_DIR}/${embed_model_name}.h5" \
+      --model_name "${embed_model_name}" \
       --embed_batch_size 20 \
       --cuda_device_ids "0"
 fi
