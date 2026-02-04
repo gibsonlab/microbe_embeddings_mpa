@@ -22,7 +22,8 @@ dataset_name="$2"
 echo "Performing prediction model training for ${embed_model_name} on dataset ${dataset_name} (EPC-nopool)"
 
 # point to the proper pretrained model embeddings
-DATA_DIR="/data/bwh-comppath-seq/youn/human_microbiome_compendium/${dataset_name}"
+BASEDIR="/data/bwh-comppath-seq/youn/human_microbiome_compendium"
+DATA_DIR="${BASEDIR}/${dataset_name}"
 EMBEDDINGS_DIR="${DATA_DIR}/embeddings"
 embeddings_file="${EMBEDDINGS_DIR}/${embed_model_name}.h5"
 if ! [ -f "${embeddings_file}" ]; then

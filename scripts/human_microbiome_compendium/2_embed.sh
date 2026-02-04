@@ -12,7 +12,8 @@ dataset_name="$2"
 echo "Performing embedding pre-calculation step for ${embed_model_name} on dataset ${dataset_name}"
 
 # generate this file/folder by running the step 1 notebook.
-NOTEBOOK_CACHE="__tmp/${dataset_name}"
+BASEDIR="/data/bwh-comppath-seq/youn/human_microbiome_compendium"
+NOTEBOOK_CACHE="${BASEDIR}/${dataset_name}"
 ASV_SEQ_PROCESSING_DIR="${NOTEBOOK_CACHE}/asv_16s_processing"
 EMBEDDING_DIR="${NOTEBOOK_CACHE}/embeddings"
 mkdir -p "${EMBEDDING_DIR}"
@@ -65,6 +66,7 @@ if [[ $embed_model_name == evo2* ]]; then
           --embed_batch_size 20 \
           --cuda_device_ids "0"
 else
+    echo "Embedding model: ${embed_model_name}"
     python embed.py \
       --asv_fasta_file "seqs.fasta" \
       --hdf5_output_path "/out_dir/${embed_model_name}.h5" \
