@@ -16,7 +16,7 @@ def filter_samples_and_asvs(
 ) -> Tuple[
     pd.DataFrame, pd.DataFrame, Dict[str, str], int
 ]:
-    project_subset, sample_subset = filter_step1_project(project_metadata, sample_metadata, target_project_ids, abundance_table_dir)
+    project_subset, sample_subset = filter_step1_read_counts(project_metadata, sample_metadata, target_project_ids, abundance_table_dir)
     asv_id_subset, sample_max_num_asvs, sample_id_subset_post_filter = filter_step2_select_subset_asvs(
         project_subset['project'].to_list(),
         set(sample_subset['srs'].tolist()),
@@ -41,7 +41,7 @@ def filter_samples_and_asvs(
     return project_subset, sample_subset, asv_seqs_subset, sample_max_num_asvs
 
 
-def filter_step1_project(
+def filter_step1_read_counts(
         project_metadata: pd.DataFrame,
         sample_metadata: pd.DataFrame,
         target_project_ids: Set[str],
@@ -56,20 +56,9 @@ def filter_step1_project(
     :param target_project_ids:
     :param abundance_table_dir: The directory containing the HMC sample information.
     """
-    project_subset = project_metadata.loc[
-        (project_metadata['condition'] == 'healthy')
-        & (project_metadata['amplicon'] == 'v4')
-        & project_metadata['project'].isin(target_project_ids),
-        :
-    ]
-
-    sample_subset = sample_metadata.loc[
-        sample_metadata['iso'].isin({"US", "CA"})  # filter by region.
-        & sample_metadata['project'].isin(set(project_subset['project']))  # filter by results of "project_subset".
-        & (sample_metadata['instrument'] == 'Illumina MiSeq')  # filter by sequencing instrument.
-        ]
-    print("[*] Stage 1 filter: {} samples remaining".format(sample_subset.shape[0]))
-
+    project_subset = project_metadata
+    sample_subset = sample_metadata
+    
     # ========== attach read depth (total # of ASV reads) as a column.
     sample_total_read_counts_all_list: List[pd.Series] = []
     for proj_id, proj_section in sample_subset.groupby('project'):
@@ -128,81 +117,77 @@ def filter_step2_select_subset_asvs(
         abundance_table_dir: Path,
 ) -> Tuple[Set[str], int, Set[str]]:
     """
-    :return: A triple of objects (Set of ASV IDs, Max # of ASV per sample, subset of sample IDs).
+    :return: A triple of objects (Set of ASV IDs, Max # of ASV per sample, subset of sample IDs). 
     The subset of sample IDs is guaranteed to be a subset of the input 'sample_subset'; it should be used for further downstream pre-filtering of samples.
     """
     asv_set = set()
     max_sample_asv = 0
     new_sample_id_subset = set()
+
+    # Load all asv count tables.
+    project_asv_tables = dict()
     for project_id in project_ids:
         with zstd.open(abundance_table_dir / f"{project_id}.txt.zst", "rt") as f:
             table = pd.read_csv(f, sep='\t').set_index("asv")
-            table = table[list(sample_subset)]
-            print(
-                "[* Pre-ASV selection filtering] PROJECT {}: {} samples, {} ASVs".format(project_id, len(table.columns),
-                                                                                         len(table.index)))
+            project_sample_ids = set(table.columns)
+            
+            table = table[list(sample_subset.intersection(project_sample_ids))]
+            project_asv_tables[project_id] = table
+            print("[* Pre-ASV selection filtering] PROJECT {}: {} samples, {} ASVs".format(project_id, len(table.columns), len(table.index)))
 
-            # # ============ debug
-            # read_depths = table.sum(axis=0)
-            # fig, ax = plt.subplots(1, 1)
-            # sb.histplot(read_depths, ax=ax)
+    """
+    Filter stage 1:
 
-            # _counts = table.to_numpy()
-            # _counts_sum_across_samples = np.sum(_counts, axis=1)  # PER ASV: total counts across samples, dimension of array = (# asvs)
-            # print("# asvs with total reads > 5 across samples: {}".format(
-            #     np.sum(_counts_sum_across_samples > 5)
-            # ))
-            # fig, ax = plt.subplots(1, 1, figsize=(8, 6))
-            # for sample_filter in [1, 2, 3, 4, 5]:  ## each curve
-            #     _asv_counts = []
-            #     count_ticks = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-            #     for ct_filter in count_ticks:  # x-axis
-            #         _thresholded_presence_per_asv_per_sample = (_counts >= ct_filter)  # table [ASV x SAMPLE]
-            #         _counts_thresholded_samples = np.sum(_thresholded_presence_per_asv_per_sample, axis=1)  # PER ASV: how many samples with count > 2, dimension of array = (# asvs)
-            #         # Example: _counts_thresholded_samples = [ASV0: 1 sample, ASV1: 5 sample, ASV2: 10 sample, ...]
-            #         y_to_plot = np.sum(_counts_thresholded_samples >= sample_filter)  # how many ASVS meeting criteria: at least `sample_filter` samples with count > 2
-            #         _asv_counts.append(int(y_to_plot))
-            #     ax.plot(count_ticks, _asv_counts, label='sample filter = {}'.format(sample_filter))
-            #         # print("# asvs present (present means > 2 reads in sample) in more than 1 samples: {}".format(
-            #         #     np.sum(_counts_thresholded_samples >= 1)
-            #         # ))
-            # ax.set_xticks(count_ticks)
-            # ax.set_xlabel('Count filter')
-            # ax.set_yscale('log')
-            # plt.legend()
-            # # ============ end debug
+    For each ASV, which samples have this ASV with count >= read_count_lb? Then count the # of samples (np.sum) and filter by num_sample_lb.
+    Note: compute the total sample tally across all projects (call df.add)
+    """
+    read_count_lb = 10
+    num_sample_lb = 1
+    print(f"Filtering ASVs by (# samples with count >= {read_count_lb}) >= {num_sample_lb}")
+    asv_n_samples_overall = None
+    for project_id, project_table in project_asv_tables.items():
+        asv_n_samples = np.sum(project_table >= read_count_lb, axis=1)
+        if asv_n_samples_overall is None:
+            asv_n_samples_overall = asv_n_samples
+        else:
+            asv_n_samples_overall = asv_n_samples_overall.add(asv_n_samples, fill_value=0).astype(int)
 
-            read_count_lb = 10
-            num_sample_lb = 1
+    # Restrict table to those ASVs where # samples >= num_sample_lb
+    for project_id, project_table in project_asv_tables.items():
+        asv_mask = asv_n_samples_overall >= num_sample_lb
+        # not all ASVs in asv_mask are present in project_table.
+        project_table = project_table[asv_mask.loc[project_table.index]]
+        assert set(asv_mask.loc[project_table.index].index) == set(project_table.index), "Pandas syntax didn't select the correct rows indexed by ASV id."
+        project_asv_tables[project_id] = project_table
 
-            print(f"Filtering ASVs by (# samples with count >= {read_count_lb}) >= {num_sample_lb}")
-            asv_n_samples = np.sum(table >= read_count_lb,
-                                   axis=1)  # per asv: which samples have this ASV with count >= 3? Then count the # of samples (np.sum)
-            table = table.loc[
-                asv_n_samples >= num_sample_lb, :]  # restrict table to those ASVs where # samples (satisfying above threshold) >= 3
+    """
+    Filter stage 2:
 
-            min_num_asv = 50
-            print(f"Filtering samples by (# filtered asv) >= {min_num_asv}")
-            num_asv_per_sample = np.sum(table > 0, axis=0)
-            samples_with_lb_asvs = num_asv_per_sample.loc[num_asv_per_sample >= min_num_asv]
-            table = table.loc[:, samples_with_lb_asvs.index.to_list()]
+    For each Sample, only keep it if it has 'min_num_asv' filtered ASVs from stage 1.
+    Also, for memory constraints during training, filter by 'max_num_asv'.
+    """
+    min_num_asv = 50
+    max_num_asv = 400
+    for project_id, project_table in project_asv_tables.items():
+        num_asv_per_sample = np.sum(project_table > 0, axis=0)
+        samples_with_lb_asvs = num_asv_per_sample.loc[
+            (num_asv_per_sample >= min_num_asv) & (num_asv_per_sample <= max_num_asv)
+        ]
+        project_table = project_table.loc[:, samples_with_lb_asvs.index.to_list()]
+        project_asv_tables[project_id] = project_table
 
-            # ======= DEBUG
-            # display(num_asv_per_sample.sort_values())
-            # fig, ax = plt.subplots(1, 1)
-            # ax.hist(num_asv_per_sample, bins=20)
-            # ax.set_ylabel('# of samples')
-            # ax.set_xlabel('# of ASVs')
-            # ======= END DEBUG
 
-            print("[* Post-ASV selection filtering] PROJECT {}: {} samples, {} ASVs".format(project_id,
-                                                                                            len(table.columns),
-                                                                                            len(table.index)))
-            for sample_id in table.columns.to_list():
-                new_sample_id_subset.add(sample_id)
-                sample_n_asvs = np.sum(table[sample_id] > 0)
-                max_sample_asv = max(max_sample_asv, sample_n_asvs)
+    """
+    Finalize and report summary.
+    """
+    for project_id, project_table in project_asv_tables.items():
+        print("[* Post-ASV selection filtering] PROJECT {}: {} samples, {} ASVs".format(project_id, len(project_table.columns), len(project_table.index)))
+        for sample_id in project_table.columns.to_list():
+            new_sample_id_subset.add(sample_id)
+            sample_n_asvs = np.sum(project_table[sample_id] > 0)
+            max_sample_asv = max(max_sample_asv, sample_n_asvs)
 
-            for asv_id in table.index.to_list():
-                asv_set.add(asv_id)
-    return asv_set, max_sample_asv, new_sample_id_subset
+        this_asv_ids = set(project_table.index.to_list())
+        print("This project contributes {} new ASVs after filtering.".format(len(this_asv_ids.difference(asv_set))))
+        asv_set = asv_set.union(this_asv_ids)
+    return asv_set, max_sample_asv, new_sample_id_subset 
