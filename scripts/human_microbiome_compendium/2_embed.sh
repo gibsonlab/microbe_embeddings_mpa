@@ -2,11 +2,11 @@
 set -e
 
 if ! [ $# -eq 2 ]; then
-  echo "Error: model_name and dataset is required"
-  echo "Usage: $0 <model_name> <dataset>"
+  echo "Error: embed_model_name and dataset are required"
+  echo "Usage: $0 <embed_model_name> <dataset>"
   exit 1
 fi
-model_name="$1"
+embed_model_name="$1"
 dataset_name="$2"
 
 # generate this file/folder by running the step 1 notebook.
@@ -37,7 +37,7 @@ HF_TOKEN_FILE=/data/cctm/youn/metaphlan_dset/hf_token.txt
 HF_TOKEN=$(cat $HF_TOKEN_FILE)
 HF_HOME="/data/cctm/youn/huggingface_cache"
 
-if [[ $model_name == evo2* ]]; then
+if [[ $embed_model_name == evo2* ]]; then
     APPTAINER_IMAGE=/data/cctm/youn/docker_images/evo2_gem.sif
     echo "Evo2 model detected. Running using Apptainer (${APPTAINER_IMAGE})."
 
@@ -58,15 +58,15 @@ if [[ $model_name == evo2* ]]; then
         "${APPTAINER_IMAGE}" \
         python embed.py \
           --asv_fasta_file "/seqs.fasta" \
-          --hdf5_output_path "${EMBEDDING_DIR}/${model_name}.h5" \
-          --model_name "${model_name}" \
+          --hdf5_output_path "${EMBEDDING_DIR}/${embed_model_name}.h5" \
+          --model_name "${embed_model_name}" \
           --embed_batch_size 20 \
           --cuda_device_ids "0"
 else
     python embed.py \
       --asv_fasta_file "seqs.fasta" \
-      --hdf5_output_path "/out_dir/${model_name}.h5" \
-      --model_name "${model_name}" \
+      --hdf5_output_path "/out_dir/${embed_model_name}.h5" \
+      --model_name "${embed_model_name}" \
       --embed_batch_size 20 \
       --cuda_device_ids "0"
 fi
