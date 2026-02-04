@@ -68,8 +68,8 @@ if [[ $embed_model_name == evo2* ]]; then
 else
     echo "Embedding model: ${embed_model_name}"
     python embed.py \
-      --asv_fasta_file "seqs.fasta" \
-      --hdf5_output_path "/out_dir/${embed_model_name}.h5" \
+      --asv_fasta_file "${ASV_SEQ_PROCESSING_DIR}/asv_sequences.post_filter.fasta" \
+      --hdf5_output_path "${EMBEDDING_DIR}/${embed_model_name}.h5" \
       --model_name "${embed_model_name}" \
       --embed_batch_size 20 \
       --cuda_device_ids "0"
