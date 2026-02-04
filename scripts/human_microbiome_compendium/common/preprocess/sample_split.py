@@ -1,13 +1,14 @@
 """ Option 3: Train samples should not share any ASVs with test samples. """
 from typing import *
 from pathlib import Path
+import itertools
 
+from tqdm import tqdm
 import numpy as np
 import pandas as pd
 import networkx as nx
 from scipy.linalg import eigh
-from tqdm import tqdm
-import itertools
+import matplotlib.pyplot as plt
 
 from ..ml import *
 
@@ -28,7 +29,7 @@ def jaccard_similarity(x: Set, y: Set) -> float:
     return numer / denom
 
 
-def spectral_division(G: nx.Graph, left_q: float, right_q: float):
+def spectral_division(G: nx.Graph, left_q: float, right_q: float, cc_name: str):
     """
     Computes an embedding of samples via spectral decomposition of a certain graph. Nodes are samples, edge weights are Jaccard Similarity.
     After the embedding is computed, computes the left-tail and right-tail set of nodes to assign (specified via quantile "q" values).
@@ -61,7 +62,7 @@ def spectral_division(G: nx.Graph, left_q: float, right_q: float):
         len(partition_left), len(partition_right), 
         np.mean(cut_w), np.median(cut_w), np.max(cut_w), np.min(cut_w)
     ))
-    plt.hist(cut_w, bins=20)
+    plt.hist(cut_w, bins=20, alpha=0.6, label=cc_name)
     return partition_left, partition_right
 
 
@@ -115,15 +116,20 @@ def train_test_split_mincut_approximation(
     training_sample_ids = []
     test_sample_ids = []
     print("# ASV-connected components: {}".format(len(ccs)))
-    for cc in ccs:
+    for cc_idx, cc in enumerate(ccs):
         print("component sample count = {}".format(len(cc)))
         if len(cc) <= 5:
             training_sample_ids += list(cc)
         else:
             G_cc = G.subgraph(cc).copy()
-            test_samples, train_samples = spectral_division(G_cc, left_q=test_fraction, right_q=1-train_fraction)
+            test_samples, train_samples = spectral_division(
+                G_cc, left_q=test_fraction, right_q=1-train_fraction,
+                cc_name=f"CC_{cc_idx}"
+            )
             training_sample_ids += train_samples
             test_sample_ids += test_samples
+    plt.legend()
+    plt.show()
 
     training_sample_ids = set(training_sample_ids)
     test_sample_ids = set(test_sample_ids)
