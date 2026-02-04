@@ -67,6 +67,9 @@ if [[ $embed_model_name == evo2* ]]; then
           --cuda_device_ids "0"
 else
     echo "Embedding model: ${embed_model_name}"
+
+    HF_HOME=$HF_HOME \
+    HF_TOKEN=$HF_TOKEN \
     python embed.py \
       --asv_fasta_file "${ASV_SEQ_PROCESSING_DIR}/asv_sequences.post_filter.fasta" \
       --hdf5_output_path "${EMBEDDING_DIR}/${embed_model_name}.h5" \
