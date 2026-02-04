@@ -61,7 +61,7 @@ if [[ $embed_model_name == evo2* ]]; then
         "${APPTAINER_IMAGE}" \
         python embed.py \
           --asv_fasta_file "/seqs.fasta" \
-          --hdf5_output_path "${EMBEDDING_DIR}/${embed_model_name}.h5" \
+          --hdf5_output_path "/out_dir/${embed_model_name}.h5" \
           --model_name "${embed_model_name}" \
           --embed_batch_size 20 \
           --cuda_device_ids "0"
