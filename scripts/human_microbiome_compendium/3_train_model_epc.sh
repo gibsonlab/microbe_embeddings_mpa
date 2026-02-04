@@ -19,6 +19,8 @@ fi
 embed_model_name="$1"
 dataset_name="$2"
 
+echo "Performing prediction model training for ${embed_model_name} on dataset ${dataset_name} (EPC-pool)"
+
 # point to the proper pretrained model embeddings
 DATA_DIR="/data/bwh-comppath-seq/youn/human_microbiome_compendium/${dataset_name}"
 EMBEDDINGS_DIR="${DATA_DIR}/embeddings"

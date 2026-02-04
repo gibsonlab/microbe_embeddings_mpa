@@ -9,6 +9,8 @@ fi
 embed_model_name="$1"
 dataset_name="$2"
 
+echo "Performing embedding pre-calculation step for ${embed_model_name} on dataset ${dataset_name}"
+
 # generate this file/folder by running the step 1 notebook.
 NOTEBOOK_CACHE="__tmp/${dataset_name}"
 ASV_SEQ_PROCESSING_DIR="${NOTEBOOK_CACHE}/asv_16s_processing"
