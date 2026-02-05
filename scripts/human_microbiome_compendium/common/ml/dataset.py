@@ -73,6 +73,34 @@ class MicrobiomeSampleEmbedding:
 
         return asv_ids, features, abunds
 
+    def get_embedded_asv_ids(self, sample: MicrobiomeSample) -> List[str]:
+        """
+        A smaller "lightweight" version of convert(), that only returns the subset list of ASV IDS with embeddings from the sample.
+        :param sample:
+        :return:
+        """
+        # Get ASV data for this sample
+        # Note: asv_id_subset should automatically filter out ASVs without a valid embedding stored in the h5 file.
+        asv_ids_full = sample.asv_ids
+        asv_ids_subset = []
+
+        # Fill in the tensors
+        if self.cache_embeddings:
+            asv_ids_subset = [
+                asv_id
+                for asv_id in asv_ids_full
+                if asv_id in self.embedding_cache
+            ]
+        else:
+            # Load embeddings from file
+            with h5py.File(self.embedding_file, "r") as h5_file:
+                asv_ids_subset = [
+                    asv_id
+                    for asv_id in asv_ids_full
+                    if asv_id in h5_file
+                ]
+        return asv_ids_subset
+
 
 # =========================================================================
 
