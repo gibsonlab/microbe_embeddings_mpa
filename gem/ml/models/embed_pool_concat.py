@@ -84,6 +84,7 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
             ResidualBlock(hidden_dim, hidden_dim, dropout_rate, add_residual=True),
             ResidualBlock(hidden_dim, 1, 0.0, add_residual=False),
         )
+        self.final_reshape_layer = nn.Flatten(start_dim=-2, end_dim=-1)
 
         self.init_weights(init_rng, weight_decay_compatible)
 
@@ -128,6 +129,7 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
 
         print("here4:", logits.shape)
         print(sgb_padding_mask.shape)
+        logits = self.final_reshape_layer(logits)
         logits = logits.masked_fill(~sgb_padding_mask, float("-inf"))
         print("Here5: {}".format(logits.shape))
         return logits
