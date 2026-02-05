@@ -132,6 +132,7 @@ class MicrobiomeProject:
                             sample_obj.set_count(asv_id, asv_count)
 
         sid = next(iter(sample_id_subset))
-        print(sid, ":", samples[sid])
+        print(sid, ":", samples[sid].asv_ids)
+        print(samples[sid].relative_abundance_array())
         exit(1)
         return [samples[s_id] for s_id in sample_id_subset]
