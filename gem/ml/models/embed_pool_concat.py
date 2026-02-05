@@ -7,7 +7,7 @@ import torch
 from torch import Tensor, nn
 
 from .base import LinearInitializedModule
-from .perm_invariant_blocks import SumAlongDim
+from .perm_invariant_blocks import SumAlongDim, ChannelwiseDropout
 
 
 class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
@@ -23,6 +23,7 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
             hidden_dim: int,
             use_sgb_pooling: bool,
             sgb_pool_dim: Optional[int] = 0,
+            dropout_rate: float = 0.0,
             weight_decay_compatible: bool = True,
             init_rng: Optional[torch.Generator] = None,
     ):
@@ -36,6 +37,7 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
             nn.Linear(marker_embed_dim, hidden_dim),
             nn.LayerNorm(normalized_shape=hidden_dim),
             nn.GELU(),
+            ChannelwiseDropout(dropout_rate),
             nn.Linear(hidden_dim, sgb_model_dim),
             nn.LayerNorm(normalized_shape=sgb_model_dim),
             nn.GELU(),
@@ -48,6 +50,7 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
                 nn.Linear(sgb_model_dim, hidden_dim),
                 nn.LayerNorm(normalized_shape=hidden_dim),
                 nn.GELU(),
+                ChannelwiseDropout(dropout_rate),
                 nn.Linear(hidden_dim, sgb_pool_dim),
                 nn.LayerNorm(normalized_shape=sgb_pool_dim),
                 nn.GELU(),
@@ -63,6 +66,7 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
             nn.Linear(prediction_input_dim, hidden_dim),
             nn.LayerNorm(normalized_shape=hidden_dim),
             nn.GELU(),
+            ChannelwiseDropout(dropout_rate),
             nn.Linear(hidden_dim, 1),
             nn.Flatten(start_dim=-2, end_dim=-1),
         )
