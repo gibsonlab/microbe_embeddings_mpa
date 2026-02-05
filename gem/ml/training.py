@@ -260,12 +260,12 @@ def main_training_loop(
                 scaler.step(optimizer)
                 scaler.update()
 
-            with timer("LR-Step", enabled=timer_profile):
-                lr_scheduler.step()
-                current_lr = lr_scheduler.get_last_lr()[0]
-
             # print("cleaning up.")
             epoch_training_loss += training_loss.item() * training_y.shape[0] / n_training_examples
+
+        with timer("LR-Step", enabled=timer_profile):
+            lr_scheduler.step()
+            current_lr = lr_scheduler.get_last_lr()[0]
 
         # option implementation
         if epoch % print_every == 0:
@@ -305,6 +305,7 @@ def main_training_loop(
 
     # finally, save the final checkpoint file.
     if epoch is not None:
+        model.eval()
         filepath = checkpoint_dir / f"checkpoint_{epoch}.pt"
         save_checkpoint(
             epoch, model, optimizer, lr_scheduler, scaler, training_data_rng,
