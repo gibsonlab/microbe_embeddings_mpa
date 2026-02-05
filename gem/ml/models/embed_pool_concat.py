@@ -32,6 +32,7 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
         :param init_rng:
         """
         super().__init__()
+        print(f"Initializing model with dropout_rate = {dropout_rate}")
         # self.marker_transform_layer = MarkerEmbedTransform(marker_embed_dim, sgb_model_dim, weight_decay_compatible, init_rng)
         self.marker_transform_layer = nn.Sequential(
             nn.Linear(marker_embed_dim, hidden_dim),
