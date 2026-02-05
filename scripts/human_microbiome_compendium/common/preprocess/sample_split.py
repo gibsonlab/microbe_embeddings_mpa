@@ -28,7 +28,9 @@ def cut_edge_weights(G: nx.Graph, set1: Set, set2: Set) -> List[float]:
     for i in set1:
         for j in set2:
             if G.has_edge(i, j):
-                cut_values.append(G[i][j].get('weight', 0.0))
+                cut_values.append(G[i][j]['weight'])
+            else:
+                cut_values.append(0.0)
     return cut_values
 
 
@@ -94,7 +96,7 @@ def find_min_cut_subsets(
     ccs: List[Set[Any]],
     target_A_frac: float = 0.4,
     target_B_frac: float = 0.1
-) -> Tuple[Set[Any], Set[Any], List[float]]:
+) -> Tuple[Set[Any], Set[Any]]:
     """
     Find subsets A and B that minimize cut weight between them.
 
@@ -112,6 +114,7 @@ def find_min_cut_subsets(
     n = len(G.nodes())
     target_A_size = int(n * target_A_frac)
     target_B_size = int(n * target_B_frac)
+    print(f"Target sizes: ({target_A_size}, {target_B_size})")
 
     A = set()
     B = set()
@@ -122,8 +125,10 @@ def find_min_cut_subsets(
         cc_size = len(cc)
 
         if len(A) + cc_size <= target_A_size:
+            print("Greedily adding {} samples to A".format(len(cc)))
             A.update(cc)
         elif len(B) + cc_size <= target_B_size:
+            print("Greedily adding {} samples to B".format(len(cc)))
             B.update(cc)
         else:
             remaining_ccs.append(cc)
@@ -146,7 +151,7 @@ def find_min_cut_subsets(
         if len(remaining_ccs) >= 2:
             # All remaining ccs are larger than the remaining space.
             # --> Case 1: Greedily assign chunks from large CCs
-
+            print("Greedily filling remaining A and B.")
             cc = remaining_ccs[0]
             assert len(cc) > needed_A
             A.update(sorted(cc)[:needed_A])
@@ -157,6 +162,7 @@ def find_min_cut_subsets(
         else:
             # One large component remaining (typical scenario!)
             # --> Case 2: use spectral clustering.
+            print("Spectral relaxation to fill remaining A and B.")
             cc_list = list(remaining_ccs[0])
             subgraph = G.subgraph(cc_list)
             A_from_cc, B_from_cc = split_component_spectral(
@@ -165,8 +171,7 @@ def find_min_cut_subsets(
             A.update(A_from_cc)
             B.update(B_from_cc)
 
-    cut_w = cut_edge_weights(G, A, B)
-    return A, B, cut_w
+    return A, B
 
 
 def train_test_split_mincut_approximation(
@@ -225,12 +230,13 @@ def train_test_split_mincut_approximation(
     ccs = list(nx.connected_components(G))
     ccs = sorted(ccs, key=lambda x: len(x), reverse=True)
 
-    training_sample_ids, test_sample_ids, cut_weights = find_min_cut_subsets(
+    training_sample_ids, test_sample_ids = find_min_cut_subsets(
         G,
         [set(cc) for cc in ccs],
         target_A_frac=train_fraction,
         target_B_frac=test_fraction,
     )
+    cut_weights = cut_edge_weights(G, training_sample_ids, test_sample_ids)
 
     fig, ax = plt.subplots()
     ax.hist(cut_weights)
