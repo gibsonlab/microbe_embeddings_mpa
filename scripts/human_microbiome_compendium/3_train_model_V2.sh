@@ -19,7 +19,7 @@ fi
 embed_model_name="$1"
 dataset_name="$2"
 
-echo "Performing prediction model training for ${embed_model_name} on dataset ${dataset_name} (EPC-pool)"
+echo "Performing prediction model training for ${embed_model_name} on dataset ${dataset_name} (v2_stack)"
 
 # point to the proper pretrained model embeddings
 BASEDIR="/data/bwh-comppath-seq/youn/human_microbiome_compendium"
@@ -37,7 +37,7 @@ training_set="${DATA_DIR}/train.tsv"
 test_set="${DATA_DIR}/test.tsv"
 
 abundance_dir="/data/cctm/youn/human_microbiome_compendium/asv"
-model_config="./model_v2_depth5.yaml"
+model_config="./model_v2.yaml"
 n_epochs=100
 learning_rate=0.0001
 batch_size=10
