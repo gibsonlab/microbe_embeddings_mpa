@@ -126,7 +126,8 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
         else:
             logits = self.prediction_layer(x)                                      # shape (*, S)
 
-        print("here4")
+        print("here4:", logits.shape)
+        print(sgb_padding_mask.shape)
         logits = logits.masked_fill(~sgb_padding_mask, float("-inf"))
         print("Here5: {}".format(logits.shape))
         return logits
