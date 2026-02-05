@@ -116,7 +116,7 @@ def train_and_save_model(
         f"Number of trainable parameters: {sum(p.numel() for p in torch_embedding_model.parameters() if p.requires_grad)}"
     )
     optimizer = optim.Adam(torch_embedding_model.parameters(), lr=lr,
-                           weight_decay=0.1)  # Note: weight_decay is L2 regularization.
+                           weight_decay=1e-3)  # Note: weight_decay is L2 regularization.
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer,
         T_max=n_epochs,
