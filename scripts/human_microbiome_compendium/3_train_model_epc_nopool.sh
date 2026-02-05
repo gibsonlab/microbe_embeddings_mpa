@@ -36,9 +36,9 @@ test_set="${DATA_DIR}/test.tsv"
 
 abundance_dir="/data/cctm/youn/human_microbiome_compendium/asv"
 model_config="./model_epc_nopool.yaml"
-n_epochs=150
+n_epochs=400
 learning_rate=0.0001
-batch_size=10
+batch_size=30
 seed=12345
 
 outdir="${DATA_DIR}/trained_models/${embed_model_name}/epc_nopool_kl"
