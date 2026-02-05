@@ -73,6 +73,7 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
 
         # define final layer.
         if use_sgb_pooling:
+            print("SGB pooling is on. SGB embeddings will be concatenated with Sample embeddings.")
             prediction_input_dim = sgb_model_dim + sgb_pool_dim  # concatentaed dim
         else:
             prediction_input_dim = sgb_model_dim
