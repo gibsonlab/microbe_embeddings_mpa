@@ -13,11 +13,11 @@ import matplotlib.pyplot as plt
 from ..ml import *
 
 
-def cut_edge_weights(G: nx.Graph, partition1: List, partition2: List):
+def cut_edge_weights(G: nx.Graph, set1: Set, set2: Set) -> List[float]:
     """Calculate the cut value between two partitions"""
     cut_values = []
-    for i in partition1:
-        for j in partition2:
+    for i in set1:
+        for j in set2:
             if G.has_edge(i, j):
                 cut_values.append(G[i][j].get('weight', 0.0))
     return cut_values
@@ -27,43 +27,6 @@ def jaccard_similarity(x: Set, y: Set) -> float:
     numer = len(x.intersection(y))
     denom = len(x.union(y))
     return numer / denom
-
-
-def spectral_division(G: nx.Graph, left_q: float, right_q: float, cc_name: str):
-    """
-    Computes an embedding of samples via spectral decomposition of a certain graph. Nodes are samples, edge weights are Jaccard Similarity.
-    After the embedding is computed, computes the left-tail and right-tail set of nodes to assign (specified via quantile "q" values).
-    """
-    if not nx.is_connected(G):
-        raise Exception("Graph not connected!")
-    
-    # Get Laplacian matrix0
-    node_order = list(G.nodes())
-    L_sparse = nx.laplacian_matrix(G, weight='weight', nodelist=node_order)
-    L_dense = L_sparse.todense()  # Or use L.toarray() for a NumPy ndarray
-    
-    # Find eigenvalues and eigenvectors
-    print("computing eigendecomposition.")
-    # eigenvals, eigenvecs = eigsh(L_sparse, k=2, which='SM')
-    eigenvals, eigenvecs = eigh(L_dense, subset_by_index=(0, 1))
-    print("eigenvalues:", eigenvals)
-    
-    # Second smallest eigenvalue and its eigenvector (Fiedler vector)
-    fiedler_vector = eigenvecs[:, 1]
-
-    # Assign left subset and right subset using the input parameters.
-    left_ub = np.quantile(fiedler_vector, q=left_q)
-    right_lb = np.quantile(fiedler_vector, q=right_q)
-    print("Using tail cutoff quantiles q_left = {}, q_right = {}".format(left_q, right_q))
-    partition_left = [node_order[i] for i in range(len(node_order)) if fiedler_vector[i] < left_ub]
-    partition_right = [node_order[i] for i in range(len(node_order)) if fiedler_vector[i] >= right_lb]
-    cut_w = cut_edge_weights(G, partition_left, partition_right)
-    print("Partition is {} vs. {} [Cut weights: mean={}, median={}, max={}, min={}]".format(
-        len(partition_left), len(partition_right), 
-        np.mean(cut_w), np.median(cut_w), np.max(cut_w), np.min(cut_w)
-    ))
-    plt.hist(cut_w, bins=20, alpha=0.6, label=cc_name)
-    return partition_left, partition_right
 
 
 def weighted_graph_from_matrix(A: np.ndarray, node_names: List[str]):
@@ -76,18 +39,139 @@ def weighted_graph_from_matrix(A: np.ndarray, node_names: List[str]):
     return G
 
 
+def split_component_spectral(
+        G: nx.Graph,
+        size_A: int,
+        size_B: int
+) -> Tuple[Set[Any], Set[Any]]:
+    """
+    Split a connected component using spectral method.
+
+    Args:
+        subgraph: NetworkX subgraph of the component
+        size_A: Number of nodes needed for A
+        size_B: Number of nodes needed for B
+
+    Returns:
+        A_nodes: Nodes assigned to A
+        B_nodes: Nodes assigned to B
+    """
+    # Get Laplacian matrix0
+    node_order = list(G.nodes())
+    L_sparse = nx.laplacian_matrix(G, weight='weight', nodelist=node_order)
+    L_dense = L_sparse.todense()  # Or use L.toarray() for a NumPy ndarray
+
+    # Find eigenvalues and eigenvectors
+    print("computing eigendecomposition.")
+    # eigenvals, eigenvecs = eigsh(L_sparse, k=2, which='SM')
+    eigenvals, eigenvecs = eigh(L_dense, subset_by_index=(0, 1))
+    print("eigenvalues:", eigenvals)
+
+    # Second smallest eigenvalue and its eigenvector (Fiedler vector)
+    fiedler_vector = eigenvecs[:, 1]
+
+    # Sort nodes by Fiedler vector value
+    sorted_indices = np.argsort(fiedler_vector)
+
+    # Assign nodes: try to minimize cut by keeping similar values together
+    # Put lowest values in A, highest in B (they'll be separated)
+    A_nodes = set([node_order[i] for i in sorted_indices[:size_A]])
+    B_nodes = set([node_order[i] for i in sorted_indices[-size_B:]])
+    return A_nodes, B_nodes
+
+
+def find_min_cut_subsets(
+    G: nx.Graph,
+    ccs: List[Set[Any]],
+    target_A_frac: float = 0.4,
+    target_B_frac: float = 0.1
+) -> Tuple[Set[Any], Set[Any], List[float]]:
+    """
+    Find subsets A and B that minimize cut weight between them.
+
+    Args:
+        G: NetworkX graph
+        ccs: List of connected components (sets of nodes)
+        target_A_frac: Fraction of vertices for set A
+        target_B_frac: Fraction of vertices for set B
+
+    Returns:
+        A: Set of nodes in A
+        B: Set of nodes in B
+        cut_weight: Weight of cut between A and B
+    """
+    n = len(G.nodes())
+    target_A_size = int(n * target_A_frac)
+    target_B_size = int(n * target_B_frac)
+
+    A = set()
+    B = set()
+    remaining_ccs = []
+
+    # Step 1: Greedily assign entire small CCs to A or B
+    for cc in ccs:
+        cc_size = len(cc)
+
+        if len(A) + cc_size <= target_A_size:
+            A.update(cc)
+        elif len(B) + cc_size <= target_B_size:
+            B.update(cc)
+        else:
+            remaining_ccs.append(cc)
+
+    # Step 2: fill from remaining large CCs as needed.
+    needed_A = target_A_size - len(A)
+    needed_B = target_B_size - len(B)
+    if needed_A <= 0 and needed_B <= 0:
+        pass
+    elif needed_A > 0 and needed_B <= 0:
+        cc = remaining_ccs[0]
+        assert len(cc) > needed_A
+        A.update(sorted(cc)[:needed_A])
+    elif needed_A <= 0 and needed_B > 0:
+        cc = remaining_ccs[0]
+        assert len(cc) > needed_B
+        B.update(sorted(cc)[:needed_B])
+    else:
+        # Need to fill both A and B.
+        if len(remaining_ccs) >= 2:
+            # All remaining ccs are larger than the remaining space.
+            # --> Case 1: Greedily assign chunks from large CCs
+
+            cc = remaining_ccs[0]
+            assert len(cc) > needed_A
+            A.update(sorted(cc)[:needed_A])
+
+            cc = remaining_ccs[1]
+            assert len(cc) > needed_B
+            B.update(sorted(cc)[:needed_B])
+        else:
+            # One large component remaining (typical scenario!)
+            # --> Case 2: use spectral clustering.
+            cc_list = list(remaining_ccs[0])
+            subgraph = G.subgraph(cc_list)
+            A_from_cc, B_from_cc = split_component_spectral(
+                subgraph, needed_A, needed_B
+            )
+            A.update(A_from_cc)
+            B.update(B_from_cc)
+
+    cut_w = cut_edge_weights(G, A, B)
+    return A, B, cut_w
+
+
 def train_test_split_mincut_approximation(
     sample_df: pd.DataFrame, 
     abundance_table_dir: Path,
-    asv_id_subset: Set[str], 
-    train_fraction: float, 
+    asv_id_subset: Set[str],
+    train_fraction: float,
     test_fraction: float
 ):
     # Collect the list of samples across all projects.
     proj_ids = list(pd.unique(sample_df['project']))
-    all_samples = []
+    all_samples: List[MicrobiomeSample] = []
     for proj_id, proj_section in sample_df.groupby('project'):
-        proj = MicrobiomeProject(proj_id, abundance_table_dir, sample_df)
+        proj = MicrobiomeProject(str(proj_id), abundance_table_dir, sample_df)
         proj_sample_subset_ids = set(proj_section['srs'])
         all_samples = all_samples + [s for s in proj.samples if s.sample_id in proj_sample_subset_ids]
     
@@ -102,7 +186,10 @@ def train_test_split_mincut_approximation(
         total=n_pairs,
         desc="Sample pair calculation",
     ):
-        sample_asv_sim = jaccard_similarity(sample_i.asv_ids, sample_j.asv_ids)
+        sample_asv_sim = jaccard_similarity(
+            sample_i.asv_ids.intersection(asv_id_subset),
+            sample_j.asv_ids.intersection(asv_id_subset)
+        )
         A[i, j] = sample_asv_sim
         A[j, i] = sample_asv_sim
     print("Computed sample similarity matrix of shape {}.".format(A.shape))
@@ -113,26 +200,18 @@ def train_test_split_mincut_approximation(
     ccs = list(nx.connected_components(G))
     ccs = sorted(ccs, key=lambda x: len(x), reverse=True)
 
-    training_sample_ids = []
-    test_sample_ids = []
-    print("# ASV-connected components: {}".format(len(ccs)))
-    for cc_idx, cc in enumerate(ccs):
-        print("component sample count = {}".format(len(cc)))
-        if len(cc) <= 5:
-            training_sample_ids += list(cc)
-        else:
-            G_cc = G.subgraph(cc).copy()
-            test_samples, train_samples = spectral_division(
-                G_cc, left_q=test_fraction, right_q=1-train_fraction,
-                cc_name=f"CC_{cc_idx}"
-            )
-            training_sample_ids += train_samples
-            test_sample_ids += test_samples
-    plt.legend()
+    training_sample_ids, test_sample_ids, cut_weights = find_min_cut_subsets(
+        G,
+        [set(cc) for cc in ccs],
+        target_A_frac=train_fraction,
+        target_B_frac=test_fraction,
+    )
+
+    fig, ax = plt.subplots()
+    ax.hist(cut_weights)
+    ax.set_title("Pairwise similarities: TRAIN <--> TEST")
     plt.show()
 
-    training_sample_ids = set(training_sample_ids)
-    test_sample_ids = set(test_sample_ids)
     train_df = sample_df.loc[sample_df['srs'].isin(training_sample_ids)]
     test_df = sample_df.loc[sample_df['srs'].isin(test_sample_ids)]
     return train_df, test_df

@@ -6,6 +6,7 @@ Requires: BioPython, vsearch
 """
 
 import subprocess
+from typing import Union
 from pathlib import Path
 
 from Bio import SeqIO
@@ -17,7 +18,7 @@ def pipeline_16s_validation(
         asv_seqs: dict[str, str],
         cache_dir: Path,
         silva_db: Path,
-        vsearch_path: Path = Path("vsearch"),
+        vsearch_path: Union[str, Path] = "vsearch",
         vsearch_num_threads: int = 1,
         min_identity: float = 0.90,
 ) -> dict[str, str]:
