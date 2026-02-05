@@ -116,15 +116,12 @@ class MicrobiomeProject:
         print(abundance_table_dir / f"{project_id}.txt.zst")
         with zstd.open(abundance_table_dir / f"{project_id}.txt.zst", "rt") as abund_file:
             header_line = abund_file.readline()
-            print("header line: {}".format(header_line))
             assert header_line.startswith("asv\t"), f"Unrecognized format for abundance table: {project_id}"
 
             abund_sample_order = header_line.strip().split("\t")[1:]
-            assert set(samples.keys()).issubset(set(abund_sample_order))
-            print(abund_sample_order)
+            assert set(samples.keys()).issubset(set(abund_sample_order)), "Sample Subset IDs must be a subset of Header line of ASV counts table."
             for row in abund_file:
                 tokens = row.strip().split("\t")
-                print("next tokens: {}".format(tokens))
                 asv_id = tokens[0]
                 assert len(abund_sample_order) == len(tokens) - 1, "Mismatch in the number of abundance tokens!"
                 for sample_id, abund_token in zip(abund_sample_order, tokens[1:]):
@@ -134,5 +131,4 @@ class MicrobiomeProject:
                         if asv_count > 0:
                             sample_obj.set_count(asv_id, asv_count)
 
-                exit(1)
         return [samples[s_id] for s_id in sample_id_subset]
