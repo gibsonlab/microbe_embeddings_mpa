@@ -11,6 +11,15 @@ from scipy.linalg import eigh
 import matplotlib.pyplot as plt
 
 from ..ml import *
+from ..util import ASVDistanceMatrix
+
+
+def distance_matrix_to_similarity_matrix(mat: ASVDistanceMatrix) -> np.ndarray:
+    mat = mat.matrix
+    assert len(mat.shape) == 2, "Input must be a 2-d matrix."
+    assert mat.shape[0] == mat.shape[1], "Input must be a square matrix, got: {}".format(mat.shape)
+    d_max = np.max(mat)
+    return 1 - (1/d_max) * mat
 
 
 def cut_edge_weights(G: nx.Graph, set1: Set, set2: Set) -> List[float]:
@@ -165,7 +174,8 @@ def train_test_split_mincut_approximation(
     abundance_table_dir: Path,
     asv_id_subset: Set[str],
     train_fraction: float,
-    test_fraction: float
+    test_fraction: float,
+    distance_matrix: Optional[ASVDistanceMatrix] = None,
 ):
     # Collect the list of samples across all projects.
     proj_ids = list(pd.unique(sample_df['project']))
@@ -181,15 +191,30 @@ def train_test_split_mincut_approximation(
     n_samples = len(all_samples)
     n_pairs = int(n_samples * (n_samples - 1) / 2)
     A = np.zeros((n_samples, n_samples), dtype=float)
+    if distance_matrix is not None:
+        print("Weighted Graph will use weight = (1 - d/d_max) as similarity metric.")
+        sim_mat: np.ndarray = distance_matrix_to_similarity_matrix(distance_matrix)
+        def sim_fn(sample1: MicrobiomeSample, sample2: MicrobiomeSample):
+            sim_values = []
+            for asv1, asv2 in itertools.product(sample1.asv_ids, sample2.asv_ids):
+                i1 = distance_matrix.get_asv_index(asv1)
+                i2 = distance_matrix.get_asv_index(asv2)
+                sim_value = sim_mat[i1, i2]
+                sim_values.append(sim_value)
+            return np.mean(sim_values)
+    else:
+        print("Weighted Graph will use weight = JACCARD(i,j) as similarity metric.")
+        sim_fn = lambda sample1, sample2: jaccard_similarity(
+            sample1.asv_ids.intersection(asv_id_subset),
+            sample2.asv_ids.intersection(asv_id_subset)
+        )
+
     for (i, sample_i), (j, sample_j) in tqdm(
         itertools.combinations(enumerate(all_samples), r=2),
         total=n_pairs,
         desc="Sample pair calculation",
     ):
-        sample_asv_sim = jaccard_similarity(
-            sample_i.asv_ids.intersection(asv_id_subset),
-            sample_j.asv_ids.intersection(asv_id_subset)
-        )
+        sample_asv_sim = sim_fn(sample_i, sample_j)
         A[i, j] = sample_asv_sim
         A[j, i] = sample_asv_sim
     print("Computed sample similarity matrix of shape {}.".format(A.shape))
