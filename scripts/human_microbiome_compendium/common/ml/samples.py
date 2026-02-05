@@ -131,4 +131,6 @@ class MicrobiomeProject:
                         if asv_count > 0:
                             sample_obj.set_count(asv_id, asv_count)
 
+        print(samples['ERS3136834'])
+        exit(1)
         return [samples[s_id] for s_id in sample_id_subset]
