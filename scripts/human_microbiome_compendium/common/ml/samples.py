@@ -113,6 +113,7 @@ class MicrobiomeProject:
             samples[sample_id] = MicrobiomeSample(sample_id, sample_subset_table)
 
         # Parse the large abundance table. (this contains more samples than we want)
+        print(abundance_table_dir / f"{project_id}.txt.zst")
         with zstd.open(abundance_table_dir / f"{project_id}.txt.zst", "rt") as abund_file:
             header_line = abund_file.readline()
             print("header line: {}".format(header_line))
@@ -122,6 +123,7 @@ class MicrobiomeProject:
             for row in abund_file:
                 tokens = row.strip().split("\t")
                 print("next tokens: {}".format(tokens))
+                exit(1)
                 asv_id = tokens[0]
                 assert len(abund_sample_order) == len(tokens) - 1, "Mismatch in the number of abundance tokens!"
                 for sample_id, abund_token in zip(abund_sample_order, tokens[1:]):
