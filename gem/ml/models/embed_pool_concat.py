@@ -121,8 +121,10 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
             print("here2")
             xy = torch.concatenate([x, y], dim=-1)                          # shape (*, S, sgb_pool_dim + sgb_model_dim)
             logits = self.prediction_layer(xy)                                    # shape (*, S)
+            print("here3")
         else:
             logits = self.prediction_layer(x)                                      # shape (*, S)
 
+        print("here4")
         logits = logits.masked_fill(~sgb_padding_mask, float("-inf"))
         return logits
