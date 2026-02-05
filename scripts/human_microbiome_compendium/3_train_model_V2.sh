@@ -44,7 +44,7 @@ batch_size=10
 seed=12345
 
 
-outdir="${DATA_DIR}/trained_models/${embed_model_name}/epc_pool_kl"
+outdir="${DATA_DIR}/trained_models/${embed_model_name}/v2_stack"
 mkdir -p ${outdir}
 
 metadata="$outdir/metadata.txt"
