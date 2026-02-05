@@ -104,32 +104,23 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
         x = x / num_markers                                                        # shape (*, S, sgb_model_dim)
 
         if self.use_sgb_pooling:
-            print("here-1")
             y = self.species_transform_layer(x)                                    # shape (*, S, sgb_pool_dim)
-            print("here0")
             # ========== mean-pooling (nanmean)
             y = torch.sum(
                 y * sgb_padding_mask.unsqueeze(-1),
                 dim=-2, keepdim=False
             )                                                                      # shape (*, sgb_pool_dim)
-            print("here1")
             num_species = sgb_padding_mask.sum(dim=-1, keepdim=True).clamp(min=1)  # shape (*, 1)
             y = y / num_species                                                    # shape (*, sgb_pool_dim)
 
             y = y.unsqueeze(-2)                                                    # shape (*, 1, sgb_pool_dim)
             y = y.expand(*x.shape[:-1], y.shape[-1])                                        # shape (*, S, sgb_pool_dim), broadcasted along dim=-2
 
-            print("here2:", y.shape)
             xy = torch.concatenate([x, y], dim=-1)                          # shape (*, S, sgb_pool_dim + sgb_model_dim)
-            print("here2:", xy.shape)
             logits = self.prediction_layer(xy)                                    # shape (*, S)
-            print("here3:", logits.shape)
         else:
             logits = self.prediction_layer(x)                                      # shape (*, S)
 
-        print("here4:", logits.shape)
-        print(sgb_padding_mask.shape)
         logits = self.final_reshape_layer(logits)
         logits = logits.masked_fill(~sgb_padding_mask, float("-inf"))
-        print("Here5: {}".format(logits.shape))
         return logits
