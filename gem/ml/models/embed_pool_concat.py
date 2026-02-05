@@ -10,27 +10,6 @@ from .base import LinearInitializedModule
 from .perm_invariant_blocks import SumAlongDim, ChannelwiseDropout
 
 
-class ResidualBlock(nn.Module):
-    def __init__(self, input_dim, output_dim, dropout_rate, add_residual=False):
-        super().__init__()
-        self.fc = nn.Linear(input_dim, output_dim)
-        self.ln = nn.LayerNorm(normalized_shape=output_dim)
-        self.gelu = nn.GELU()
-        self.dropout = ChannelwiseDropout(dropout_rate)
-        self.add_residual = add_residual
-
-    def forward(self, x):
-        identity = x
-        x = self.fc(x)
-        x = self.ln(x)
-        x = self.gelu(x)
-        x = self.dropout(x)
-        if self.add_residual:
-            return x + identity  # Residual connection
-        else:
-            return x
-
-
 class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
     """
     A simple model which applies a MLP to each marker, and pools the markers to form features per species.
@@ -55,38 +34,74 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
         super().__init__()
         print(f"Initializing model with dropout_rate = {dropout_rate}")
         # self.marker_transform_layer = MarkerEmbedTransform(marker_embed_dim, sgb_model_dim, weight_decay_compatible, init_rng)
-        self.marker_transform_layer = nn.Sequential(
-            ResidualBlock(marker_embed_dim, hidden_dim, dropout_rate, add_residual=False),
-            ResidualBlock(hidden_dim, hidden_dim, dropout_rate, add_residual=False),
-            ResidualBlock(hidden_dim, sgb_model_dim, 0.0, add_residual=False),
-        )
+        if dropout_rate > 0.0:
+            self.marker_transform_layer = nn.Sequential(
+                nn.Linear(marker_embed_dim, hidden_dim),
+                nn.LayerNorm(normalized_shape=hidden_dim),
+                nn.GELU(),
+                ChannelwiseDropout(dropout_rate),
+                nn.Linear(hidden_dim, sgb_model_dim),
+                nn.LayerNorm(normalized_shape=sgb_model_dim),
+                nn.GELU(),
+            )
+        else:
+            self.marker_transform_layer = nn.Sequential(
+                nn.Linear(marker_embed_dim, hidden_dim),
+                nn.LayerNorm(normalized_shape=hidden_dim),
+                nn.GELU(),
+                nn.Linear(hidden_dim, sgb_model_dim),
+                nn.LayerNorm(normalized_shape=sgb_model_dim),
+                nn.GELU(),
+            )
 
         self.use_sgb_pooling = use_sgb_pooling
         if use_sgb_pooling:
             assert sgb_pool_dim > 0, "If pooling is turned on, sgb_pool_dim must be specified and greater than 0."
-
-        self.species_transform_layer = nn.Sequential(
-            ResidualBlock(sgb_model_dim, hidden_dim, dropout_rate, add_residual=False),
-            ResidualBlock(hidden_dim, hidden_dim, dropout_rate, add_residual=False),
-            ResidualBlock(hidden_dim, sgb_pool_dim, 0.0, add_residual=False),
-        )
+            if dropout_rate > 0.0:
+                self.species_transform_layer = nn.Sequential(
+                    nn.Linear(sgb_model_dim, hidden_dim),
+                    nn.LayerNorm(normalized_shape=hidden_dim),
+                    nn.GELU(),
+                    ChannelwiseDropout(dropout_rate),
+                    nn.Linear(hidden_dim, sgb_pool_dim),
+                    nn.LayerNorm(normalized_shape=sgb_pool_dim),
+                    nn.GELU(),
+                )
+            else:
+                self.species_transform_layer = nn.Sequential(
+                    nn.Linear(sgb_model_dim, hidden_dim),
+                    nn.LayerNorm(normalized_shape=hidden_dim),
+                    nn.GELU(),
+                    nn.Linear(hidden_dim, sgb_pool_dim),
+                    nn.LayerNorm(normalized_shape=sgb_pool_dim),
+                    nn.GELU(),
+                )
 
         # define final layer.
         if use_sgb_pooling:
-            print("SGB pooling is on. SGB embeddings will be concatenated with Sample embeddings.")
             prediction_input_dim = sgb_model_dim + sgb_pool_dim  # concatentaed dim
         else:
             prediction_input_dim = sgb_model_dim
 
-        self.prediction_layer = nn.Sequential(
-            ResidualBlock(prediction_input_dim, hidden_dim, dropout_rate, add_residual=False),
-            ResidualBlock(hidden_dim, hidden_dim, dropout_rate, add_residual=False),
-            ResidualBlock(hidden_dim, 1, 0.0, add_residual=False),
-        )
-        self.final_reshape_layer = nn.Flatten(start_dim=-2, end_dim=-1)
+        if dropout_rate > 0.0:
+            self.prediction_layer = nn.Sequential(
+                nn.Linear(prediction_input_dim, hidden_dim),
+                nn.LayerNorm(normalized_shape=hidden_dim),
+                nn.GELU(),
+                ChannelwiseDropout(dropout_rate),
+                nn.Linear(hidden_dim, 1),
+                nn.Flatten(start_dim=-2, end_dim=-1),
+            )
+        else:
+            self.prediction_layer = nn.Sequential(
+                nn.Linear(prediction_input_dim, hidden_dim),
+                nn.LayerNorm(normalized_shape=hidden_dim),
+                nn.GELU(),
+                nn.Linear(hidden_dim, 1),
+                nn.Flatten(start_dim=-2, end_dim=-1),
+            )
 
         self.init_weights(init_rng, weight_decay_compatible)
-        print(self)
 
     def forward(self, g: Tensor, marker_padding_mask: Tensor, sgb_padding_mask: Tensor) -> Tensor:
         """
@@ -121,6 +136,5 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
         else:
             logits = self.prediction_layer(x)                                      # shape (*, S)
 
-        logits = self.final_reshape_layer(logits)
         logits = logits.masked_fill(~sgb_padding_mask, float("-inf"))
         return logits
