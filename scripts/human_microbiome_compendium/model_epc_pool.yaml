@@ -3,4 +3,4 @@ sgb_model_dim: 32
 hidden_dim: 64
 use_sgb_pooling: True
 sgb_pool_dim: 64
-dropout_rate: 0.1
+dropout_rate: 0.0
