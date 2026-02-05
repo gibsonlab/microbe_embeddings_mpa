@@ -57,7 +57,7 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
         # self.marker_transform_layer = MarkerEmbedTransform(marker_embed_dim, sgb_model_dim, weight_decay_compatible, init_rng)
         self.marker_transform_layer = nn.Sequential(
             ResidualBlock(marker_embed_dim, hidden_dim, dropout_rate, add_residual=False),
-            ResidualBlock(hidden_dim, hidden_dim, dropout_rate, add_residual=True),
+            ResidualBlock(hidden_dim, hidden_dim, dropout_rate, add_residual=False),
             ResidualBlock(hidden_dim, sgb_model_dim, 0.0, add_residual=False),
         )
 
@@ -67,7 +67,7 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
 
         self.species_transform_layer = nn.Sequential(
             ResidualBlock(sgb_model_dim, hidden_dim, dropout_rate, add_residual=False),
-            ResidualBlock(hidden_dim, hidden_dim, dropout_rate, add_residual=True),
+            ResidualBlock(hidden_dim, hidden_dim, dropout_rate, add_residual=False),
             ResidualBlock(hidden_dim, sgb_pool_dim, 0.0, add_residual=False),
         )
 
@@ -79,7 +79,7 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
 
         self.prediction_layer = nn.Sequential(
             ResidualBlock(prediction_input_dim, hidden_dim, dropout_rate, add_residual=False),
-            ResidualBlock(hidden_dim, hidden_dim, dropout_rate, add_residual=True),
+            ResidualBlock(hidden_dim, hidden_dim, dropout_rate, add_residual=False),
             ResidualBlock(hidden_dim, 1, 0.0, add_residual=False),
         )
         self.final_reshape_layer = nn.Flatten(start_dim=-2, end_dim=-1)
