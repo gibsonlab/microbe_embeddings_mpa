@@ -73,7 +73,7 @@ class MicrobiomeSampleEmbedding:
 
         return asv_ids, features, abunds
 
-    def get_embedded_asv_ids(self, sample: MicrobiomeSample) -> List[str]:
+    def get_abundance_profile_lightweight(self, sample: MicrobiomeSample) -> Tuple[List[str], np.ndarray]:
         """
         A smaller "lightweight" version of convert(), that only returns the subset list of ASV IDS with embeddings from the sample.
         :param sample:
@@ -81,25 +81,26 @@ class MicrobiomeSampleEmbedding:
         """
         # Get ASV data for this sample
         # Note: asv_id_subset should automatically filter out ASVs without a valid embedding stored in the h5 file.
-        asv_ids_full = sample.asv_ids
+        asv_ids_full, abunds_full = sample.relative_abundance_array(asv_id_subset=self.asv_id_subset)
         asv_ids_subset = []
+        abunds_subset = []
 
         # Fill in the tensors
         if self.cache_embeddings:
-            asv_ids_subset = [
-                asv_id
-                for asv_id in asv_ids_full
-                if asv_id in self.embedding_cache
-            ]
+            for asv_id, asv_abund in zip(asv_ids_full, abunds_full):
+                if asv_id in self.embedding_cache:
+                    asv_ids_subset.append(asv_id)
+                    abunds_subset.append(asv_abund)
         else:
             # Load embeddings from file
             with h5py.File(self.embedding_file, "r") as h5_file:
-                asv_ids_subset = [
-                    asv_id
-                    for asv_id in asv_ids_full
-                    if asv_id in h5_file
-                ]
-        return asv_ids_subset
+                for asv_id, asv_abund in zip(asv_ids_full, abunds_full):
+                    if asv_id in h5_file:
+                        asv_ids_subset.append(asv_id)
+                        abunds_subset.append(asv_abund)
+
+        abunds_subset = np.array(abunds_subset, dtype=float)
+        return asv_ids_subset, abunds_subset / np.sum(abunds_subset)
 
 
 # =========================================================================
