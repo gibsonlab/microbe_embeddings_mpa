@@ -117,11 +117,28 @@ def train_and_save_model(
     )
     optimizer = optim.Adam(torch_embedding_model.parameters(), lr=lr,
                            weight_decay=1e-3)  # Note: weight_decay is L2 regularization.
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+
+    from torch.optim.lr_scheduler import SequentialLR, LinearLR, CosineAnnealingLR
+    warmup_epochs = 5
+
+    warmup_scheduler = LinearLR(
         optimizer,
-        T_max=n_epochs,
-        eta_min=1e-6  # Very small final LR
+        start_factor=0.01,  # Start at 1% of lr
+        total_iters=warmup_epochs
     )
+
+    cosine_scheduler = CosineAnnealingLR(
+        optimizer,
+        T_max=n_epochs - warmup_epochs,
+        eta_min=1e-6
+    )
+
+    scheduler = SequentialLR(
+        optimizer,
+        schedulers=[warmup_scheduler, cosine_scheduler],
+        milestones=[warmup_epochs]
+    )
+
     torch.set_float32_matmul_precision('high')
 
     """ output files -- preparation """
