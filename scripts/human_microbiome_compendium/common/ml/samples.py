@@ -120,6 +120,7 @@ class MicrobiomeProject:
             assert header_line.startswith("asv\t"), f"Unrecognized format for abundance table: {project_id}"
 
             abund_sample_order = header_line.strip().split("\t")[1:]
+            assert set(abund_sample_order) == set(samples.keys())
             print(abund_sample_order)
             for row in abund_file:
                 tokens = row.strip().split("\t")
