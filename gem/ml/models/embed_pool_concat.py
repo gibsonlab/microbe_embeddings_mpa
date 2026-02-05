@@ -14,7 +14,7 @@ class ResidualBlock(nn.Module):
     def __init__(self, input_dim, output_dim, dropout_rate, add_residual=False):
         super().__init__()
         self.fc = nn.Linear(input_dim, output_dim)
-        self.ln = nn.LayerNorm(output_dim)
+        self.ln = nn.LayerNorm(normalized_shape=output_dim)
         self.gelu = nn.GELU()
         self.dropout = ChannelwiseDropout(dropout_rate)
         self.add_residual = add_residual
@@ -26,6 +26,8 @@ class ResidualBlock(nn.Module):
         x = self.gelu(x)
         x = self.dropout(x)
         if self.add_residual:
+            print(identity.shape)
+            print(x.shape)
             return x + identity  # Residual connection
         else:
             return x
