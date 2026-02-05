@@ -230,17 +230,13 @@ def train_test_split_mincut_approximation(
         print("Weighted Graph will use weight = (1 - d/d_max) as similarity metric.")
         sim_mat: np.ndarray = distance_matrix_to_similarity_matrix(distance_matrix)
         def sim_fn(sample1: MicrobiomeSample, sample2: MicrobiomeSample):
-            sim_values = []
-            for asv1, asv2 in itertools.product(sample1.asv_ids, sample2.asv_ids):
-                if asv1 in distance_matrix.asv_to_idx and asv2 in distance_matrix.asv_to_idx:
-                    i1 = distance_matrix.get_asv_index(asv1)
-                    i2 = distance_matrix.get_asv_index(asv2)
-                    sim_value = sim_mat[i1, i2]
-                    sim_values.append(sim_value)
-            if len(sim_values) > 0:
-                return np.mean(sim_values)
-            else:
+            sample1_indices = [distance_matrix.get_asv_index(asv_id) for asv_id in sample1.asv_ids if distance_matrix.contains_asv(asv_id)]
+            sample2_indices = [distance_matrix.get_asv_index(asv_id) for asv_id in sample2.asv_ids if distance_matrix.contains_asv(asv_id)]
+            if len(sample1_indices) == 0 or len(sample2_indices) == 0:
                 return 0.0
+            submatrix = sim_mat[np.ix_(sample1_indices, sample2_indices)]
+            triu_entries = submatrix[np.triu_indices(submatrix.shape[0], k=1)]
+            return np.mean(triu_entries)
     else:
         print("Weighted Graph will use weight = JACCARD(i,j) as similarity metric.")
         sim_fn = lambda sample1, sample2: jaccard_similarity(
