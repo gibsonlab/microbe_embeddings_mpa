@@ -1,8 +1,9 @@
 torch==2.7.0
-tensordict
-psutil
 flash-attn==2.7.4.post1
 evo-model
+tensordict
+transformers
+psutil
 numpy
 pandas
 scikit-learn
