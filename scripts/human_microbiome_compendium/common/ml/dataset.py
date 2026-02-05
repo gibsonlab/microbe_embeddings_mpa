@@ -68,9 +68,6 @@ class MicrobiomeSampleEmbedding:
                 for asv_idx, asv_id in enumerate(asv_ids):
                     features[asv_idx] = h5_file[asv_id][:]
 
-        print("sample: {}".format(sample.sample_id))
-        print("asv_ids = {}".format(asv_ids))
-        print("abunds = {}".format(abunds))
         return asv_ids, features, abunds
 
     def get_abundance_profile_lightweight(self, sample: MicrobiomeSample) -> Tuple[List[str], np.ndarray]:
