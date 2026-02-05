@@ -26,8 +26,6 @@ class ResidualBlock(nn.Module):
         x = self.gelu(x)
         x = self.dropout(x)
         if self.add_residual:
-            print(identity.shape)
-            print(x.shape)
             return x + identity  # Residual connection
         else:
             return x
