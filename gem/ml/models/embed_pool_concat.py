@@ -10,6 +10,23 @@ from .base import LinearInitializedModule
 from .perm_invariant_blocks import SumAlongDim, ChannelwiseDropout
 
 
+class ResidualBlock(nn.Module):
+    def __init__(self, input_dim, output_dim, dropout_rate):
+        super().__init__()
+        self.fc = nn.Linear(input_dim, output_dim)
+        self.ln = nn.LayerNorm(output_dim)
+        self.gelu = nn.GELU()
+        self.dropout = ChannelwiseDropout(dropout_rate)
+
+    def forward(self, x):
+        identity = x
+        x = self.fc(x)
+        x = self.ln(x)
+        x = self.gelu(x)
+        x = self.dropout(x)
+        return x + identity  # Residual connection
+
+
 class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
     """
     A simple model which applies a MLP to each marker, and pools the markers to form features per species.
@@ -34,62 +51,21 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
         super().__init__()
         print(f"Initializing model with dropout_rate = {dropout_rate}")
         # self.marker_transform_layer = MarkerEmbedTransform(marker_embed_dim, sgb_model_dim, weight_decay_compatible, init_rng)
-        if dropout_rate > 0.0:
-            self.marker_transform_layer = nn.Sequential(
-                nn.Linear(marker_embed_dim, hidden_dim),
-                nn.LayerNorm(normalized_shape=hidden_dim),
-                nn.GELU(),
-                ChannelwiseDropout(dropout_rate),
-                nn.Linear(hidden_dim, hidden_dim),
-                nn.LayerNorm(normalized_shape=hidden_dim),
-                nn.GELU(),
-                ChannelwiseDropout(dropout_rate),
-                nn.Linear(hidden_dim, sgb_model_dim),
-                nn.LayerNorm(normalized_shape=sgb_model_dim),
-                nn.GELU(),
-            )
-        else:
-            self.marker_transform_layer = nn.Sequential(
-                nn.Linear(marker_embed_dim, hidden_dim),
-                nn.LayerNorm(normalized_shape=hidden_dim),
-                nn.GELU(),
-                nn.Linear(hidden_dim, hidden_dim),
-                nn.LayerNorm(normalized_shape=hidden_dim),
-                nn.GELU(),
-                nn.Linear(hidden_dim, sgb_model_dim),
-                nn.LayerNorm(normalized_shape=sgb_model_dim),
-                nn.GELU(),
-            )
+        self.marker_transform_layer = nn.Sequential(
+            ResidualBlock(marker_embed_dim, hidden_dim, dropout_rate),
+            ResidualBlock(hidden_dim, hidden_dim, dropout_rate),
+            ResidualBlock(hidden_dim, sgb_model_dim, 0.0),
+        )
 
         self.use_sgb_pooling = use_sgb_pooling
         if use_sgb_pooling:
             assert sgb_pool_dim > 0, "If pooling is turned on, sgb_pool_dim must be specified and greater than 0."
-            if dropout_rate > 0.0:
-                self.species_transform_layer = nn.Sequential(
-                    nn.Linear(sgb_model_dim, hidden_dim),
-                    nn.LayerNorm(normalized_shape=hidden_dim),
-                    nn.GELU(),
-                    ChannelwiseDropout(dropout_rate),
-                    nn.Linear(hidden_dim, hidden_dim),
-                    nn.LayerNorm(normalized_shape=hidden_dim),
-                    nn.GELU(),
-                    ChannelwiseDropout(dropout_rate),
-                    nn.Linear(hidden_dim, sgb_pool_dim),
-                    nn.LayerNorm(normalized_shape=sgb_pool_dim),
-                    nn.GELU(),
-                )
-            else:
-                self.species_transform_layer = nn.Sequential(
-                    nn.Linear(sgb_model_dim, hidden_dim),
-                    nn.LayerNorm(normalized_shape=hidden_dim),
-                    nn.GELU(),
-                    nn.Linear(hidden_dim, hidden_dim),
-                    nn.LayerNorm(normalized_shape=hidden_dim),
-                    nn.GELU(),
-                    nn.Linear(hidden_dim, sgb_pool_dim),
-                    nn.LayerNorm(normalized_shape=sgb_pool_dim),
-                    nn.GELU(),
-                )
+
+        self.species_transform_layer = nn.Sequential(
+            ResidualBlock(sgb_model_dim, hidden_dim, dropout_rate),
+            ResidualBlock(hidden_dim, hidden_dim, dropout_rate),
+            ResidualBlock(hidden_dim, sgb_pool_dim, 0.0),
+        )
 
         # define final layer.
         if use_sgb_pooling:
@@ -97,29 +73,11 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
         else:
             prediction_input_dim = sgb_model_dim
 
-        if dropout_rate > 0.0:
-            self.prediction_layer = nn.Sequential(
-                nn.Linear(prediction_input_dim, hidden_dim),
-                nn.LayerNorm(normalized_shape=hidden_dim),
-                nn.GELU(),
-                nn.Linear(hidden_dim, hidden_dim),
-                nn.LayerNorm(normalized_shape=hidden_dim),
-                nn.GELU(),
-                ChannelwiseDropout(dropout_rate),
-                nn.Linear(hidden_dim, 1),
-                nn.Flatten(start_dim=-2, end_dim=-1),
-            )
-        else:
-            self.prediction_layer = nn.Sequential(
-                nn.Linear(prediction_input_dim, hidden_dim),
-                nn.LayerNorm(normalized_shape=hidden_dim),
-                nn.GELU(),
-                nn.Linear(hidden_dim, hidden_dim),
-                nn.LayerNorm(normalized_shape=hidden_dim),
-                nn.GELU(),
-                nn.Linear(hidden_dim, 1),
-                nn.Flatten(start_dim=-2, end_dim=-1),
-            )
+        self.prediction_layer = nn.Sequential(
+            ResidualBlock(prediction_input_dim, hidden_dim, dropout_rate),
+            ResidualBlock(hidden_dim, hidden_dim, dropout_rate),
+            ResidualBlock(hidden_dim, 1, 0.0),
+        )
 
         self.init_weights(init_rng, weight_decay_compatible)
 
