@@ -85,6 +85,7 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
         self.final_reshape_layer = nn.Flatten(start_dim=-2, end_dim=-1)
 
         self.init_weights(init_rng, weight_decay_compatible)
+        print(self)
 
     def forward(self, g: Tensor, marker_padding_mask: Tensor, sgb_padding_mask: Tensor) -> Tensor:
         """
