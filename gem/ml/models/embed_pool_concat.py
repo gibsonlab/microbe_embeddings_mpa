@@ -11,12 +11,13 @@ from .perm_invariant_blocks import SumAlongDim, ChannelwiseDropout
 
 
 class ResidualBlock(nn.Module):
-    def __init__(self, input_dim, output_dim, dropout_rate):
+    def __init__(self, input_dim, output_dim, dropout_rate, add_residual=False):
         super().__init__()
         self.fc = nn.Linear(input_dim, output_dim)
         self.ln = nn.LayerNorm(output_dim)
         self.gelu = nn.GELU()
         self.dropout = ChannelwiseDropout(dropout_rate)
+        self.add_residual = add_residual
 
     def forward(self, x):
         identity = x
@@ -24,7 +25,10 @@ class ResidualBlock(nn.Module):
         x = self.ln(x)
         x = self.gelu(x)
         x = self.dropout(x)
-        return x + identity  # Residual connection
+        if self.add_residual:
+            return x + identity  # Residual connection
+        else:
+            return x
 
 
 class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
@@ -52,9 +56,9 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
         print(f"Initializing model with dropout_rate = {dropout_rate}")
         # self.marker_transform_layer = MarkerEmbedTransform(marker_embed_dim, sgb_model_dim, weight_decay_compatible, init_rng)
         self.marker_transform_layer = nn.Sequential(
-            ResidualBlock(marker_embed_dim, hidden_dim, dropout_rate),
-            ResidualBlock(hidden_dim, hidden_dim, dropout_rate),
-            ResidualBlock(hidden_dim, sgb_model_dim, 0.0),
+            ResidualBlock(marker_embed_dim, hidden_dim, dropout_rate, add_residual=False),
+            ResidualBlock(hidden_dim, hidden_dim, dropout_rate, add_residual=True),
+            ResidualBlock(hidden_dim, sgb_model_dim, 0.0, add_residual=False),
         )
 
         self.use_sgb_pooling = use_sgb_pooling
@@ -62,9 +66,9 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
             assert sgb_pool_dim > 0, "If pooling is turned on, sgb_pool_dim must be specified and greater than 0."
 
         self.species_transform_layer = nn.Sequential(
-            ResidualBlock(sgb_model_dim, hidden_dim, dropout_rate),
-            ResidualBlock(hidden_dim, hidden_dim, dropout_rate),
-            ResidualBlock(hidden_dim, sgb_pool_dim, 0.0),
+            ResidualBlock(sgb_model_dim, hidden_dim, dropout_rate, add_residual=False),
+            ResidualBlock(hidden_dim, hidden_dim, dropout_rate, add_residual=True),
+            ResidualBlock(hidden_dim, sgb_pool_dim, 0.0, add_residual=False),
         )
 
         # define final layer.
@@ -74,9 +78,9 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
             prediction_input_dim = sgb_model_dim
 
         self.prediction_layer = nn.Sequential(
-            ResidualBlock(prediction_input_dim, hidden_dim, dropout_rate),
-            ResidualBlock(hidden_dim, hidden_dim, dropout_rate),
-            ResidualBlock(hidden_dim, 1, 0.0),
+            ResidualBlock(prediction_input_dim, hidden_dim, dropout_rate, add_residual=False),
+            ResidualBlock(hidden_dim, hidden_dim, dropout_rate, add_residual=True),
+            ResidualBlock(hidden_dim, 1, 0.0, add_residual=False),
         )
 
         self.init_weights(init_rng, weight_decay_compatible)
