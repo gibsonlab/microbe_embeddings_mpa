@@ -30,16 +30,28 @@ class ASVDistanceMatrix:
         with open(aln_fasta, 'r') as handle:
             for record in SeqIO.parse(handle, "fasta"):
                 aligned_sequences[record.id] = str(record.seq).upper()
-        id_ordering = sorted(aligned_sequences.keys())
 
-        # Fill in the matrix
+        id_ordering = sorted(aligned_sequences.keys())
         N = len(id_ordering)
-        matrix = np.zeros(shape=(N, N), dtype=int)
+
+        # Convert sequences to numeric array for vectorized operations
+        print(f"Converting sequences to numeric array...")
+        seq_length = len(aligned_sequences[id_ordering[0]])
+        seq_array = np.zeros((N, seq_length), dtype=np.uint8)
+
+        for i, asv_id in enumerate(id_ordering):
+            seq_array[i] = np.frombuffer(aligned_sequences[asv_id].encode('ascii'), dtype=np.uint8)
+
+        # Vectorized hamming distance calculation
         print(f"Populating {N} x {N} distance matrix...")
-        for (i, asv_i), (j, asv_j) in tqdm(itertools.combinations(enumerate(id_ordering), r=2), total=N*(N-1) // 2):
-            _d = hamming_distance(aligned_sequences[asv_i], aligned_sequences[asv_j])
-            matrix[i, j] = _d
-            matrix[j, i] = _d
+        matrix = np.zeros((N, N), dtype=int)
+
+        for i in tqdm(range(N)):
+            # Calculate distances from sequence i to all sequences at once
+            diffs = seq_array != seq_array[i:i + 1]
+            distances = diffs.sum(axis=1)
+            matrix[i] = distances
+
         print("Done.")
         return ASVDistanceMatrix(id_ordering, matrix)
 
