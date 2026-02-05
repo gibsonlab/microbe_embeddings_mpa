@@ -235,8 +235,7 @@ def train_test_split_mincut_approximation(
             if len(sample1_indices) == 0 or len(sample2_indices) == 0:
                 return 0.0
             submatrix = sim_mat[np.ix_(sample1_indices, sample2_indices)]
-            triu_entries = submatrix[np.triu_indices(submatrix.shape[0], k=1)]
-            return np.mean(triu_entries)
+            return np.mean(submatrix)
     else:
         print("Weighted Graph will use weight = JACCARD(i,j) as similarity metric.")
         sim_fn = lambda sample1, sample2: jaccard_similarity(
