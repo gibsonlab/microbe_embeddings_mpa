@@ -15,7 +15,7 @@ if ! [ -d "${BASEDIR}/${dset_name}" ]; then
 fi
 
 for embed_name in "dnabert-s" "evo2_7b_hyena10" "evo-1-8k-base_hyena5"; do
-  bash 2_embed.sh "$embed_name" "$dset_name"
+#  bash 2_embed.sh "$embed_name" "$dset_name"
 #  bash 3_train_model_V2.sh "$embed_name" "$dset_name"
   bash 3_train_model_epc.sh "$embed_name" "$dset_name"
   bash 3_train_model_epc_nopool.sh "$embed_name" "$dset_name"
