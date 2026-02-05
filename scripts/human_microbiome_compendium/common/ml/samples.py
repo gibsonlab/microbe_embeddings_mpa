@@ -120,10 +120,10 @@ class MicrobiomeProject:
             assert header_line.startswith("asv\t"), f"Unrecognized format for abundance table: {project_id}"
 
             abund_sample_order = header_line.strip().split("\t")[1:]
+            print(abund_sample_order)
             for row in abund_file:
                 tokens = row.strip().split("\t")
                 print("next tokens: {}".format(tokens))
-                exit(1)
                 asv_id = tokens[0]
                 assert len(abund_sample_order) == len(tokens) - 1, "Mismatch in the number of abundance tokens!"
                 for sample_id, abund_token in zip(abund_sample_order, tokens[1:]):
@@ -132,4 +132,6 @@ class MicrobiomeProject:
                         asv_count = int(float(abund_token))
                         if asv_count > 0:
                             sample_obj.set_count(asv_id, asv_count)
+
+                exit(1)
         return [samples[s_id] for s_id in sample_id_subset]
