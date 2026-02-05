@@ -115,11 +115,13 @@ class MicrobiomeProject:
         # Parse the large abundance table. (this contains more samples than we want)
         with zstd.open(abundance_table_dir / f"{project_id}.txt.zst", "rt") as abund_file:
             header_line = abund_file.readline()
+            print("header line: {}".format(header_line))
             assert header_line.startswith("asv\t"), f"Unrecognized format for abundance table: {project_id}"
 
             abund_sample_order = header_line.strip().split("\t")[1:]
             for row in abund_file:
                 tokens = row.strip().split("\t")
+                print("next tokens: {}".format(tokens))
                 asv_id = tokens[0]
                 assert len(abund_sample_order) == len(tokens) - 1, "Mismatch in the number of abundance tokens!"
                 for sample_id, abund_token in zip(abund_sample_order, tokens[1:]):
