@@ -113,7 +113,6 @@ class MicrobiomeProject:
             samples[sample_id] = MicrobiomeSample(sample_id, sample_subset_table)
 
         # Parse the large abundance table. (this contains more samples than we want)
-        print(abundance_table_dir / f"{project_id}.txt.zst")
         with zstd.open(abundance_table_dir / f"{project_id}.txt.zst", "rt") as abund_file:
             header_line = abund_file.readline()
             assert header_line.startswith("asv\t"), f"Unrecognized format for abundance table: {project_id}"
@@ -131,8 +130,4 @@ class MicrobiomeProject:
                         if asv_count > 0:
                             sample_obj.set_count(asv_id, asv_count)
 
-        sid = next(iter(sample_id_subset))
-        print(sid, ":", samples[sid].asv_ids)
-        print(samples[sid].relative_abundance_array())
-        exit(1)
         return [samples[s_id] for s_id in sample_id_subset]

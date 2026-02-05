@@ -50,6 +50,8 @@ class MicrobiomeSampleEmbedding:
         # Get ASV data for this sample
         # Note: asv_id_subset should automatically filter out ASVs without a valid embedding stored in the h5 file.
         asv_ids, abunds = sample.relative_abundance_array(asv_id_subset=self.asv_id_subset)
+        if len(asv_ids) == 0:
+            raise Exception("No ASV found in the intersection between embedded ASV IDS and sample.")
 
         # Initialize tensors with padding
         n = len(asv_ids)
@@ -59,16 +61,11 @@ class MicrobiomeSampleEmbedding:
         if self.cache_embeddings:
             # Use cached embeddings
             for asv_idx, asv_id in enumerate(asv_ids):
-                if asv_id not in self.embedding_cache:
-                    raise KeyError(
-                        f"ASV ID '{asv_id}' not found in cache, loaded from '{self.embedding_file}'. Was it pre-computed properly?")
                 features[asv_idx] = self.embedding_cache[asv_id]
         else:
             # Load embeddings from file
             with h5py.File(self.embedding_file, "r") as h5_file:
                 for asv_idx, asv_id in enumerate(asv_ids):
-                    if asv_id not in h5_file:
-                        raise KeyError(f"Unexpected error: ASV ID '{asv_id}' not found in embeddings file '{self.embedding_file}'.")
                     features[asv_idx] = h5_file[asv_id][:]
 
         return asv_ids, features, abunds
@@ -81,25 +78,7 @@ class MicrobiomeSampleEmbedding:
         """
         # Get ASV data for this sample
         # Note: asv_id_subset should automatically filter out ASVs without a valid embedding stored in the h5 file.
-        asv_ids_full, abunds_full = sample.relative_abundance_array(asv_id_subset=self.asv_id_subset)
-        asv_ids_subset = []
-        abunds_subset = []
-
-        # Fill in the tensors
-        if self.cache_embeddings:
-            for asv_id, asv_abund in zip(asv_ids_full, abunds_full):
-                if asv_id in self.embedding_cache:
-                    asv_ids_subset.append(asv_id)
-                    abunds_subset.append(asv_abund)
-        else:
-            # Load embeddings from file
-            with h5py.File(self.embedding_file, "r") as h5_file:
-                for asv_id, asv_abund in zip(asv_ids_full, abunds_full):
-                    if asv_id in h5_file:
-                        asv_ids_subset.append(asv_id)
-                        abunds_subset.append(asv_abund)
-
-        abunds_subset = np.array(abunds_subset, dtype=float)
+        asv_ids_subset, abunds_subset = sample.relative_abundance_array(asv_id_subset=self.asv_id_subset)
         return asv_ids_subset, abunds_subset / np.sum(abunds_subset)
 
 
