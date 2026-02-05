@@ -182,6 +182,36 @@ def train_test_split_mincut_approximation(
     test_fraction: float,
     distance_matrix: Optional[ASVDistanceMatrix] = None,
 ):
+    """
+    Construct a weighted undirected graph G, where nodes are samples (to be split into test/train), and weights are
+    w_ij = SIMILARITY(sample_i, sample_j).
+
+    SIMILARITY is defined in one of two ways:
+
+    1) If distance_matrix is None, then SIMILARITY is the Jaccard overlap similarity of ASV Identifiers. (not ASV sequences)
+    2) If distance_matrix is given, then SIMILARITY is equal to 1-(DIST_{i,j}/D_MAX), where DIST_{i,j} is the mean distance between all pairs of ASVs in i and j.
+    Namely: DIST_{i,j} = 1/(|i||j|) * \SUM_{asv1 in i} \SUM_{asv2 in j} distance(asv1, asv2)
+
+    The algorithm attempts to find a min-cutset pair amongst all train/test sets of the specified size.
+
+    The algorithm works as follows: First, break G into connected components, and list them out in increasing order of size.
+    For each connected component cc_i, we greedily include it into the training set (or test set, if training is almost full), until |cc_i| is bigger than the remaining capacity.
+
+    To fill the remaining capacity, we do one of the following to fill up the rest of the capacity of train/test.
+
+    1) Greedily separate remaining connected components (if there is more than 1 left) into either training or test. OR
+    2) Perform a Fieldler vector-based sorting of the connected component (if there is only 1 CC left) to find extremal sets.
+
+    This function plots the cut-weights (similarity metric).
+
+    :param sample_df:
+    :param abundance_table_dir:
+    :param asv_id_subset:
+    :param train_fraction:
+    :param test_fraction:
+    :param distance_matrix:
+    :return:
+    """
     # Collect the list of samples across all projects.
     proj_ids = list(pd.unique(sample_df['project']))
     all_samples: List[MicrobiomeSample] = []
@@ -202,11 +232,15 @@ def train_test_split_mincut_approximation(
         def sim_fn(sample1: MicrobiomeSample, sample2: MicrobiomeSample):
             sim_values = []
             for asv1, asv2 in itertools.product(sample1.asv_ids, sample2.asv_ids):
-                i1 = distance_matrix.get_asv_index(asv1)
-                i2 = distance_matrix.get_asv_index(asv2)
-                sim_value = sim_mat[i1, i2]
-                sim_values.append(sim_value)
-            return np.mean(sim_values)
+                if asv1 in distance_matrix.asv_to_idx and asv2 in distance_matrix.asv_to_idx:
+                    i1 = distance_matrix.get_asv_index(asv1)
+                    i2 = distance_matrix.get_asv_index(asv2)
+                    sim_value = sim_mat[i1, i2]
+                    sim_values.append(sim_value)
+            if len(sim_values) > 0:
+                return np.mean(sim_values)
+            else:
+                return 0.0
     else:
         print("Weighted Graph will use weight = JACCARD(i,j) as similarity metric.")
         sim_fn = lambda sample1, sample2: jaccard_similarity(

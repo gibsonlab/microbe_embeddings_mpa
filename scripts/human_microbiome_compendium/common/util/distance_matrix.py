@@ -13,6 +13,9 @@ class ASVDistanceMatrix:
         self.asv_to_idx = {asv_id: i for i, asv_id in enumerate(self.id_ordering)}
         self.matrix = matrix
 
+    def contains_asv(self, asv_id: str) -> bool:
+        return asv_id in self.asv_to_idx
+
     def get_asv_index(self, asv_id: str) -> int:
         return self.asv_to_idx[asv_id]
 
