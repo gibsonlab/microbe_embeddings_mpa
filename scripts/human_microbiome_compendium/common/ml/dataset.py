@@ -70,6 +70,7 @@ class MicrobiomeSampleEmbedding:
 
         print("sample: {}".format(sample.sample_id))
         print("asv_ids = {}".format(asv_ids))
+        print("abunds = {}".format(abunds))
         return asv_ids, features, abunds
 
     def get_abundance_profile_lightweight(self, sample: MicrobiomeSample) -> Tuple[List[str], np.ndarray]:
