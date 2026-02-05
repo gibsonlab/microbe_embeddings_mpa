@@ -165,6 +165,7 @@ def collate_asv_profiles(
         features_batch[b_idx, :S, :] = embeddings
         asv_mask_batch[b_idx, :S] = True
         targets_batch[b_idx, :S] = targets
+        print(targets_batch[b_idx])
 
     # sample_ids, training_batch_features, training_marker_mask, training_taxa_mask, training_y
     # features: (batch_sz, S_max, M, E), where M=1
