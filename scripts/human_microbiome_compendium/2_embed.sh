@@ -18,6 +18,13 @@ ASV_SEQ_PROCESSING_DIR="${NOTEBOOK_CACHE}/asv_16s_processing"
 EMBEDDING_DIR="${NOTEBOOK_CACHE}/embeddings"
 mkdir -p "${EMBEDDING_DIR}"
 
+OUT_FNAME="${embed_model_name}.h5"
+
+if [ -f "${EMBEDDING_DIR}/${OUT_FNAME}" ]; then
+  echo "Embedding file already exists: ${EMBEDDING_DIR}/${OUT_FNAME}"
+  exit 0
+fi
+
 # Bash function, which finds the project root directory.
 # This function repeatedly traverses upwards, until it finds an ancestor with the subdirectory "gem".
 find_gem_project_dir() {
@@ -61,7 +68,7 @@ if [[ $embed_model_name == evo2* ]]; then
         "${APPTAINER_IMAGE}" \
         python embed.py \
           --asv_fasta_file "/seqs.fasta" \
-          --hdf5_output_path "/out_dir/${embed_model_name}.h5" \
+          --hdf5_output_path "/out_dir/${OUT_FNAME}" \
           --model_name "${embed_model_name}" \
           --embed_batch_size 20 \
           --cuda_device_ids "0"
@@ -72,7 +79,7 @@ else
     HF_TOKEN=$HF_TOKEN \
     python embed.py \
       --asv_fasta_file "${ASV_SEQ_PROCESSING_DIR}/asv_sequences.post_filter.fasta" \
-      --hdf5_output_path "${EMBEDDING_DIR}/${embed_model_name}.h5" \
+      --hdf5_output_path "${EMBEDDING_DIR}/${OUT_FNAME}" \
       --model_name "${embed_model_name}" \
       --embed_batch_size 20 \
       --cuda_device_ids "0"
