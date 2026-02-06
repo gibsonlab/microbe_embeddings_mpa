@@ -7,7 +7,7 @@ if ! [ $# -eq 1 ]; then
   echo "Usage: $0 <dataset>"
   echo "Available dataset names:"
   for dir in "${BASEDIR}"/*; do
-    echo "$(basename "${dir}")"
+    echo "-> $(basename "${dir}")"
   done
   exit 1
 fi
