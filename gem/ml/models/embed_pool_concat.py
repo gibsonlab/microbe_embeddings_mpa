@@ -7,7 +7,7 @@ import torch
 from torch import Tensor, nn
 
 from .base import LinearInitializedModule
-from .perm_invariant_blocks import SumAlongDim, ChannelwiseDropout
+from .perm_invariant_blocks import ChannelwiseDropout
 
 
 class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
@@ -40,10 +40,6 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
                 nn.LayerNorm(normalized_shape=hidden_dim),
                 nn.GELU(),
                 ChannelwiseDropout(dropout_rate),
-                nn.Linear(hidden_dim, hidden_dim),
-                nn.LayerNorm(normalized_shape=hidden_dim),
-                nn.GELU(),
-                ChannelwiseDropout(dropout_rate),
                 nn.Linear(hidden_dim, sgb_model_dim),
                 nn.LayerNorm(normalized_shape=sgb_model_dim),
                 nn.GELU(),
@@ -51,9 +47,6 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
         else:
             self.marker_transform_layer = nn.Sequential(
                 nn.Linear(marker_embed_dim, hidden_dim),
-                nn.LayerNorm(normalized_shape=hidden_dim),
-                nn.GELU(),
-                nn.Linear(hidden_dim, hidden_dim),
                 nn.LayerNorm(normalized_shape=hidden_dim),
                 nn.GELU(),
                 nn.Linear(hidden_dim, sgb_model_dim),
@@ -70,10 +63,6 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
                     nn.LayerNorm(normalized_shape=hidden_dim),
                     nn.GELU(),
                     ChannelwiseDropout(dropout_rate),
-                    nn.Linear(hidden_dim, hidden_dim),
-                    nn.LayerNorm(normalized_shape=hidden_dim),
-                    nn.GELU(),
-                    ChannelwiseDropout(dropout_rate),
                     nn.Linear(hidden_dim, sgb_pool_dim),
                     nn.LayerNorm(normalized_shape=sgb_pool_dim),
                     nn.GELU(),
@@ -81,9 +70,6 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
             else:
                 self.species_transform_layer = nn.Sequential(
                     nn.Linear(sgb_model_dim, hidden_dim),
-                    nn.LayerNorm(normalized_shape=hidden_dim),
-                    nn.GELU(),
-                    nn.Linear(hidden_dim, hidden_dim),
                     nn.LayerNorm(normalized_shape=hidden_dim),
                     nn.GELU(),
                     nn.Linear(hidden_dim, sgb_pool_dim),
@@ -103,20 +89,12 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
                 nn.LayerNorm(normalized_shape=hidden_dim),
                 nn.GELU(),
                 ChannelwiseDropout(dropout_rate),
-                nn.Linear(hidden_dim, hidden_dim),
-                nn.LayerNorm(normalized_shape=hidden_dim),
-                nn.GELU(),
-                ChannelwiseDropout(dropout_rate),
-                ChannelwiseDropout(dropout_rate),
                 nn.Linear(hidden_dim, 1),
                 nn.Flatten(start_dim=-2, end_dim=-1),
             )
         else:
             self.prediction_layer = nn.Sequential(
                 nn.Linear(prediction_input_dim, hidden_dim),
-                nn.LayerNorm(normalized_shape=hidden_dim),
-                nn.GELU(),
-                nn.Linear(hidden_dim, hidden_dim),
                 nn.LayerNorm(normalized_shape=hidden_dim),
                 nn.GELU(),
                 nn.Linear(hidden_dim, 1),
