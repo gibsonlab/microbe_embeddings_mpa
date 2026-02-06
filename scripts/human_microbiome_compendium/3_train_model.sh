@@ -11,15 +11,16 @@
 # Note: this is a Slurm script, meant to be run on ErisXDL compute nodes with GPUs.
 set -e
 
-if ! [ $# -eq 2 ]; then
-  echo "Error: embed_model_name and dataset are required"
-  echo "Usage: $0 <embed_model_name> <dataset>"
+if ! [ $# -eq 3 ]; then
+  echo "Error: embed_model_name, pred_model_name, dataset are required"
+  echo "Usage: $0 <embed_model_name> <pred_model_name> <dataset>"
   exit 1
 fi
 embed_model_name="$1"
-dataset_name="$2"
+pred_model_name="$2"
+dataset_name="$3"
 
-echo "Performing prediction model training for ${embed_model_name} on dataset ${dataset_name} (v2_stack)"
+echo "Performing prediction model training for ${embed_model_name} on dataset ${dataset_name} (${pred_model_name})"
 
 # point to the proper pretrained model embeddings
 BASEDIR="/data/bwh-comppath-seq/youn/human_microbiome_compendium"
@@ -37,14 +38,14 @@ training_set="${DATA_DIR}/train.tsv"
 test_set="${DATA_DIR}/test.tsv"
 
 abundance_dir="/data/cctm/youn/human_microbiome_compendium/asv"
-model_config="./model_v2.yaml"
-n_epochs=100
+model_config="./model_${pred_model_name}.yaml"
+n_epochs=80
 learning_rate=0.0001
-batch_size=10
+batch_size=30
 seed=12345
 
 
-outdir="${DATA_DIR}/trained_models/${embed_model_name}/v2_stack"
+outdir="${DATA_DIR}/trained_models/${embed_model_name}/${pred_model_name}_kl"
 mkdir -p ${outdir}
 
 metadata="$outdir/metadata.txt"
@@ -72,6 +73,6 @@ python train_model.py \
   --seed "$seed" \
   --prefetch-factor 2 \
   --cuda-device "cuda" \
-  --model-version "V2"
+  --model-version "EPC"
 
 echo "Done."
