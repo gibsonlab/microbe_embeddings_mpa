@@ -6,7 +6,9 @@ if ! [ $# -eq 1 ]; then
   echo "Error: dataset is required"
   echo "Usage: $0 <dataset>"
   echo "Available dataset names:"
-  ls -d "${BASEDIR}"
+  for dir in "${BASEDIR}/*"; do
+    echo "$(basename "${dir}")"
+  done
   exit 1
 fi
 dset_name="$1"
