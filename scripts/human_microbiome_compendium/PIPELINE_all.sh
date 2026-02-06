@@ -1,16 +1,16 @@
 #!/bin/bash
 set -e
 
+BASEDIR="/data/bwh-comppath-seq/youn/human_microbiome_compendium"
 if ! [ $# -eq 1 ]; then
   echo "Error: dataset is required"
   echo "Usage: $0 <dataset>"
   echo "Available dataset names:"
-  ls -d */
+  ls -d "${BASEDIR}"
   exit 1
 fi
 dset_name="$1"
 
-BASEDIR="/data/bwh-comppath-seq/youn/human_microbiome_compendium"
 if ! [ -d "${BASEDIR}/${dset_name}" ]; then
   echo "Dataset files for '${dset_name}' do not exist!"
   exit 1
