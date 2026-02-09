@@ -1,2 +1,4 @@
 __pycache__/
 logs/
+.ipynb_checkpoints
+hf_token.txt

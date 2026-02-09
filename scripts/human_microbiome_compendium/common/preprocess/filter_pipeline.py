@@ -10,13 +10,12 @@ from .asvs import get_asv_sequences
 def filter_samples_and_asvs(
         project_metadata: pd.DataFrame,
         sample_metadata: pd.DataFrame,
-        target_project_ids: Set[str],
         abundance_table_dir: Path,
         asv_sequence_file: Path,
 ) -> Tuple[
     pd.DataFrame, pd.DataFrame, Dict[str, str], int
 ]:
-    project_subset, sample_subset = filter_step1_read_counts(project_metadata, sample_metadata, target_project_ids, abundance_table_dir)
+    project_subset, sample_subset = filter_step1_read_counts(project_metadata, sample_metadata, abundance_table_dir)
     asv_id_subset, sample_max_num_asvs, sample_id_subset_post_filter = filter_step2_select_subset_asvs(
         project_subset['project'].to_list(),
         set(sample_subset['srs'].tolist()),
@@ -44,7 +43,6 @@ def filter_samples_and_asvs(
 def filter_step1_read_counts(
         project_metadata: pd.DataFrame,
         sample_metadata: pd.DataFrame,
-        target_project_ids: Set[str],
         abundance_table_dir: Path,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
@@ -53,7 +51,6 @@ def filter_step1_read_counts(
 
     :param project_metadata:
     :param sample_metadata:
-    :param target_project_ids:
     :param abundance_table_dir: The directory containing the HMC sample information.
     """
     project_subset = project_metadata
@@ -84,8 +81,8 @@ def filter_step1_read_counts(
         print(f"[Project {proj_id}] Read count statistics:")
         print(sample_project_section['read_counts'].describe().to_frame())
 
-        read_count_ub = np.quantile(sample_project_section['read_counts'], q=0.975)
-        read_count_lb = np.quantile(sample_project_section['read_counts'], q=0.025)
+        read_count_ub = np.quantile(sample_project_section['read_counts'], q=0.950)
+        read_count_lb = np.quantile(sample_project_section['read_counts'], q=0.050)
         print(f"[Project {proj_id}] Using read count threshold of {read_count_lb} < x < {read_count_ub}")
         sample_project_section = sample_project_section.loc[
             (sample_project_section['read_counts'] <= read_count_ub) & (
@@ -167,7 +164,7 @@ def filter_step2_select_subset_asvs(
     Also, for memory constraints during training, filter by 'max_num_asv'.
     """
     min_num_asv = 50
-    max_num_asv = 400
+    max_num_asv = 250
     for project_id, project_table in project_asv_tables.items():
         num_asv_per_sample = np.sum(project_table > 0, axis=0)
         samples_with_lb_asvs = num_asv_per_sample.loc[

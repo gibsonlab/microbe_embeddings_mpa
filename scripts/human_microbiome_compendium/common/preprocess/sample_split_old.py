@@ -101,7 +101,7 @@ def train_test_split_mincut_approximation(
         proj_sample_subset_ids = set(proj_section['srs'])
         all_samples = all_samples + [s for s in proj.samples if s.sample_id in proj_sample_subset_ids]
 
-    print(f"Splitting {len(all_samples)} samples found in projects: {proj_ids}")
+    print(f"[FAIR SPLIT] Splitting {len(all_samples)} samples found in projects: {proj_ids}")
 
     # Compute weighted adjacency matrix, A[i,j] = # of ASVs shared by sample i and j.
     n_samples = len(all_samples)
