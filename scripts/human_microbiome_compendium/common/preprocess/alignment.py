@@ -1,6 +1,86 @@
 import sys
 import subprocess
+from typing import Set
 from pathlib import Path
+from Bio import SeqIO
+from Bio.Seq import Seq
+
+
+def parse_mothur_bad_ids(
+        filepath: Path
+) -> Set[str]:
+    with open(filepath, "rt") as f:
+        return set(line.strip() for line in f)
+
+
+def convert_mother_alignment(mothur_aln_path: Path, out_path: Path, bad_ids: Set[str]):
+    with open(mothur_aln_path, "rt") as read_f, out_path.open("wt") as out_f:
+        for record in SeqIO.parse(read_f, "fasta"):
+            if record.id in bad_ids:
+                print(f"Skipping conversion of {record.id} to gapped FASTA output!")
+                continue
+
+            record.seq = Seq(str(record.seq).replace('.', '-'))
+            out_f.write(record)
+
+
+def run_mothur(
+        in_fasta: Path,
+        out_fasta: Path,
+        reference_16s_path: Path,
+        n_processors: int = 20,
+        mothur_cmd: str = 'mothur'
+) -> Set[str]:
+    """
+    Run the alignment.
+    :return: the set of ASV ids that MOTHUR suggests removing  (due to too many trimmed bases)
+    """
+    asvs_bad_id_filepath = in_fasta.with_suffix('.flip.accnos')
+
+    if out_fasta.exists():
+        print(f"alignment output already exists: {out_fasta}")
+        return parse_mothur_bad_ids(asvs_bad_id_filepath)
+
+    if not in_fasta.exists():
+        raise FileNotFoundError(f"Input file not found: {in_fasta}")
+
+    # Check for MOTHUR installation
+    try:
+        subprocess.run(
+            [mothur_cmd, "--version"],
+            capture_output=True,
+            check=True
+        )
+    except FileNotFoundError:
+        raise FileNotFoundError(
+            "MOTHUR is not installed or not in PATH. Install it with: conda install -c bioconda mothur"
+        ) from None
+
+    # Run MOTHUR
+    # Example command: mothur "#align.seqs(fasta=asv_sequences.post_filter.fasta, reference=Ecoli_16s.fasta, processors=20)"
+    try:
+        print("DEBUG -- skipping mothur call!")
+
+        exec_mothur_cmd = f"#align.seqs(fasta={str(in_fasta)}, reference={str(reference_16s_path)}, processors={n_processors})"
+        # result = subprocess.run(
+        # [mothur_cmd, exec_mothur_cmd],
+        #     capture_output=True,
+        #     text=True,
+        #     check=True  # Raises exception if return code is non-zero
+        # )
+        # print("STDOUT:")
+        # print(result.stdout)
+    except subprocess.CalledProcessError as e:
+        print(f"Error running mothur: {e}")
+        print(f"Return code: {e.returncode}")
+        print(f"STDERR: {e.stderr}")
+        raise
+
+    asvs_bad_id_filepath = in_fasta.with_suffix('.align')
+    bad_ids = parse_mothur_bad_ids(asvs_bad_id_filepath)
+    convert_mother_alignment(asvs_bad_id_filepath, out_fasta, bad_ids)
+    return bad_ids
+
 
 
 def run_mafft(in_fasta: Path, out_fasta: Path, mafft_cmd: str = 'mafft'):
