@@ -37,7 +37,7 @@ def run_mothur(
         out_fasta: Path,
         reference_16s_path: Path,
         n_processors: int = 20,
-        remove_frac_below: float = 0.85,
+        remove_frac_below: float = 0.70,
         mothur_cmd: str = 'mothur'
 ) -> Set[str]:
     """
@@ -70,15 +70,15 @@ def run_mothur(
     try:
         exec_mothur_cmd = f"#align.seqs(fasta={str(in_fasta)}, reference={str(reference_16s_path)}, processors={n_processors})"
         print("Running mothur command: {}".format(exec_mothur_cmd))
-        result = subprocess.run(
-        [mothur_cmd, exec_mothur_cmd],
-            cwd=in_fasta.parent,
-            capture_output=True,
-            text=True,
-            check=True  # Raises exception if return code is non-zero
-        )
-        print("STDOUT:")
-        print(result.stdout)
+        # result = subprocess.run(
+        # [mothur_cmd, exec_mothur_cmd],
+        #     cwd=in_fasta.parent,
+        #     capture_output=True,
+        #     text=True,
+        #     check=True  # Raises exception if return code is non-zero
+        # )
+        # print("STDOUT:")
+        # print(result.stdout)
     except subprocess.CalledProcessError as e:
         print(f"Error running mothur: {e}")
         print(f"Return code: {e.returncode}")
