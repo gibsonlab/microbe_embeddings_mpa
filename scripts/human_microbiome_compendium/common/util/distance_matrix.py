@@ -1,10 +1,10 @@
-from typing import List
+from typing import List, Tuple
 from pathlib import Path
 
 from Bio import SeqIO
 import numpy as np
 from tqdm import tqdm
-
+from joblib import Parallel, delayed
 from scipy.sparse import csr_matrix, save_npz as sparse_save_npz, load_npz as sparse_load_npz
 
 
@@ -15,7 +15,7 @@ class ASVDistanceMatrixSparse:
         self.matrix = matrix
 
     @staticmethod
-    def from_alignment_sparse(aln_fasta: Path) -> 'ASVDistanceMatrixSparse':
+    def from_alignment_sparse(aln_fasta: Path, n_threads: int = 1) -> 'ASVDistanceMatrixSparse':
         """ SPARSE (csr) implementation of the distance matrix. """
         # for each index i, ensure that the nearest (smallest distance) j is stored.
         # Note: this may mean that some rows may have more than 1 entry
@@ -41,21 +41,36 @@ class ASVDistanceMatrixSparse:
 
         # Vectorized hamming distance calculation
         print(f"Populating SPARSE {N} x {N} distance matrix... (nearest-neighbor only)")
+
+        def compute_nearest_neighbor(i: int, seq_array: np.ndaray) -> Tuple[int, int, int]:
+            """Compute nearest neighbor for sequence i"""
+            distances = (seq_array != seq_array[i:i + 1]).sum(axis=1)
+            distances[i] = -1  # Exclude self
+            best_j = np.argmax(distances)
+            best_dist = distances[best_j]
+            return i, best_j, best_dist
+
+        # Parallel computation, note: n_jobs=-1 uses all cores
+        results = []
+        with tqdm(total=N) as pbar:
+            for result in Parallel(n_jobs=n_threads, return_as='generator')(
+                    delayed(compute_nearest_neighbor)(i, seq_array)
+                    for i in range(N)
+            ):
+                results.append(result)
+                pbar.update(1)  # Update as each job completes
+
         data = []  # must be deduplicated, since duplicates are summed!
         row = []  # may have duplicates
         col = []  # may have duplicates
-        for i in tqdm(range(N)):
-            # Calculate distances from sequence i to all sequences at once
-            distances = (seq_array != seq_array[i:i + 1]).sum(axis=1)
-            best_j = np.argmax(distances)
-            # add both (i,j) and (j,i)
+        for i, j, dist in results:
             row.append(i)
-            col.append(best_j)
-            data.append(distances[best_j])
+            col.append(j)
+            data.append(dist)
 
-            row.append(best_j)
+            row.append(j)
             col.append(i)
-            data.append(distances[best_j])
+            data.append(dist)
 
         # deduplicate before CSR creation
         print("Deduplicating sparse entries...")
