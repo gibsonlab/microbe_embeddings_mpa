@@ -7,8 +7,9 @@ from Bio.Seq import Seq
 import pandas as pd
 
 
-def parse_mothur_bad_ids(
+def filter_bad_16s_alignments(
         filepath: Path,
+        bad_path: Path,
         remove_frac_below: float,
 ) -> Set[str]:
     align_report = pd.read_csv(filepath, sep="\t")
@@ -17,8 +18,11 @@ def parse_mothur_bad_ids(
     query_end = align_report['QueryEnd']
     frac_aligned = (query_end - query_start + 1) / query_len
     bad_section = align_report.loc[frac_aligned < remove_frac_below]
-    print("bad ASVs:", bad_section.shape[0])
-    raise Exception("DEBUG!")
+    bad_asv_ids = bad_section['QueryName'].to_list()
+    with open(bad_path, "w") as bad_file:
+        for asv_id in bad_asv_ids:
+            print(asv_id, file=bad_file)
+    return set(bad_asv_ids)
 
 
 def convert_mother_alignment(mothur_aln_path: Path, out_path: Path, bad_ids: Set[str]):
@@ -44,11 +48,17 @@ def run_mothur(
     Run the alignment.
     :return: the set of ASV ids that MOTHUR suggests removing  (due to too many trimmed bases)
     """
-    asvs_bad_id_filepath = in_fasta.with_suffix('.flip.accnos')
+    bad_asv_id_filepath = in_fasta.with_suffix('.bad')
 
     if out_fasta.exists():
         print(f"alignment output already exists: {out_fasta}")
-        return parse_mothur_bad_ids(asvs_bad_id_filepath)
+        with open(out_fasta, "rt") as bad_f:
+            bad_ids = set()
+            for line in bad_f:
+                line = line.strip()
+                if len(line) > 0:
+                    bad_ids.add(line)
+            return bad_ids
 
     if not in_fasta.exists():
         raise FileNotFoundError(f"Input file not found: {in_fasta}")
@@ -87,7 +97,7 @@ def run_mothur(
 
     align_report_filepath = in_fasta.with_suffix('.align_report')
     align_filepath = in_fasta.with_suffix('.align')
-    bad_ids = parse_mothur_bad_ids(align_report_filepath, remove_frac_below=remove_frac_below)
+    bad_ids = filter_bad_16s_alignments(align_report_filepath, bad_asv_id_filepath, remove_frac_below=remove_frac_below)
     convert_mother_alignment(align_filepath, out_fasta, bad_ids)
     return bad_ids
 
