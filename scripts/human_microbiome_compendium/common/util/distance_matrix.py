@@ -1,10 +1,86 @@
 from typing import List
 from pathlib import Path
-import itertools
 
 from Bio import SeqIO
 import numpy as np
 from tqdm import tqdm
+
+from scipy.sparse import csr_matrix, save_npz as sparse_save_npz, load_npz as sparse_load_npz
+
+
+class ASVDistanceMatrixSparse:
+    def __init__(self, id_ordering: List[str], matrix: csr_matrix):
+        self.id_ordering = id_ordering
+        self.asv_to_idx = {asv_id: i for i, asv_id in enumerate(self.id_ordering)}
+        self.matrix = matrix
+
+    @staticmethod
+    def from_alignment_sparse(aln_fasta: Path) -> 'ASVDistanceMatrixSparse':
+        """ SPARSE (csr) implementation of the distance matrix. """
+        # for each index i, ensure that the nearest (smallest distance) j is stored.
+        # Note: this may mean that some rows may have more than 1 entry
+        # (e.g. a bunch of indices i having j as its nearest neighbor, but j's neighbor isn't any of these i's.)
+
+        # Parse multiple alignment output.
+        print(f"Loading alignments from {aln_fasta}")
+        aligned_sequences = {}
+        with open(aln_fasta, 'r') as handle:
+            for record in SeqIO.parse(handle, "fasta"):
+                aligned_sequences[record.id] = str(record.seq).upper()
+
+        id_ordering = sorted(aligned_sequences.keys())
+        N = len(id_ordering)
+
+        # Convert sequences to numeric array for vectorized operations
+        print(f"Converting sequences to numeric array...")
+        seq_length = len(aligned_sequences[id_ordering[0]])
+        seq_array = np.zeros((N, seq_length), dtype=np.uint8)
+
+        for i, asv_id in enumerate(id_ordering):
+            seq_array[i] = np.frombuffer(aligned_sequences[asv_id].encode('ascii'), dtype=np.uint8)
+
+        # Vectorized hamming distance calculation
+        print(f"Populating SPARSE {N} x {N} distance matrix... (nearest-neighbor only)")
+        data = []  # must be deduplicated, since duplicates are summed!
+        row = []  # may have duplicates
+        col = []  # may have duplicates
+        for i in tqdm(range(N)):
+            # Calculate distances from sequence i to all sequences at once
+            distances = (seq_array != seq_array[i:i + 1]).sum(axis=1)
+            best_j = np.argmax(distances)
+            # add both (i,j) and (j,i)
+            row.append(i)
+            col.append(best_j)
+            data.append(distances[best_j])
+
+            row.append(best_j)
+            col.append(i)
+            data.append(distances[best_j])
+
+        # deduplicate before CSR creation
+        print("Deduplicating sparse entries...")
+        import pandas as pd
+        df = pd.DataFrame({'row': row, 'col': col, 'data': data})
+        df_dedup = df.drop_duplicates(subset=['row', 'col'], keep='last')
+        matrix = csr_matrix((df_dedup['data'], (df_dedup['row'], df_dedup['col'])), shape=(N, N))
+
+        print("Done.")
+        return ASVDistanceMatrixSparse(id_ordering, matrix)
+
+    def save(self, path: Path):
+        # np.savez(path, ids=np.array(self.id_ordering, dtype=object), matrix=self.matrix)
+        sparse_save_npz(str(path), self.matrix)
+        with open(path.parent / f'{path.stem}.ordering.txt', "wt") as out_f:
+            for _id in self.id_ordering:
+                out_f.write(f"{_id}\n")
+
+    @staticmethod
+    def load(path: Path) -> 'ASVDistanceMatrix':
+        with open(path.parent / f'{path.stem}.ordering.txt', "rt") as out_f:
+            id_ordering = out_f.read().splitlines()
+            id_ordering = [_id for _id in id_ordering if len(_id) > 0]
+        matrix = sparse_load_npz(path)
+        return ASVDistanceMatrix(id_ordering, matrix)
 
 
 class ASVDistanceMatrix:

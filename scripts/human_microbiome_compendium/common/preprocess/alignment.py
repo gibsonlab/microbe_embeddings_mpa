@@ -33,8 +33,47 @@ def convert_mother_alignment(mothur_aln_path: Path, out_path: Path, bad_ids: Set
                 print(f"Skipping conversion of {record.id} to gapped FASTA output!")
                 continue
 
-            record.seq = Seq(str(record.seq).replace('.', '-'))
+            # record.seq = Seq(str(record.seq).replace('.', '-'))
             SeqIO.write(record, out_f, "fasta")
+
+
+def check_mothur(mothur_cmd: str):
+    # Check for MOTHUR installation
+    try:
+        subprocess.run(
+            [mothur_cmd, "--version"],
+            capture_output=True,
+            check=True
+        )
+    except FileNotFoundError:
+        raise FileNotFoundError(
+            "MOTHUR is not installed or not in PATH. Install it with: conda install -c bioconda mothur"
+        ) from None
+
+
+def run_mothur_command(
+        mothur: str,
+        command: str,
+        cwd: Path,
+):
+    # Run MOTHUR
+    # Example command: mothur "#align.seqs(fasta=asv_sequences.post_filter.fasta, reference=Ecoli_16s.fasta, processors=20)"
+    try:
+        print("Running mothur command: {}".format(command))
+        result = subprocess.run(
+        [mothur, command],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            check=True  # Raises exception if return code is non-zero
+        )
+        print("STDOUT:")
+        print(result.stdout)
+    except subprocess.CalledProcessError as e:
+        print(f"Error running mothur: {e}")
+        print(f"Return code: {e.returncode}")
+        print(f"STDERR: {e.stderr}")
+        raise
 
 
 def run_mothur(
@@ -64,37 +103,10 @@ def run_mothur(
     if not in_fasta.exists():
         raise FileNotFoundError(f"Input file not found: {in_fasta}")
 
-    # Check for MOTHUR installation
-    try:
-        subprocess.run(
-            [mothur_cmd, "--version"],
-            capture_output=True,
-            check=True
-        )
-    except FileNotFoundError:
-        raise FileNotFoundError(
-            "MOTHUR is not installed or not in PATH. Install it with: conda install -c bioconda mothur"
-        ) from None
+    check_mothur(mothur_cmd)
 
-    # Run MOTHUR
-    # Example command: mothur "#align.seqs(fasta=asv_sequences.post_filter.fasta, reference=Ecoli_16s.fasta, processors=20)"
-    try:
-        exec_mothur_cmd = f"#align.seqs(fasta={str(in_fasta)}, reference={str(reference_16s_path)}, processors={n_processors})"
-        print("Running mothur command: {}".format(exec_mothur_cmd))
-        # result = subprocess.run(
-        # [mothur_cmd, exec_mothur_cmd],
-        #     cwd=in_fasta.parent,
-        #     capture_output=True,
-        #     text=True,
-        #     check=True  # Raises exception if return code is non-zero
-        # )
-        # print("STDOUT:")
-        # print(result.stdout)
-    except subprocess.CalledProcessError as e:
-        print(f"Error running mothur: {e}")
-        print(f"Return code: {e.returncode}")
-        print(f"STDERR: {e.stderr}")
-        raise
+    exec_mothur_cmd = f"#align.seqs(fasta={str(in_fasta)}, reference={str(reference_16s_path)}, processors={n_processors})"
+    run_mothur_command(mothur_cmd, exec_mothur_cmd, cwd=in_fasta.parent)
 
     align_report_filepath = in_fasta.with_suffix('.align_report')
     align_filepath = in_fasta.with_suffix('.align')
