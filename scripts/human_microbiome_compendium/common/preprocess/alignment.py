@@ -21,7 +21,7 @@ def convert_mother_alignment(mothur_aln_path: Path, out_path: Path, bad_ids: Set
                 continue
 
             record.seq = Seq(str(record.seq).replace('.', '-'))
-            out_f.write(record)
+            SeqIO.write(record, out_f, "fasta")
 
 
 def run_mothur(
@@ -60,6 +60,7 @@ def run_mothur(
     # Example command: mothur "#align.seqs(fasta=asv_sequences.post_filter.fasta, reference=Ecoli_16s.fasta, processors=20)"
     try:
         exec_mothur_cmd = f"#align.seqs(fasta={str(in_fasta)}, reference={str(reference_16s_path)}, processors={n_processors})"
+        print("Running mothur command: {}".format(exec_mothur_cmd))
         result = subprocess.run(
         [mothur_cmd, exec_mothur_cmd],
             capture_output=True,
