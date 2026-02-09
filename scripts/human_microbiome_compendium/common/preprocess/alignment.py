@@ -92,7 +92,7 @@ def run_mothur(
 
     if out_fasta.exists():
         print(f"alignment output already exists: {out_fasta}")
-        with open(out_fasta, "rt") as bad_f:
+        with open(bad_asv_id_filepath, "rt") as bad_f:
             bad_ids = set()
             for line in bad_f:
                 line = line.strip()
