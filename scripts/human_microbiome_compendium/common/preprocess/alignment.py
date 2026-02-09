@@ -20,6 +20,7 @@ def filter_bad_16s_alignments(
     bad_section = align_report.loc[frac_aligned < remove_frac_below]
     bad_asv_ids = bad_section['QueryName'].to_list()
     with open(bad_path, "w") as bad_file:
+        print(f"# frac threshold: {remove_frac_below}", file=bad_file)
         for asv_id in bad_asv_ids:
             print(asv_id, file=bad_file)
     return set(bad_asv_ids)
@@ -56,7 +57,7 @@ def run_mothur(
             bad_ids = set()
             for line in bad_f:
                 line = line.strip()
-                if len(line) > 0:
+                if len(line) > 0 and not line.startswith("#"):
                     bad_ids.add(line)
             return bad_ids
 
