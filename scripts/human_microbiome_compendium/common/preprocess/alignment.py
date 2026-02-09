@@ -59,17 +59,15 @@ def run_mothur(
     # Run MOTHUR
     # Example command: mothur "#align.seqs(fasta=asv_sequences.post_filter.fasta, reference=Ecoli_16s.fasta, processors=20)"
     try:
-        print("DEBUG -- skipping mothur call!")
-
         exec_mothur_cmd = f"#align.seqs(fasta={str(in_fasta)}, reference={str(reference_16s_path)}, processors={n_processors})"
-        # result = subprocess.run(
-        # [mothur_cmd, exec_mothur_cmd],
-        #     capture_output=True,
-        #     text=True,
-        #     check=True  # Raises exception if return code is non-zero
-        # )
-        # print("STDOUT:")
-        # print(result.stdout)
+        result = subprocess.run(
+        [mothur_cmd, exec_mothur_cmd],
+            capture_output=True,
+            text=True,
+            check=True  # Raises exception if return code is non-zero
+        )
+        print("STDOUT:")
+        print(result.stdout)
     except subprocess.CalledProcessError as e:
         print(f"Error running mothur: {e}")
         print(f"Return code: {e.returncode}")
