@@ -37,6 +37,7 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
         super().__init__()
         print(f"Initializing model with dropout_rate = {dropout_rate}")
         marker_transform_mlp_layers = [nn.Linear(marker_embed_dim, hidden_dim), nn.LayerNorm(normalized_shape=hidden_dim), nn.GELU()]
+        print("Constructing {} extra hidden layers.".format(mlp_hidden_layers - 1))
         for i in range(mlp_hidden_layers - 1):
             # Add extra hidden layers.
             marker_transform_mlp_layers += [nn.Linear(hidden_dim, hidden_dim), nn.LayerNorm(normalized_shape=hidden_dim), nn.GELU()]
