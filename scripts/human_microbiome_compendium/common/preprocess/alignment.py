@@ -4,13 +4,21 @@ from typing import Set
 from pathlib import Path
 from Bio import SeqIO
 from Bio.Seq import Seq
+import pandas as pd
 
 
 def parse_mothur_bad_ids(
-        filepath: Path
+        filepath: Path,
+        remove_frac_below: float,
 ) -> Set[str]:
-    with open(filepath, "rt") as f:
-        return set(line.strip() for line in f)
+    align_report = pd.read_csv(filepath, sep="\t")
+    query_len = align_report['QueryLength']
+    query_start = align_report['QueryStart']
+    query_end = align_report['QueryEnd']
+    frac_aligned = (query_end - query_start + 1) / query_len
+    bad_section = align_report.loc[frac_aligned < remove_frac_below]
+    print("bad ASVs:", bad_section.shape[0])
+    raise Exception("DEBUG!")
 
 
 def convert_mother_alignment(mothur_aln_path: Path, out_path: Path, bad_ids: Set[str]):
@@ -29,6 +37,7 @@ def run_mothur(
         out_fasta: Path,
         reference_16s_path: Path,
         n_processors: int = 20,
+        remove_frac_below: float = 0.85,
         mothur_cmd: str = 'mothur'
 ) -> Set[str]:
     """
@@ -63,6 +72,7 @@ def run_mothur(
         print("Running mothur command: {}".format(exec_mothur_cmd))
         result = subprocess.run(
         [mothur_cmd, exec_mothur_cmd],
+            cwd=in_fasta.parent,
             capture_output=True,
             text=True,
             check=True  # Raises exception if return code is non-zero
@@ -75,9 +85,10 @@ def run_mothur(
         print(f"STDERR: {e.stderr}")
         raise
 
-    asvs_bad_id_filepath = in_fasta.with_suffix('.align')
-    bad_ids = parse_mothur_bad_ids(asvs_bad_id_filepath)
-    convert_mother_alignment(asvs_bad_id_filepath, out_fasta, bad_ids)
+    align_report_filepath = in_fasta.with_suffix('.align_report')
+    align_filepath = in_fasta.with_suffix('.align')
+    bad_ids = parse_mothur_bad_ids(align_report_filepath, remove_frac_below=remove_frac_below)
+    convert_mother_alignment(align_filepath, out_fasta, bad_ids)
     return bad_ids
 
 
