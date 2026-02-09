@@ -83,20 +83,18 @@ class MicrobiomeSampleEmbedding:
 
 
 # =========================================================================
-
-class ASVPreembeddedDataset(Dataset):
+class ASVDatasetForBaseline(Dataset):
     def __init__(
             self,
             sample_metadata: pd.DataFrame,
             abundance_table_dir: Path,
-            embedding_h5_path: Path,
+            asv_id_subset: Set[str],
             dtype: torch.dtype = torch.float32
     ):
         self.sample_df = sample_metadata
         self.dtype = dtype
-
+        self.asv_id_subset = asv_id_subset
         self.sample_list = self.initialize_samples(abundance_table_dir)
-        self.sample_converter = MicrobiomeSampleEmbedding(embedding_h5_path, cache_embeddings=True)
 
     def initialize_samples(self, abundance_table_dir: Path) -> List[MicrobiomeSample]:
         """
@@ -108,14 +106,73 @@ class ASVPreembeddedDataset(Dataset):
             proj = MicrobiomeProject(str(proj_id), abundance_table_dir, self.sample_df)
             target_sample_ids = set(proj_section['srs'])  # subset of samples from this project that we want to keep.
             for sample in proj.samples:
-                if sample.sample_id in target_sample_ids:
-                    sample_list.append(sample)
+                if sample.sample_id not in target_sample_ids:
+                    # only keep samples in the requested subset dataframe.
+                    continue
 
-        assert len(sample_list) == self.sample_df.shape[0], (
-            "Dataframe specified {} samples, but ended up with {} instead.".format(
-                self.sample_df.shape[0], len(sample_list)
+                if len(sample.asv_ids.intersection(self.asv_id_subset)) == 0:
+                    # only keep samples with at least one valid ASV (e.g. post-filter ASVs)
+                    continue
+
+                sample_list.append(sample)
+
+        if len(sample_list) < self.sample_df.shape[0]:
+            print(
+                "Dataframe specified {} samples, but ended up with {} after ASV subset filtering.".format(self.sample_df.shape[0], len(sample_list))
             )
-        )
+
+        # Finally, sort sample_list according to dataframe ordering.
+        sample_ordering: Dict[str, int] = {
+            str(row['srs']): row_idx
+            for row_idx, (_, row) in enumerate(self.sample_df.iterrows())
+        }
+        sample_list = sorted(sample_list, key=lambda samp: sample_ordering[samp.sample_id])
+        return sample_list
+
+    def __getitem__(self, idx: int) -> Tuple[str, List[str], Tensor]:
+        sample = self.sample_list[idx]
+        asv_id_ordering, abunds_subset = sample.relative_abundance_array(asv_id_subset=self.asv_id_subset)
+        return sample.sample_id, asv_id_ordering, torch.from_numpy(abunds_subset).to(self.dtype)
+
+
+class ASVPreembeddedDataset(Dataset):
+    def __init__(
+            self,
+            sample_metadata: pd.DataFrame,
+            abundance_table_dir: Path,
+            embedding_h5_path: Path,
+            dtype: torch.dtype = torch.float32
+    ):
+        self.sample_df = sample_metadata
+        self.dtype = dtype
+        self.sample_converter = MicrobiomeSampleEmbedding(embedding_h5_path, cache_embeddings=True)
+
+        self.sample_list = self.initialize_samples(abundance_table_dir)
+
+    def initialize_samples(self, abundance_table_dir: Path) -> List[MicrobiomeSample]:
+        """
+        Create a mapping from dataset index to (project_id, sample_id, row_index).
+        This allows efficient random access without groupby operations.
+        """
+        sample_list = []
+        for proj_id, proj_section in self.sample_df.groupby("project"):
+            proj = MicrobiomeProject(str(proj_id), abundance_table_dir, self.sample_df)
+            target_sample_ids = set(proj_section['srs'])  # subset of samples from this project that we want to keep.
+            for sample in proj.samples:
+                if sample.sample_id not in target_sample_ids:
+                    # only keep samples in the requested subset dataframe.
+                    continue
+
+                if len(sample.asv_ids.intersection(self.sample_converter.asv_id_subset)) == 0:
+                    # only keep samples with at least one valid ASV with embedding (e.g. post-filter ASVs)
+                    continue
+
+                sample_list.append(sample)
+
+        if len(sample_list) < self.sample_df.shape[0]:
+            print(
+                "Dataframe specified {} samples, but ended up with {} after ASV subset filtering.".format(self.sample_df.shape[0], len(sample_list))
+            )
 
         # Finally, sort sample_list according to dataframe ordering.
         sample_ordering: Dict[str, int] = {

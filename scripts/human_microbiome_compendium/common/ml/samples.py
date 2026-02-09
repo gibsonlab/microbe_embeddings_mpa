@@ -51,6 +51,9 @@ class MicrobiomeSample:
         else:
             target_asv_ids = asv_id_subset.intersection(self.asv_ids)
 
+        if len(target_asv_ids) == 0:
+            raise ValueError(f"Sample ID = {self.sample_id}, No ASVs in the restricted set!")
+
         asv_ids = []
         asv_reads = []
         for asv_id in target_asv_ids:
