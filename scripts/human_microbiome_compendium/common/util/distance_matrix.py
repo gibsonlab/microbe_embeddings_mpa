@@ -42,7 +42,7 @@ class ASVDistanceMatrixSparse:
         # Vectorized hamming distance calculation
         print(f"Populating SPARSE {N} x {N} distance matrix... (nearest-neighbor only)")
 
-        def compute_nearest_neighbor(i: int, seq_array: np.ndaray) -> Tuple[int, int, int]:
+        def compute_nearest_neighbor(i: int, seq_array: np.ndarray) -> Tuple[int, int, int]:
             """Compute nearest neighbor for sequence i"""
             distances = (seq_array != seq_array[i:i + 1]).sum(axis=1)
             distances[i] = -1  # Exclude self
