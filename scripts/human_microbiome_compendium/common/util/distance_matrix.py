@@ -134,6 +134,7 @@ class ASVDistanceMatrixLazy(ASVDistanceMatrix):
         # multi-threaded impl
         self.executor = ThreadPoolExecutor(max_workers=self.n_workers)
         atexit.register(self.executor.shutdown, wait=True)
+        return self
 
     def __exit__(self, exception_type, exception_value, traceback):
         # Resource cleanup and optional exception handling goes here
