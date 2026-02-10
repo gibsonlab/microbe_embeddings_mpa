@@ -93,13 +93,20 @@ def train_test_split_mincut_approximation(
         test_fraction: float,
         distance_matrix: Optional[ASVDistanceMatrix] = None,
 ):
+    """
+    Splits samples by applying spectral cut algorithm to each CC.
+    """
     # Collect the list of samples across all projects.
     proj_ids = list(pd.unique(sample_df['project']))
-    all_samples = []
+    all_samples: List[MicrobiomeSample] = []
     for proj_id, proj_section in sample_df.groupby('project'):
-        proj = MicrobiomeProject(proj_id, abundance_table_dir, sample_df)
+        proj = MicrobiomeProject(str(proj_id), abundance_table_dir, sample_df)
         proj_sample_subset_ids = set(proj_section['srs'])
-        all_samples = all_samples + [s for s in proj.samples if s.sample_id in proj_sample_subset_ids]
+        for sample in proj.samples:
+            if sample.sample_id in proj_sample_subset_ids:
+                n_sample_asvs = len([asv_id for asv_id in sample.asv_ids if asv_id in asv_id_subset])
+                if n_sample_asvs > 0:
+                    all_samples.append(sample)
 
     print(f"[FAIR SPLIT] Splitting {len(all_samples)} samples found in projects: {proj_ids}")
 
@@ -109,17 +116,18 @@ def train_test_split_mincut_approximation(
     A = np.zeros((n_samples, n_samples), dtype=float)
     if distance_matrix is not None:
         print("Weighted Graph will use weight = (1 - d/d_max) as similarity metric.")
-        sim_mat: np.ndarray = distance_matrix_to_similarity_matrix(distance_matrix)
 
         def sim_fn(sample1: MicrobiomeSample, sample2: MicrobiomeSample):
-            sample1_indices = [distance_matrix.get_asv_index(asv_id) for asv_id in sample1.asv_ids if
-                               distance_matrix.contains_asv(asv_id)]
-            sample2_indices = [distance_matrix.get_asv_index(asv_id) for asv_id in sample2.asv_ids if
-                               distance_matrix.contains_asv(asv_id)]
-            if len(sample1_indices) == 0 or len(sample2_indices) == 0:
-                return 0.0
-            submatrix = sim_mat[np.ix_(sample1_indices, sample2_indices)]
-            return np.mean(submatrix)
+            distance_submat = distance_matrix.submatrix(
+                [asv_id for asv_id in sample1.asv_ids if asv_id in asv_id_subset],
+                [asv_id for asv_id in sample2.asv_ids if asv_id in asv_id_subset],
+            )
+            if distance_submat.size == 0:
+                raise ValueError(
+                    "Distance submatrix had size 0. Some sample (illegally) had 0 ASVs in filtered collection.")
+            else:
+                sim_submat = 1 - (distance_submat / distance_matrix.seq_len())  # SIMILARITY = 1 - HAMMING_DIST / SEQLEN
+                return np.mean(sim_submat)
     else:
         print("Weighted Graph will use weight = JACCARD(i,j) as similarity metric.")
         sim_fn = lambda sample1, sample2: jaccard_similarity(
