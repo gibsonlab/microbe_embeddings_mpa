@@ -129,6 +129,9 @@ class ASVDatasetForBaseline(Dataset):
         sample_list = sorted(sample_list, key=lambda samp: sample_ordering[samp.sample_id])
         return sample_list
 
+    def __len__(self) -> int:
+        return len(self.sample_list)
+
     def __getitem__(self, idx: int) -> Tuple[str, List[str], Tensor]:
         sample = self.sample_list[idx]
         asv_id_ordering, abunds_subset = sample.relative_abundance_array(asv_id_subset=self.asv_id_subset)
@@ -188,7 +191,7 @@ class ASVPreembeddedDataset(Dataset):
         return sample.sample_id, torch.from_numpy(features).to(self.dtype), torch.from_numpy(abunds).to(self.dtype)
 
     def __len__(self) -> int:
-        return self.sample_df.shape[0]
+        return len(self.sample_list)
 
     def embedding_dtype(self) -> torch.dtype:
         return self.dtype

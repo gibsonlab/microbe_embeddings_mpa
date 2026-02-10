@@ -39,12 +39,22 @@ zstd --rm obs_md.txt
 
 echo "(Step 3 of 3) Unpacking ASV count files..."
 tar -xzf project_asv_tables.tar.gz  # this unpacks a subdir called "asv"
-cd asv
+cd "asv"
 echo "To reduce disk footprint, this script will now compress each ASV count file."
 for counts_file in ./*.txt; do
   echo "Compressing: ${counts_file}"
   zstd --rm "${counts_file}"
 done
+cd ..
+
+
+echo "Downloading greengenes 16S database (for downstream processing)"
+# using analysis dir for this part
+mkdir -p "GREENGENES_16S_DB"
+cd "GREENGENES_16S_DB"
+wget https://mothur.s3.us-east-2.amazonaws.com/wiki/gg_13_8_99.refalign.tgz
+tar -xvzf gg_13_8_99.refalign.tgz
+cd ..
 
 echo ""
 echo "Done!"
