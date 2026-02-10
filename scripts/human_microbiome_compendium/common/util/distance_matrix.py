@@ -92,6 +92,7 @@ class ASVDistanceMatrixLazy(ASVDistanceMatrix):
         n_cols = len(asv_indices_2)
 
         # Create all the Future instances without blocking.
+        print("Requested {} x {} submatrix.".format(n_rows, n_cols))
         print("Creating {} async tasks.".format(n_rows * n_cols))
         jobs = [
             [
