@@ -106,6 +106,7 @@ class ASVDistanceMatrixLazy(ASVDistanceMatrix):
         # Now, wait for the results.
         result = []
         if self.enable_progress_bar:
+            print("with progressbar")
             with tqdm(total=total_jobs, desc="Computing matrix") as pbar:
                 for i in range(n_rows):
                     row = []
@@ -114,6 +115,7 @@ class ASVDistanceMatrixLazy(ASVDistanceMatrix):
                         pbar.update(1)
                     result.append(row)
         else:
+            print("no progressbar")
             for i in range(n_rows):
                 row = []
                 for j in range(n_cols):
