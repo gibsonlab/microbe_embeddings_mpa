@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, Future
 import atexit
@@ -9,16 +9,16 @@ from tqdm import tqdm
 
 
 class ASVDistanceMatrixLazy:
-    def __init__(self, id_ordering: List[str], alignment_file: Path, n_workers: int):
-        self.id_ordering = id_ordering
+    def __init__(self, alignment_file: Path, n_workers: int):
+        self.id_ordering, self.alignments = self.parse_alignments(alignment_file)
         self.asv_to_idx = {asv_id: i for i, asv_id in enumerate(self.id_ordering)}
-        self.alignments = self.parse_alignments(alignment_file)
 
         # multi-threaded impl
         self.executor = ThreadPoolExecutor(max_workers=n_workers)
         atexit.register(self.executor.shutdown, wait=True)
 
-    def parse_alignments(self, aln_fasta: Path) -> np.ndarray:
+    @staticmethod
+    def parse_alignments(aln_fasta: Path) -> Tuple[List[str], np.ndarray]:
         """ SPARSE (csr) implementation of the distance matrix. """
         # for each index i, ensure that the nearest (smallest distance) j is stored.
         # Note: this may mean that some rows may have more than 1 entry
@@ -31,16 +31,17 @@ class ASVDistanceMatrixLazy:
             for record in SeqIO.parse(handle, "fasta"):
                 aligned_sequences[record.id] = str(record.seq).upper()
 
-        N = len(self.id_ordering)
+        id_ordering = sorted(list(aligned_sequences.keys()))
+        N = len(id_ordering)
 
         # Convert sequences to numeric array for vectorized operations
         print(f"Converting sequences to numeric array...")
-        seq_length = len(aligned_sequences[self.id_ordering[0]])
+        seq_length = len(aligned_sequences[id_ordering[0]])
         seq_array = np.zeros((N, seq_length), dtype=np.uint8)
 
-        for i, asv_id in enumerate(self.id_ordering):
+        for i, asv_id in enumerate(id_ordering):
             seq_array[i] = np.frombuffer(aligned_sequences[asv_id].encode('ascii'), dtype=np.uint8)
-        return seq_array
+        return id_ordering, seq_array
 
     def contains_asv(self, asv_id: str) -> bool:
         return asv_id in self.asv_to_idx
