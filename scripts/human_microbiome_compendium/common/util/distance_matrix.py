@@ -76,7 +76,8 @@ class ASVDistanceMatrix:
     def entry(self, asv_i: str, asv_j: str) -> int:
         return self.matrix[self.asv_to_idx[asv_i], self.asv_to_idx[asv_j]]
 
-    def from_alignment(self, aln_fasta: Path) -> 'ASVDistanceMatrix':
+    @staticmethod
+    def from_alignment(aln_fasta: Path) -> 'ASVDistanceMatrix':
         # Parse multiple alignment output.
         print(f"Loading alignments from {aln_fasta}")
         aligned_sequences = {}
@@ -84,14 +85,15 @@ class ASVDistanceMatrix:
             for record in SeqIO.parse(handle, "fasta"):
                 aligned_sequences[record.id] = str(record.seq).upper()
 
-        N = len(self.id_ordering)
+        id_ordering = sorted(list(aligned_sequences.keys()))
+        N = len(id_ordering)
 
         # Convert sequences to numeric array for vectorized operations
         print(f"Converting sequences to numeric array...")
-        seq_length = len(aligned_sequences[self.id_ordering[0]])
+        seq_length = len(aligned_sequences[id_ordering[0]])
         seq_array = np.zeros((N, seq_length), dtype=np.uint8)
 
-        for i, asv_id in enumerate(self.id_ordering):
+        for i, asv_id in enumerate(id_ordering):
             seq_array[i] = np.frombuffer(aligned_sequences[asv_id].encode('ascii'), dtype=np.uint8)
 
         # Vectorized hamming distance calculation
@@ -105,7 +107,7 @@ class ASVDistanceMatrix:
             matrix[i] = distances
 
         print("Done.")
-        return ASVDistanceMatrix(self.id_ordering, matrix)
+        return ASVDistanceMatrix(id_ordering, matrix)
 
     def save(self, path: Path):
         np.savez(path, ids=np.array(self.id_ordering, dtype=object), matrix=self.matrix)
