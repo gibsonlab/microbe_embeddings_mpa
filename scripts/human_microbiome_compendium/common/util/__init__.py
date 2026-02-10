@@ -1,1 +1,1 @@
-from .distance_matrix import ASVDistanceMatrix, hamming_distance, ASVDistanceMatrixSparse
+from .distance_matrix import ASVDistanceMatrix, hamming_distance, ASVDistanceMatrixLazy
