@@ -1,3 +1,4 @@
+from abc import abstractmethod, ABC
 from typing import List, Tuple
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, Future
@@ -8,9 +9,27 @@ import numpy as np
 from tqdm import tqdm
 
 
-class ASVDistanceMatrixLazy:
+class ASVDistanceMatrix(ABC):
+    @abstractmethod
+    def seq_len(self) -> int:
+        pass
+
+    @abstractmethod
+    def contains_asv(self, asv_id: str) -> bool:
+        pass
+
+    @abstractmethod
+    def get_asv_index(self, asv_id: str) -> int:
+        pass
+
+    @abstractmethod
+    def submatrix(self, asv_indices_1: List[str], asv_indices_2: List[str]) -> np.ndarray:
+        pass
+
+
+class ASVDistanceMatrixLazy(ASVDistanceMatrix):
     def __init__(self, alignment_file: Path, n_workers: int):
-        self.id_ordering, self.alignments = self.parse_alignments(alignment_file)
+        self.id_ordering, self.seqlen, self.alignments = self.parse_alignments(alignment_file)
         self.asv_to_idx = {asv_id: i for i, asv_id in enumerate(self.id_ordering)}
 
         # multi-threaded impl
@@ -18,7 +37,7 @@ class ASVDistanceMatrixLazy:
         atexit.register(self.executor.shutdown, wait=True)
 
     @staticmethod
-    def parse_alignments(aln_fasta: Path) -> Tuple[List[str], np.ndarray]:
+    def parse_alignments(aln_fasta: Path) -> Tuple[List[str], int, np.ndarray]:
         """ SPARSE (csr) implementation of the distance matrix. """
         # for each index i, ensure that the nearest (smallest distance) j is stored.
         # Note: this may mean that some rows may have more than 1 entry
@@ -41,7 +60,7 @@ class ASVDistanceMatrixLazy:
 
         for i, asv_id in enumerate(id_ordering):
             seq_array[i] = np.frombuffer(aligned_sequences[asv_id].encode('ascii'), dtype=np.uint8)
-        return id_ordering, seq_array
+        return id_ordering, seq_length, seq_array
 
     def contains_asv(self, asv_id: str) -> bool:
         return asv_id in self.asv_to_idx
@@ -52,6 +71,9 @@ class ASVDistanceMatrixLazy:
     def entry_async(self, asv_i: str, asv_j: str) -> Future:
         future = self.executor.submit(self.alignment_hamming_dist, self.get_asv_index(asv_i), self.get_asv_index(asv_j))
         return future
+
+    def seq_len(self) -> int:
+        return self.seqlen
 
     def alignment_hamming_dist(self, asv_i_idx: int, asv_j_idx: int) -> int:
         aln_i = self.alignments[asv_i_idx]
@@ -84,11 +106,12 @@ class ASVDistanceMatrixLazy:
         self.executor.shutdown(wait=True)
 
 
-class ASVDistanceMatrix:
-    def __init__(self, id_ordering: List[str], matrix: np.ndarray):
+class ASVDistanceMatrixPrecomputed(ASVDistanceMatrix):
+    def __init__(self, id_ordering: List[str], seqlen: int, matrix: np.ndarray):
         self.id_ordering = id_ordering
         self.asv_to_idx = {asv_id: i for i, asv_id in enumerate(self.id_ordering)}
         self.matrix = matrix
+        self.seqlen = seqlen
 
     def contains_asv(self, asv_id: str) -> bool:
         return asv_id in self.asv_to_idx
@@ -98,6 +121,9 @@ class ASVDistanceMatrix:
 
     def entry(self, asv_i: str, asv_j: str) -> int:
         return self.matrix[self.asv_to_idx[asv_i], self.asv_to_idx[asv_j]]
+
+    def seq_len(self) -> int:
+        return self.seqlen
 
     @staticmethod
     def from_alignment(aln_fasta: Path) -> 'ASVDistanceMatrix':
@@ -130,7 +156,12 @@ class ASVDistanceMatrix:
             matrix[i] = distances
 
         print("Done.")
-        return ASVDistanceMatrix(id_ordering, matrix)
+        return ASVDistanceMatrix(id_ordering, seq_length, matrix)
+
+    def submatrix(self, asv_indices_1: List[str], asv_indices_2: List[str]) -> np.ndarray:
+        sample1_indices = [self.get_asv_index(asv_id) for asv_id in asv_indices_1]
+        sample2_indices = [self.get_asv_index(asv_id) for asv_id in asv_indices_2]
+        return self.matrix[np.ix_(sample1_indices, sample2_indices)]
 
     def save(self, path: Path):
         np.savez(path, ids=np.array(self.id_ordering, dtype=object), matrix=self.matrix)
