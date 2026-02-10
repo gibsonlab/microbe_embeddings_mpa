@@ -31,10 +31,8 @@ class ASVDistanceMatrixLazy(ASVDistanceMatrix):
     def __init__(self, alignment_file: Path, n_workers: int):
         self.id_ordering, self.seqlen, self.alignments = self.parse_alignments(alignment_file)
         self.asv_to_idx = {asv_id: i for i, asv_id in enumerate(self.id_ordering)}
-
-        # multi-threaded impl
-        self.executor = ThreadPoolExecutor(max_workers=n_workers)
-        atexit.register(self.executor.shutdown, wait=True)
+        self.n_workers = n_workers
+        self.executor = None
 
     @staticmethod
     def parse_alignments(aln_fasta: Path) -> Tuple[List[str], int, np.ndarray]:
@@ -69,6 +67,7 @@ class ASVDistanceMatrixLazy(ASVDistanceMatrix):
         return self.asv_to_idx[asv_id]
 
     def entry_async(self, asv_i: str, asv_j: str) -> Future:
+        assert self.executor is not None, "ASVDistanceMatrixLazy must be initialized as a context manager (e.g. `with ASVDistanceMatrixLazy(...) as mat`)"
         future = self.executor.submit(self.alignment_hamming_dist, self.get_asv_index(asv_i), self.get_asv_index(asv_j))
         return future
 
@@ -107,9 +106,20 @@ class ASVDistanceMatrixLazy(ASVDistanceMatrix):
 
     # this class is implemented as a context.
     def __enter__(self):
-        pass
+        # multi-threaded impl
+        self.executor = ThreadPoolExecutor(max_workers=self.n_workers)
+        atexit.register(self.executor.shutdown, wait=True)
 
-    def __exit__(self):
+    def __exit__(self, exception_type, exception_value, traceback):
+        # Resource cleanup and optional exception handling goes here
+        if exception_type:
+            # Handle the exception if necessary
+            print(f"An exception occurred: {exception_value}")
+            # Returning True here would suppress the exception
+            # Returning False (or nothing) will re-raise the exception
+
+        # This is where your cleanup code should go
+        print("Shutting down threads..")
         self.shutdown()
 
 
