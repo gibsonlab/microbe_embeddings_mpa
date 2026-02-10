@@ -105,6 +105,13 @@ class ASVDistanceMatrixLazy(ASVDistanceMatrix):
     def shutdown(self):
         self.executor.shutdown(wait=True)
 
+    # this class is implemented as a context.
+    def __enter__(self):
+        pass
+
+    def __exit__(self):
+        self.shutdown()
+
 
 class ASVDistanceMatrixPrecomputed(ASVDistanceMatrix):
     def __init__(self, id_ordering: List[str], seqlen: int, matrix: np.ndarray):
