@@ -15,6 +15,10 @@ class ASVDistanceMatrix(ABC):
         pass
 
     @abstractmethod
+    def get_asv_ids(self) -> List[str]:
+        pass
+
+    @abstractmethod
     def contains_asv(self, asv_id: str) -> bool:
         pass
 
@@ -28,11 +32,15 @@ class ASVDistanceMatrix(ABC):
 
 
 class ASVDistanceMatrixLazy(ASVDistanceMatrix):
-    def __init__(self, alignment_file: Path, n_workers: int):
+    def __init__(self, alignment_file: Path, n_workers: int, enable_progress_bar: bool = False):
         self.id_ordering, self.seqlen, self.alignments = self.parse_alignments(alignment_file)
         self.asv_to_idx = {asv_id: i for i, asv_id in enumerate(self.id_ordering)}
         self.n_workers = n_workers
         self.executor = None
+        self.enable_progress_bar = enable_progress_bar
+
+    def get_asv_ids(self) -> List[str]:
+        return self.id_ordering
 
     @staticmethod
     def parse_alignments(aln_fasta: Path) -> Tuple[List[str], int, np.ndarray]:
@@ -92,14 +100,31 @@ class ASVDistanceMatrixLazy(ASVDistanceMatrix):
             for i in range(n_rows)
         ]
 
+        # Flatten jobs to track total progress
+        total_jobs = n_rows * n_cols
+
         # Now, wait for the results.
-        return np.array([
-            [
-                jobs[i][j].result()
-                for j in range(n_cols)
-            ]
-            for i in range(n_rows)
-        ], dtype=int)
+        result = []
+        if self.enable_progress_bar:
+            with tqdm(total=total_jobs, desc="Computing matrix") as pbar:
+                for i in range(n_rows):
+                    row = []
+                    for j in range(n_cols):
+                        row.append(jobs[i][j].result())
+                        pbar.update(1)
+                    result.append(row)
+        else:
+            for i in range(n_rows):
+                row = []
+                for j in range(n_cols):
+                    row.append(jobs[i][j].result())
+                result.append(row)
+
+        res = np.array(result, dtype=int)
+        assert res.shape[0] == n_rows
+        assert res.shape[1] == n_cols
+        return res
+
 
     def shutdown(self):
         self.executor.shutdown(wait=True)
@@ -129,6 +154,9 @@ class ASVDistanceMatrixPrecomputed(ASVDistanceMatrix):
         self.asv_to_idx = {asv_id: i for i, asv_id in enumerate(self.id_ordering)}
         self.matrix = matrix
         self.seqlen = seqlen
+
+    def get_asv_ids(self) -> List[str]:
+        return self.id_ordering
 
     def contains_asv(self, asv_id: str) -> bool:
         return asv_id in self.asv_to_idx
