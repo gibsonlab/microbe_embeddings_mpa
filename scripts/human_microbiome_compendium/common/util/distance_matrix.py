@@ -58,6 +58,28 @@ class ASVDistanceMatrixLazy:
         aln_j = self.alignments[asv_j_idx]
         return np.sum(aln_i != aln_j)
 
+    def submatrix(self, asv_indices_1: List[str], asv_indices_2: List[str]) -> np.ndarray:
+        n_rows = len(asv_indices_1)
+        n_cols = len(asv_indices_2)
+
+        # Create all the Future instances without blocking.
+        jobs = [
+            [
+                self.entry_async(asv_indices_1[i], asv_indices_2[j])
+                for j in range(n_cols)
+            ]
+            for i in range(n_rows)
+        ]
+
+        # Now, wait for the results.
+        return np.array([
+            [
+                jobs[i][j].result()
+                for j in range(n_cols)
+            ]
+            for i in range(n_rows)
+        ], dtype=int)
+
     def shutdown(self):
         self.executor.shutdown(wait=True)
 
