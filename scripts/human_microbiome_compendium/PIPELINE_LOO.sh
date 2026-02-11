@@ -24,7 +24,7 @@ for loo_dir in "${dset_dir}"/LOO_*; do
     fi
 
     # Create a job script for this subdirectory
-    job_script="job_${loo_subdir_name}.sh"
+    job_script="./slurm/job_${loo_subdir_name}.sh"
 
     # Write SBATCH headers and job commands
     cat > "${job_script}" << EOF
