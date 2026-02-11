@@ -31,7 +31,7 @@ for loo_dir in "${dset_dir}"/LOO_*; do
     cat > "${job_script}" << EOF
 #!/bin/bash
 #SBATCH --partition=bwh_comppath_all
-#SBATCH --gres=gpu:1
+#SBATCH --gpus=1
 #SBATCH --mem=40G
 #SBATCH --cpus-per-task=8
 #SBATCH --time=12:00:00
