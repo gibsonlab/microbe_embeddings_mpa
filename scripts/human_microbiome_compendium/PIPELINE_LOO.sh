@@ -14,7 +14,6 @@ mkdir -p ./slurm
 mkdir -p ./slurm/logs
 
 # Loop through all LOO_* subdirectories
-cd ./slurm
 for loo_dir in "${dset_dir}"/LOO_*; do
     # Extract just the directory name (e.g., LOO_PRJNA391858)
     loo_subdir_name=$(basename "${loo_dir}")
@@ -26,7 +25,7 @@ for loo_dir in "${dset_dir}"/LOO_*; do
     fi
 
     # Create a job script for this subdirectory
-    job_script="job_${loo_subdir_name}.sh"
+    job_script="./slurm/job_${loo_subdir_name}.sh"
 
     # Write SBATCH headers and job commands
     cat > "${job_script}" << EOF
@@ -37,13 +36,12 @@ for loo_dir in "${dset_dir}"/LOO_*; do
 #SBATCH --cpus-per-task=8
 #SBATCH --time=12:00:00
 #SBATCH --job-name=${loo_subdir_name}
-#SBATCH --output=logs/${loo_subdir_name}.log
-#SBATCH --error=logs/${loo_subdir_name}.err
+#SBATCH --output=slurm/logs/${loo_subdir_name}.log
+#SBATCH --error=slurm/logs/${loo_subdir_name}.err
 
 # Run the pipeline
-cd ..
 bash PIPELINE_all.sh "v3v4_split_multiproj_extended" "${loo_subdir_name}"
-touch logs/${loo_subdir_name}.DONE
+touch slurm/logs/${loo_subdir_name}.DONE
 EOF
 
     # Submit the job
