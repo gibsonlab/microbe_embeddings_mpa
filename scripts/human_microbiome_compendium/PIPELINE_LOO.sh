@@ -48,6 +48,5 @@ EOF
     sbatch --exclude=${EXCLUDE} "${job_script}"
 
     echo "Submitted job for ${loo_subdir_name}"
-    break
 done
 
