@@ -94,16 +94,31 @@ class ASVDatasetForBaseline(Dataset):
         self.sample_df = sample_metadata
         self.dtype = dtype
         self.asv_id_subset = asv_id_subset
-        self.sample_list = self.initialize_samples(abundance_table_dir)
+        self.abund_table_dir = abundance_table_dir
+        self.sample_list = self.initialize_samples()
 
-    def initialize_samples(self, abundance_table_dir: Path) -> List[MicrobiomeSample]:
+    def dataset_subset_asv_ids(self) -> Set[str]:
+        subset_ids = set()
+        for proj_id, proj_section in self.sample_df.groupby("project"):
+            proj = MicrobiomeProject(str(proj_id), self.abund_table_dir, self.sample_df)
+            target_sample_ids = set(proj_section['srs'])  # subset of samples from this project that we want to keep.
+            for sample in proj.samples:
+                if sample.sample_id not in target_sample_ids:
+                    # only keep samples in the requested subset dataframe.
+                    continue
+
+                sample_subset_ids = sample.asv_ids.intersection(self.asv_id_subset)
+                subset_ids.update(sample_subset_ids)
+        return subset_ids
+
+    def initialize_samples(self) -> List[MicrobiomeSample]:
         """
         Create a mapping from dataset index to (project_id, sample_id, row_index).
         This allows efficient random access without groupby operations.
         """
         sample_list = []
         for proj_id, proj_section in self.sample_df.groupby("project"):
-            proj = MicrobiomeProject(str(proj_id), abundance_table_dir, self.sample_df)
+            proj = MicrobiomeProject(str(proj_id), self.abund_table_dir, self.sample_df)
             target_sample_ids = set(proj_section['srs'])  # subset of samples from this project that we want to keep.
             for sample in proj.samples:
                 if sample.sample_id not in target_sample_ids:
@@ -148,18 +163,19 @@ class ASVPreembeddedDataset(Dataset):
     ):
         self.sample_df = sample_metadata
         self.dtype = dtype
+        self.abund_table_dir = abundance_table_dir
         self.sample_converter = MicrobiomeSampleEmbedding(embedding_h5_path, cache_embeddings=True)
 
-        self.sample_list = self.initialize_samples(abundance_table_dir)
+        self.sample_list = self.initialize_samples()
 
-    def initialize_samples(self, abundance_table_dir: Path) -> List[MicrobiomeSample]:
+    def initialize_samples(self) -> List[MicrobiomeSample]:
         """
         Create a mapping from dataset index to (project_id, sample_id, row_index).
         This allows efficient random access without groupby operations.
         """
         sample_list = []
         for proj_id, proj_section in self.sample_df.groupby("project"):
-            proj = MicrobiomeProject(str(proj_id), abundance_table_dir, self.sample_df)
+            proj = MicrobiomeProject(str(proj_id), self.abund_table_dir, self.sample_df)
             target_sample_ids = set(proj_section['srs'])  # subset of samples from this project that we want to keep.
             for sample in proj.samples:
                 if sample.sample_id not in target_sample_ids:

@@ -35,7 +35,7 @@ def pipeline_16s_validation(
     :param min_identity: Minimum identity threshold (0.0-1.0)
     :return: Dictionary of ASV IDs -> ASV Sequences mapping, restricted to bacterial ASVs.
     """
-    asv_sequence_file = cache_dir / "asv_sequences.fasta"
+    asv_sequence_file = cache_dir / "asv_sequences.pre_validation.fasta"
     dict_to_fasta(asv_seqs, asv_sequence_file)
 
     validation_output = cache_dir / "asv_vsearch_validation.txt"
