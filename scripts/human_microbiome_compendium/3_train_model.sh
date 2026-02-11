@@ -11,22 +11,22 @@
 # Note: this is a Slurm script, meant to be run on ErisXDL compute nodes with GPUs.
 set -e
 
-if ! [ $# -eq 3 ]; then
-  echo "Error: embed_model_name, pred_model_name, dataset are required"
-  echo "Usage: $0 <embed_model_name> <pred_model_name> <dataset>"
+if ! [ $# -eq 4 ]; then
+  echo "Error: embed_model_name, pred_model_name, dataset, analysis_name are required"
+  echo "Usage: $0 <dataset> <analysis_name> <embed_model_name> <pred_model_name>"
   exit 1
 fi
-embed_model_name="$1"
-pred_model_name="$2"
-dataset_name="$3"
+dataset_name="$1"
+analysis_name="$2"
+embed_model_name="$3"
+pred_model_name="$4"
 
 echo "Performing prediction model training for ${embed_model_name} on dataset ${dataset_name} (${pred_model_name})"
 
 # point to the proper pretrained model embeddings
 BASEDIR="/data/bwh-comppath-seq/youn/human_microbiome_compendium"
 DATA_DIR="${BASEDIR}/${dataset_name}"
-EMBEDDINGS_DIR="${DATA_DIR}/embeddings"
-embeddings_file="${EMBEDDINGS_DIR}/${embed_model_name}.h5"
+embeddings_file="${DATA_DIR}/embeddings/${embed_model_name}.h5"
 if ! [ -f "${embeddings_file}" ]; then
   echo "Embeddings for model not found: ${embeddings_file}"
   exit 1
@@ -34,8 +34,16 @@ else
   echo "Embeddings file: ${embeddings_file}"
 fi
 
-training_set="${DATA_DIR}/train.tsv"
-test_set="${DATA_DIR}/test.tsv"
+ANALYSIS_DIR="${DATA_DIR}/${analysis_name}"
+training_set="${ANALYSIS_DIR}/train.tsv"
+test_set="${ANALYSIS_DIR}/test.tsv"
+if ! [ -f "${test_set}" ]; then
+  echo "test.tsv not found in ${ANALYSIS_DIR}"
+fi
+if ! [ -f "${training_set}" ]; then
+  echo "training.tsv not found in ${ANALYSIS_DIR}"
+fi
+
 
 abundance_dir="/data/cctm/youn/human_microbiome_compendium/asv"
 model_config="./model_${pred_model_name}.yaml"
@@ -45,8 +53,8 @@ batch_size=30
 seed=12345
 
 
-outdir="${DATA_DIR}/trained_models/${embed_model_name}/${pred_model_name}_kl"
-mkdir -p ${outdir}
+outdir="${ANALYSIS_DIR}/trained_models/${embed_model_name}/${pred_model_name}_kl"
+mkdir -p "${outdir}"
 
 metadata="$outdir/metadata.txt"
 echo "====== Params ======"
