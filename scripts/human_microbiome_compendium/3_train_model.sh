@@ -54,6 +54,7 @@ seed=12345
 
 
 outdir="${ANALYSIS_DIR}/trained_models/${embed_model_name}/${pred_model_name}_kl"
+echo "Model output dir: ${outdir}"
 mkdir -p "${outdir}"
 
 metadata="$outdir/metadata.txt"
