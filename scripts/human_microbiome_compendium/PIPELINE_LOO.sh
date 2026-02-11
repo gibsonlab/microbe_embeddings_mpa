@@ -6,14 +6,27 @@ BASEDIR="/data/bwh-comppath-seq/youn/human_microbiome_compendium"
 dset_dir = "${BASEDIR}/v3v4_split_multiproj_extended"
 NODELIST="lmd-2,lmd-3"
 
+# Get list of currently running/pending jobs for this user
+running_jobs=$(squeue -u $USER -h -o "%j" 2>/dev/null)
+
 mkdir -p ./slurm
 mkdir -o ./slurm/logs
 
 # Loop through all LOO_* subdirectories
-for loo_dir in "${dset_dir}"/LOO_*; do
+for loo_dir in "${BASEDIR}"/LOO_*; do
     # Extract just the directory name (e.g., LOO_PRJNA391858)
     loo_subdir_name=$(basename "${loo_dir}")
-    job_script="./slurm/job_${loo_subdir_name}.sh"
+
+    # Check if a job with this name is already running or pending
+    if echo "$running_jobs" | grep -q "^${loo_subdir_name}$"; then
+        echo "Skipping ${loo_subdir_name} - job already running/pending"
+        continue
+    fi
+
+    # Create a job script for this subdirectory
+    job_script="job_${loo_subdir_name}.sh"
+
+    # Write SBATCH headers and job commands
     cat > "${job_script}" << EOF
 #!/bin/bash
 #SBATCH --partition=bwh_comppath
@@ -28,6 +41,7 @@ for loo_dir in "${dset_dir}"/LOO_*; do
 
 # Run the pipeline
 bash PIPELINE_all.sh ${loo_subdir_name}
+touch slurm/logs/${loo_subdir_name}.DONE
 EOF
 
     # Submit the job
