@@ -10,7 +10,7 @@ NODELIST="lmd-2,lmd-3"
 running_jobs=$(squeue -u $USER -h -o "%j" 2>/dev/null)
 
 mkdir -p ./slurm
-mkdir -o ./slurm/logs
+mkdir -p ./slurm/logs
 
 # Loop through all LOO_* subdirectories
 for loo_dir in "${dset_dir}"/LOO_*; do
@@ -29,7 +29,7 @@ for loo_dir in "${dset_dir}"/LOO_*; do
     # Write SBATCH headers and job commands
     cat > "${job_script}" << EOF
 #!/bin/bash
-#SBATCH --partition=bwh_comppath
+#SBATCH --partition=bwh_comppath_all
 #SBATCH --gres=gpu:1
 #SBATCH --mem=40G
 #SBATCH --cpus-per-task=8
@@ -48,5 +48,6 @@ EOF
     sbatch "${job_script}"
 
     echo "Submitted job for ${loo_subdir_name}"
+    break
 done
 
