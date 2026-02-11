@@ -22,6 +22,9 @@ fi
 for embed_name in "dnabert-s" "evo2_7b_hyena10" "evo-1-8k-base_hyena5"; do
   bash 2_embed.sh "$embed_name" "$dset_name"
   bash 3_train_model.sh "$dset_name" "$analysis_name" "$embed_name" "epc_pool"
+  bash 3_train_model.sh "$dset_name" "$analysis_name" "$embed_name" "epc_pool_1"
+  bash 3_train_model.sh "$dset_name" "$analysis_name" "$embed_name" "epc_pool_2"
+  bash 3_train_model.sh "$dset_name" "$analysis_name" "$embed_name" "epc_pool_3"
   bash 3_train_model.sh "$dset_name" "$analysis_name" "$embed_name" "epc_nopool"
 done
 
