@@ -4,7 +4,7 @@ set -e
 
 BASEDIR="/data/bwh-comppath-seq/youn/human_microbiome_compendium"
 dset_dir="${BASEDIR}/v3v4_split_multiproj_extended"
-NODELIST="lmd-2,lmd-3"
+EXCLUDE="lmd-1,lmd-4"
 cwd="$(pwd)"
 
 # Get list of currently running/pending jobs for this user
@@ -45,7 +45,7 @@ touch slurm/logs/${loo_subdir_name}.DONE
 EOF
 
     # Submit the job
-    sbatch --nodelist=${NODELIST} "${job_script}"
+    sbatch --exclude=${EXCLUDE} "${job_script}"
 
     echo "Submitted job for ${loo_subdir_name}"
     break
