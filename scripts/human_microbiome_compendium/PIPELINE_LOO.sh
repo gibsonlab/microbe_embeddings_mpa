@@ -24,8 +24,16 @@ for loo_dir in "${dset_dir}"/LOO_*; do
         continue
     fi
 
+    # Check if the job already finished previously.
+    if [ -f "./slurm/logs/${loo_subdir_name}.DONE" ]; then
+        echo "Skipping ${loo_subdir_name} - job already finished."
+        continue
+    fi
+
     # Create a job script for this subdirectory
     job_script="./slurm/job_${loo_subdir_name}.sh"
+    rm -f "slurm/logs/${loo_subdir_name}.log"
+    rm -f "slurm/logs/${loo_subdir_name}.err"
 
     # Write SBATCH headers and job commands
     cat > "${job_script}" << EOF
