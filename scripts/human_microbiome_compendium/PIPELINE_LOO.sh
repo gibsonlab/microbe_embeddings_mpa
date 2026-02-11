@@ -42,7 +42,7 @@ for loo_dir in "${dset_dir}"/LOO_*; do
 #SBATCH --nodelist=${NODELIST}
 
 # Run the pipeline
-bash ${cwd}/PIPELINE_all.sh ${loo_subdir_name}
+bash ${cwd}/PIPELINE_all.sh "v3v4_split_multiproj_extended" "${loo_subdir_name}"
 touch logs/${loo_subdir_name}.DONE
 EOF
 
