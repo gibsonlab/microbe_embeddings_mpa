@@ -39,7 +39,6 @@ for loo_dir in "${dset_dir}"/LOO_*; do
 #SBATCH --job-name=${loo_subdir_name}
 #SBATCH --output=logs/${loo_subdir_name}.log
 #SBATCH --error=logs/${loo_subdir_name}.err
-#SBATCH --nodelist=${NODELIST}
 
 # Run the pipeline
 cd ..
@@ -48,7 +47,7 @@ touch logs/${loo_subdir_name}.DONE
 EOF
 
     # Submit the job
-    sbatch "${job_script}"
+    sbatch --nodelist=${NODELIST} "${job_script}"
 
     echo "Submitted job for ${loo_subdir_name}"
     break
