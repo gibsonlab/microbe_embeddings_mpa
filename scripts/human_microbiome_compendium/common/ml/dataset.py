@@ -144,6 +144,10 @@ class ASVDatasetForBaseline(Dataset):
         sample_list = sorted(sample_list, key=lambda samp: sample_ordering[samp.sample_id])
         return sample_list
 
+    def true_abundance_profile(self, idx: int) -> Tuple[str, Tensor]:
+        _, asv_ids, abunds = self.__getitem__(idx)
+        return asv_ids, abunds
+
     def __len__(self) -> int:
         return len(self.sample_list)
 

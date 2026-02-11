@@ -12,6 +12,10 @@ def filter_samples_and_asvs(
         sample_metadata: pd.DataFrame,
         abundance_table_dir: Path,
         asv_sequence_file: Path,
+        step2_read_count_lb: int = 10,
+        step2_num_sample_lb: int = 1,
+        step2_min_num_asv: int = 50,
+        step2_max_num_asv: int = 250
 ) -> Tuple[
     pd.DataFrame, pd.DataFrame, Dict[str, str], int
 ]:
@@ -20,6 +24,10 @@ def filter_samples_and_asvs(
         project_subset['project'].to_list(),
         set(sample_subset['srs'].tolist()),
         abundance_table_dir,
+        read_count_lb=step2_read_count_lb,
+        num_sample_lb=step2_num_sample_lb,
+        min_num_asv=step2_min_num_asv,
+        max_num_asv=step2_max_num_asv,
     )
 
     print("Num. project-relevant ASVs:", len(asv_id_subset))
@@ -112,8 +120,18 @@ def filter_step2_select_subset_asvs(
         project_ids: List[str],
         sample_subset: Set[str],
         abundance_table_dir: Path,
+        read_count_lb: int,
+        num_sample_lb: int,
+        min_num_asv: int,
+        max_num_asv: int,
 ) -> Tuple[Set[str], int, Set[str]]:
     """
+    :param read_count_lb: Consider ASVs exceeding this count in `num_sample_lb` samples.
+    :param num_sample_lb: Consider ASVs exceeding `read_count_lb` count in this many samples.
+
+    :param min_num_asv: After the ASV screening, only keep samples exceeding this number of ASVs.
+    :param max_num_asv: After the ASV screening, only keep samples below this number of ASVs.
+    
     :return: A triple of objects (Set of ASV IDs, Max # of ASV per sample, subset of sample IDs). 
     The subset of sample IDs is guaranteed to be a subset of the input 'sample_subset'; it should be used for further downstream pre-filtering of samples.
     """
@@ -138,8 +156,6 @@ def filter_step2_select_subset_asvs(
     For each ASV, which samples have this ASV with count >= read_count_lb? Then count the # of samples (np.sum) and filter by num_sample_lb.
     Note: compute the total sample tally across all projects (call df.add)
     """
-    read_count_lb = 10
-    num_sample_lb = 1
     print(f"Filtering ASVs by (# samples with count >= {read_count_lb}) >= {num_sample_lb}")
     asv_n_samples_overall = None
     for project_id, project_table in project_asv_tables.items():
@@ -163,8 +179,7 @@ def filter_step2_select_subset_asvs(
     For each Sample, only keep it if it has 'min_num_asv' filtered ASVs from stage 1.
     Also, for memory constraints during training, filter by 'max_num_asv'.
     """
-    min_num_asv = 50
-    max_num_asv = 250
+    print(f"Filtering Samples by ASV count between {min_num_asv} and {max_num_asv}")
     for project_id, project_table in project_asv_tables.items():
         num_asv_per_sample = np.sum(project_table > 0, axis=0)
         samples_with_lb_asvs = num_asv_per_sample.loc[
