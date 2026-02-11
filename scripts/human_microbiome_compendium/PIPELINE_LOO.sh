@@ -14,7 +14,7 @@ mkdir -p ./slurm
 mkdir -p ./slurm/logs
 
 # Loop through all LOO_* subdirectories
-cd .slurm
+cd ./slurm
 for loo_dir in "${dset_dir}"/LOO_*; do
     # Extract just the directory name (e.g., LOO_PRJNA391858)
     loo_subdir_name=$(basename "${loo_dir}")
