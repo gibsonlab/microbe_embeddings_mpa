@@ -4,4 +4,4 @@ hidden_dim: 64
 use_sgb_pooling: True
 sgb_pool_dim: 64
 mlp_hidden_layers: 1
-dropout_rate: 0.2
+dropout_rate: 0.0
