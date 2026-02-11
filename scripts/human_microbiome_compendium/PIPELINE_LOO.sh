@@ -4,6 +4,7 @@ set -e
 
 BASEDIR="/data/bwh-comppath-seq/youn/human_microbiome_compendium"
 dset_dir = "${BASEDIR}/v3v4_split_multiproj_extended"
+NODELIST="lmd-2,lmd-3"
 
 mkdir -p ./slurm
 mkdir -o ./slurm/logs
@@ -23,13 +24,14 @@ for loo_dir in "${dset_dir}"/LOO_*; do
 #SBATCH --job-name=${loo_subdir_name}
 #SBATCH --output=slurm/logs/${loo_subdir_name}.log
 #SBATCH --error=slurm/logs/${loo_subdir_name}.err
+#SBATCH --nodelist=${NODELIST}
 
 # Run the pipeline
 bash PIPELINE_all.sh ${loo_subdir_name}
 EOF
 
     # Submit the job
-    sbatch --nodelist= "${job_script}"
+    sbatch "${job_script}"
 
     echo "Submitted job for ${loo_subdir_name}"
 done
