@@ -5,6 +5,7 @@ set -e
 BASEDIR="/data/bwh-comppath-seq/youn/human_microbiome_compendium"
 dset_dir="${BASEDIR}/v3v4_split_multiproj_extended"
 NODELIST="lmd-2,lmd-3"
+cwd="$(pwd)"
 
 # Get list of currently running/pending jobs for this user
 running_jobs=$(squeue -u $USER -h -o "%j" 2>/dev/null)
@@ -13,6 +14,7 @@ mkdir -p ./slurm
 mkdir -p ./slurm/logs
 
 # Loop through all LOO_* subdirectories
+cd .slurm
 for loo_dir in "${dset_dir}"/LOO_*; do
     # Extract just the directory name (e.g., LOO_PRJNA391858)
     loo_subdir_name=$(basename "${loo_dir}")
@@ -24,7 +26,7 @@ for loo_dir in "${dset_dir}"/LOO_*; do
     fi
 
     # Create a job script for this subdirectory
-    job_script="./slurm/job_${loo_subdir_name}.sh"
+    job_script="job_${loo_subdir_name}.sh"
 
     # Write SBATCH headers and job commands
     cat > "${job_script}" << EOF
@@ -35,13 +37,13 @@ for loo_dir in "${dset_dir}"/LOO_*; do
 #SBATCH --cpus-per-task=8
 #SBATCH --time=12:00:00
 #SBATCH --job-name=${loo_subdir_name}
-#SBATCH --output=slurm/logs/${loo_subdir_name}.log
-#SBATCH --error=slurm/logs/${loo_subdir_name}.err
+#SBATCH --output=logs/${loo_subdir_name}.log
+#SBATCH --error=logs/${loo_subdir_name}.err
 #SBATCH --nodelist=${NODELIST}
 
 # Run the pipeline
-bash PIPELINE_all.sh ${loo_subdir_name}
-touch slurm/logs/${loo_subdir_name}.DONE
+bash ${cwd}/PIPELINE_all.sh ${loo_subdir_name}
+touch logs/${loo_subdir_name}.DONE
 EOF
 
     # Submit the job
