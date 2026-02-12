@@ -10,7 +10,7 @@ if [ $# -eq 0 ]; then
   for dir in "${BASEDIR}"/*; do
     echo "-> $(basename "${dir}")"
   done
-  echo "Run this command "
+  echo "Run this command with 'bash PIPELINE_all.sh <dataset>' to print the available analysis subdirectories."
   exit 1
 fi
 dset_name="$1"
