@@ -34,7 +34,7 @@ else
   echo "Embeddings file: ${embeddings_file}"
 fi
 
-ANALYSIS_DIR="${DATA_DIR}/${analysis_name}"
+ANALYSIS_DIR="${DATA_DIR}/analyses/${analysis_name}"
 training_set="${ANALYSIS_DIR}/train.tsv"
 test_set="${ANALYSIS_DIR}/test.tsv"
 if ! [ -f "${test_set}" ]; then
