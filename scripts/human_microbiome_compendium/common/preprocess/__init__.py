@@ -4,3 +4,4 @@ from .filter_pipeline import filter_samples_and_asvs
 from .validate_16s_vsearch import pipeline_16s_validation
 from .alignment import run_mafft, run_mothur
 from .sample_split_old import train_test_split_mincut_approximation
+from .sample_split_pcoa import compute_sample_distance_matrix
