@@ -25,7 +25,7 @@ def kl_divergence(p: np.ndarray, q: np.ndarray) -> float:
 def jensen_shannon_between_samples(x: MicrobiomeSample, y: MicrobiomeSample, asv_id_subset: Set[str]) -> float:
     x_ids = x.asv_ids.intersection(asv_id_subset)
     y_ids = y.asv_ids.intersection(asv_id_subset)
-    all_ids = x_ids.union(y_ids)
+    all_ids = list(x_ids.union(y_ids))
     p = x.relative_abundance_array_padded(asv_id_order=all_ids)
     q = y.relative_abundance_array_padded(asv_id_order=all_ids)
     m = 0.5 * (p + q)
