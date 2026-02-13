@@ -92,7 +92,7 @@ def train_test_split(
         train_fraction: float,
         test_fraction: float,
         method: str,
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+) -> Tuple[pd.DataFrame, pd.DataFrame, Optional[Any]]:
     if method == 'spectral-mincut':
         print("Using Min-cut splitting.")
         return train_test_split_mincut_approximation(sample_df, sample_dist_mat_order, sample_distance_matrix, train_fraction, test_fraction)
@@ -109,7 +109,7 @@ def train_test_split_pcoa(
         sample_distance_matrix: np.ndarray,
         train_fraction: float,
         test_fraction: float,
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     import skbio
     import seaborn as sb
     pcoa_result = skbio.stats.ordination.pcoa(sample_distance_matrix, method='eigh')
@@ -160,7 +160,7 @@ def train_test_split_pcoa(
     plt.title('PCoA Plot')
     plt.grid(True, alpha=0.3)
     plt.show()
-    return train_df, test_df
+    return train_df, test_df, coordinates
 
 
 def train_test_split_mincut_approximation(
