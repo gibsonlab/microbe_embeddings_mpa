@@ -85,6 +85,70 @@ def weighted_graph_from_matrix(A: np.ndarray, node_names: List[str]):
     return G
 
 
+def train_test_split(
+        sample_df: pd.DataFrame,
+        abundance_table_dir: Path,
+        asv_id_subset: Set[str],
+        train_fraction: float,
+        test_fraction: float,
+        sample_distance_matrix: np.ndarray,
+        method: str,
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    if method == 'spectral-mincut':
+        return train_test_split_mincut_approximation(sample_df, abundance_table_dir, asv_id_subset, train_fraction, test_fraction, sample_distance_matrix=sample_distance_matrix)
+    elif method == 'pcoa':
+        return train_test_split_pcoa(sample_df, abundance_table_dir, asv_id_subset, train_fraction, test_fraction, sample_distance_matrix=sample_distance_matrix)
+    else:
+        raise ValueError(f"Unsupported method `{method}`.")
+
+
+def train_test_split_pcoa(
+        sample_df: pd.DataFrame,
+        abundance_table_dir: Path,
+        asv_id_subset: Set[str],
+        train_fraction: float,
+        test_fraction: float,
+        sample_dist_mat_order: List[str],
+        sample_distance_matrix: np.ndarray,
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    import skbio
+    import seaborn as sb
+    pcoa_result = skbio.stats.ordination.pcoa(sample_distance_matrix, method='eigh')
+
+    """ PCoA based coordinate plotting of samples """
+    coordinates = pcoa_result.samples[['PC1', 'PC2']].assign(SampleId=sample_dist_mat_order)
+
+
+
+    # ============================ plot output.
+    train_sample_set = set(train_df['srs'])
+    test_sample_set = set(test_df['srs'])
+
+    test_train_labels = []
+    for sample_id in sample_dist_mat_order:
+        if sample_id in train_sample_set:
+            test_train_labels.append("Train")
+        elif sample_id in test_sample_set:
+            test_train_labels.append("Test")
+        else:
+            test_train_labels.append("Excluded")
+
+    fig, ax = plt.subplots(1, 1, figsize=(8, 6))
+    sb.scatterplot(
+        coordinates.assign(Label=test_train_labels),
+        x='PC1', y='PC2', hue="Label",
+        alpha=0.3, linewidth=0.
+    )
+
+    # Get proportion of variance explained
+    prop_var = pcoa_result.proportion_explained
+    plt.xlabel(f'PC1 ({prop_var[0] * 100:.2f}%)')
+    plt.ylabel(f'PC2 ({prop_var[1] * 100:.2f}%)')
+    plt.title('PCoA Plot')
+    plt.grid(True, alpha=0.3)
+    plt.show()
+
+
 def train_test_split_mincut_approximation(
         sample_df: pd.DataFrame,
         abundance_table_dir: Path,
@@ -93,7 +157,7 @@ def train_test_split_mincut_approximation(
         test_fraction: float,
         sample_distance_matrix: Optional[np.ndarray] = None,
         asv_distance_matrix: Optional[ASVDistanceMatrix] = None,
-):
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Splits samples by applying spectral cut algorithm to each CC.
     """
@@ -119,6 +183,7 @@ def train_test_split_mincut_approximation(
         A = 1 - (sample_distance_matrix / np.max(sample_distance_matrix))
         print("Computed sample similarity matrix of shape {}.".format(A.shape))
     else:
+        print("[WARNING] ----------- Having sample_distance_matrix = None is deprecated. Use compute_sample_distance_matrix() to pre-compute a distance matrix instead. -------- ")
         print("Computing sample-to-sample distance matrix from ASV collections.")
         # calculate sample distance matrix.
         # Compute weighted adjacency matrix, A[i,j] = # of ASVs shared by sample i and j.
