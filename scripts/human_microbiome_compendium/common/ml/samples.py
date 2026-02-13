@@ -80,6 +80,14 @@ class MicrobiomeSample:
         # asv_ids, read_counts = self.read_count_array(asv_id_subset)
         # return asv_ids, read_counts / np.sum(read_counts)
 
+    def relative_abundance_array_padded(self, asv_id_order: List[str]) -> np.ndarray:
+        counts = np.zeros(len(asv_id_order), dtype=float)
+        for tgt_i, asv_id in enumerate(asv_id_order):
+            if asv_id in self.asv_indices:
+                src_i = self.asv_indices[asv_id]
+                counts[tgt_i] = self.asv_reads_full[src_i]
+        return counts / np.sum(counts)
+
     def num_asvs(self) -> int:
         return len(self.read_counts)
 
