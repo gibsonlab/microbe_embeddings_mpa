@@ -29,7 +29,7 @@ def jensen_shannon_between_samples(x: MicrobiomeSample, y: MicrobiomeSample, asv
     p = x.relative_abundance_array_padded(asv_id_order=all_ids)
     q = y.relative_abundance_array_padded(asv_id_order=all_ids)
     m = 0.5 * (p + q)
-    return 0.5 * (kl_div(p, m) + kl_div(q, m))
+    return 0.5 * (kl_divergence(p, m) + kl_divergence(q, m))
 
 
 def compute_sample_distance_matrix(
