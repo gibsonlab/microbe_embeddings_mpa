@@ -58,7 +58,8 @@ def dump_asv_ids(sequences_dict: Dict[str, str], sample_df: pd.DataFrame, abunda
     :param abundance_table_dir: Abundance table directory
     :param out_path: A path to an output file.
     """
-    input_subset = set(sequences_dict.keys())
+    sample_subset = set(sample_df['srs'])
+    input_asv_subset = set(sequences_dict.keys())
 
     # this is always a subset of input_subset. may or may not be the entire set, depending on what `sample_df` gets passed in.
     output_subset = set()
@@ -67,7 +68,20 @@ def dump_asv_ids(sequences_dict: Dict[str, str], sample_df: pd.DataFrame, abunda
     for proj_id in sample_proj_ids:
         # load the sample table dir.
         with zstd.open(abundance_table_dir / f"{proj_id}.txt.zst", "rt") as f:
-            proj_asvs = set(pd.read_csv(f, sep='\t')['asv']).intersection(input_subset)
+            table = pd.read_csv(f, sep='\t').set_index("asv")
+
+            # restrict to samples which appear in the input.
+            project_sample_ids = set(table.columns)
+            table = table[list(sample_subset.intersection(project_sample_ids))]
+
+            # restrict to those ASVs which appear in the specified subset.
+            existing_asv_idxs = input_asv_subset.intersection(table.index)
+            table = table.loc[list(existing_asv_idxs)]
+
+            # delete all ASVs which don't appear in any sample.
+            table = table[(table != 0.0).any(axis=1)]
+
+            proj_asvs = set(str(s) for s in table.index)
             output_subset.update(proj_asvs)
 
     # Now write these ASVs to file.
