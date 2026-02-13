@@ -10,8 +10,7 @@ from typing import Union
 from pathlib import Path
 
 from Bio import SeqIO
-from Bio.Seq import Seq
-from Bio.SeqRecord import SeqRecord
+from .asvs import dict_to_fasta
 
 
 def pipeline_16s_validation(
@@ -71,28 +70,6 @@ def pipeline_16s_validation(
     }
     assert len(asv_seqs_subset) == len(asv_id_subset)
     return asv_seqs_subset
-
-
-def dict_to_fasta(sequences_dict: dict[str, str], output_file: Path) -> None:
-    """
-    Write sequences from dictionary to multi-FASTA file using BioPython.
-
-    :param sequences_dict: Dictionary mapping sequence IDs to sequences
-    :param output_file: Path to output FASTA file
-    """
-    seq_records: list[SeqRecord] = []
-    for seq_id, sequence in sequences_dict.items():
-        seq_record: SeqRecord = SeqRecord(
-            Seq(sequence),
-            id=seq_id,
-            description=""
-        )
-        seq_records.append(seq_record)
-
-    with open(output_file, "w") as handle:
-        SeqIO.write(seq_records, handle, "fasta")
-
-    print(f"Wrote {len(seq_records)} sequences to {output_file}")
 
 
 def check_vsearch_installation(vsearch_path: str = 'vsearch') -> bool:
