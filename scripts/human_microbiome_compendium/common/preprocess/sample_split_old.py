@@ -91,7 +91,8 @@ def train_test_split_mincut_approximation(
         asv_id_subset: Set[str],
         train_fraction: float,
         test_fraction: float,
-        distance_matrix: Optional[ASVDistanceMatrix] = None,
+        sample_distance_matrix: Optional[np.ndarray] = None,
+        asv_distance_matrix: Optional[ASVDistanceMatrix] = None,
 ):
     """
     Splits samples by applying spectral cut algorithm to each CC.
@@ -110,40 +111,50 @@ def train_test_split_mincut_approximation(
 
     print(f"[FAIR SPLIT] Splitting {len(all_samples)} samples found in projects: {proj_ids}")
 
-    # Compute weighted adjacency matrix, A[i,j] = # of ASVs shared by sample i and j.
-    n_samples = len(all_samples)
-    n_pairs = int(n_samples * (n_samples - 1) / 2)
-    A = np.zeros((n_samples, n_samples), dtype=float)
-    if distance_matrix is not None:
-        print("Weighted Graph will use weight = (1 - d/d_max) as similarity metric.")
-
-        def sim_fn(sample1: MicrobiomeSample, sample2: MicrobiomeSample):
-            distance_submat = distance_matrix.submatrix(
-                [asv_id for asv_id in sample1.asv_ids if asv_id in asv_id_subset],
-                [asv_id for asv_id in sample2.asv_ids if asv_id in asv_id_subset],
-            )
-            if distance_submat.size == 0:
-                raise ValueError(
-                    "Distance submatrix had size 0. Some sample (illegally) had 0 ASVs in filtered collection.")
-            else:
-                sim_submat = 1 - (distance_submat / distance_matrix.seq_len())  # SIMILARITY = 1 - HAMMING_DIST / SEQLEN
-                return np.mean(sim_submat)
+    if sample_distance_matrix is not None:
+        assert sample_distance_matrix.shape[0] == sample_distance_matrix.shape[1], "Distance matrix must be a square matrix."
+        assert sample_distance_matrix.shape[0] == len(all_samples), "Distance matrix n_rows must match dimensions of the number of samples in collection."
+        print("Using pre-computed sample-to-sample distance matrix.")
+        print("Using conversion: Similarity = (1 - d / d_max)")
+        A = 1 - (sample_distance_matrix / np.max(sample_distance_matrix))
+        print("Computed sample similarity matrix of shape {}.".format(A.shape))
     else:
-        print("Weighted Graph will use weight = JACCARD(i,j) as similarity metric.")
-        sim_fn = lambda sample1, sample2: jaccard_similarity(
-            sample1.asv_ids.intersection(asv_id_subset),
-            sample2.asv_ids.intersection(asv_id_subset)
-        )
+        print("Computing sample-to-sample distance matrix from ASV collections.")
+        # calculate sample distance matrix.
+        # Compute weighted adjacency matrix, A[i,j] = # of ASVs shared by sample i and j.
+        n_samples = len(all_samples)
+        n_pairs = int(n_samples * (n_samples - 1) / 2)
+        A = np.zeros((n_samples, n_samples), dtype=float)
+        if asv_distance_matrix is not None:
+            print("Weighted Graph will use weight = (1 - d/d_max) as similarity metric.")
 
-    for (i, sample_i), (j, sample_j) in tqdm(
-            itertools.combinations(enumerate(all_samples), r=2),
-            total=n_pairs,
-            desc="Sample pair calculation",
-    ):
-        sample_asv_sim = sim_fn(sample_i, sample_j)
-        A[i, j] = sample_asv_sim
-        A[j, i] = sample_asv_sim
-    print("Computed sample similarity matrix of shape {}.".format(A.shape))
+            def sim_fn(sample1: MicrobiomeSample, sample2: MicrobiomeSample):
+                distance_submat = asv_distance_matrix.submatrix(
+                    [asv_id for asv_id in sample1.asv_ids if asv_id in asv_id_subset],
+                    [asv_id for asv_id in sample2.asv_ids if asv_id in asv_id_subset],
+                )
+                if distance_submat.size == 0:
+                    raise ValueError(
+                        "Distance submatrix had size 0. Some sample (illegally) had 0 ASVs in filtered collection.")
+                else:
+                    sim_submat = 1 - (distance_submat / asv_distance_matrix.seq_len())  # SIMILARITY = 1 - HAMMING_DIST / SEQLEN
+                    return np.mean(sim_submat)
+        else:
+            print("Weighted Graph will use weight = JACCARD(i,j) as similarity metric.")
+            sim_fn = lambda sample1, sample2: jaccard_similarity(
+                sample1.asv_ids.intersection(asv_id_subset),
+                sample2.asv_ids.intersection(asv_id_subset)
+            )
+
+        for (i, sample_i), (j, sample_j) in tqdm(
+                itertools.combinations(enumerate(all_samples), r=2),
+                total=n_pairs,
+                desc="Sample pair calculation",
+        ):
+            sample_asv_sim = sim_fn(sample_i, sample_j)
+            A[i, j] = sample_asv_sim
+            A[j, i] = sample_asv_sim
+        print("Computed sample similarity matrix of shape {}.".format(A.shape))
 
     # Create a graph, using "A" as an adjacency matrix. Enumerate all connected components.
     # first rule out all small/trivial connected components.
