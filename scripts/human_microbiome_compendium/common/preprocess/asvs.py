@@ -63,7 +63,8 @@ def dump_asv_ids(sequences_dict: Dict[str, str], sample_df: pd.DataFrame, abunda
     # this is always a subset of input_subset. may or may not be the entire set, depending on what `sample_df` gets passed in.
     output_subset = set()
 
-    for proj_id in sample_df.groupby("project"):
+    sample_proj_ids = set(sample_df['project'])
+    for proj_id in sample_proj_ids:
         # load the sample table dir.
         with zstd.open(abundance_table_dir / f"{proj_id}.txt.zst", "rt") as f:
             proj_asvs = set(pd.read_csv(f, sep='\t')['asv']).intersection(input_subset)
