@@ -5,8 +5,8 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --time=5-00:00:00
 #SBATCH --job-name=train
-#SBATCH --output=train_%A_%a.out
-#SBATCH --error=train_%A_%a.err
+#SBATCH --output=logs/train_%A_%a.out
+#SBATCH --error=logs/train_%A_%a.err
 
 # Note: this is a Slurm script, meant to be run on ErisXDL compute nodes with GPUs.
 set -e
