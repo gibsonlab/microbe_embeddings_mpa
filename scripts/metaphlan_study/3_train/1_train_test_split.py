@@ -112,15 +112,16 @@ def test_train_split_pcoa_jensenshannon(
         # Assign left subset and right subset using the input parameters.
         left_ub = np.quantile(pc1, q=left_q)
         right_lb = np.quantile(pc1, q=right_q)
-        print("Using tail cutoff quantiles train < {}, test >= {}".format(left_q, right_q))
         partition_left = {sample_id for i, sample_id in enumerate(sample_ids) if pc1[i] < left_ub}
         partition_right = {sample_id for i, sample_id in enumerate(sample_ids) if pc1[i] >= right_lb}
         return partition_left, partition_right
 
 
     if train_is_left:
+        print("Using tail cutoff quantiles train < {}, test >= {}".format(train_fraction, 1 - test_fraction))
         training_sample_ids, test_sample_ids = split_partition_by_pc1(train_fraction, 1 - test_fraction)
     else:
+        print("Using tail cutoff quantiles test < {}, train >= {}".format(test_fraction, 1 - train_fraction))
         test_sample_ids, training_sample_ids = split_partition_by_pc1(test_fraction, 1 - train_fraction)
 
     train_df = profile_df[profile_df.index.isin(training_sample_ids)]
