@@ -89,6 +89,7 @@ def test_train_split_pcoa_jensenshannon(
     abundances = extractor.sgb_profile_df.to_numpy()
     abundances = abundances / abundances.sum(axis=-1, keepdims=True)
     sample_ids = [str(sid) for sid in extractor.sgb_profile_df.index]
+    print("Sample IDS preview: {} ...".format(sample_ids[:5]))
 
     print("Calculating jensen-shannon distance matrix.")
     dist_mat = calculate_js_distances_numba(abundances)
