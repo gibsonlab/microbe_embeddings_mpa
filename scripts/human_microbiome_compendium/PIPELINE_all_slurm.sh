@@ -71,6 +71,11 @@ for analysis_subdir in "${dset_dir}"/analyses/*; do
     # Create a job script for this subdirectory
     jobname="${dset_name}:${analysis_name}"
     job_script="${SCRIPT_DIR}/${jobname}.sh"
+    if $DRY_RUN; then
+        echo "[Dry run] Submit ${jobname}:  sbatch --exclude=${EXCLUDE_NODES} ${job_script}  -->  bash PIPELINE_all.sh \"${dset_name}\" \"${analysis_name}\""
+        continue
+    fi
+
     rm -f "${LOG_DIR}/${jobname}.out"
     rm -f "${LOG_DIR}/${jobname}.err"
 
