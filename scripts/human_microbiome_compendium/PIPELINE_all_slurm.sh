@@ -77,8 +77,9 @@ for analysis_subdir in "${dset_dir}"/analyses/*; do
         continue
     fi
 
-    rm -f "${LOG_DIR}/${dset_name}__${analysis_name}.out"
-    rm -f "${LOG_DIR}/${dset_name}__${analysis_name}.err"
+    logfile="${LOG_DIR}/${dset_name}__${analysis_name}.out"
+    errfile="${LOG_DIR}/${dset_name}__${analysis_name}.err"
+    rm -f "${logfile}" "${errfile}"
 
     # Write SBATCH headers and job commands
     cat > "${job_script}" << EOF
@@ -89,8 +90,8 @@ for analysis_subdir in "${dset_dir}"/analyses/*; do
 #SBATCH --cpus-per-task=8
 #SBATCH --time=12:00:00
 #SBATCH --job-name=${analysis_name}
-#SBATCH --output=${LOG_DIR}/${jobname}.out
-#SBATCH --error=${LOG_DIR}/${jobname}.err
+#SBATCH --output=${logfile}
+#SBATCH --error=${errfile}
 set -e
 
 # Run the pipeline
