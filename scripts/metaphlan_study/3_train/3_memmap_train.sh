@@ -1,7 +1,6 @@
 #!/bin/bash
 #SBATCH --partition=bwh_comppath_long
 #SBATCH --array=1-80
-#SBATCH --ntasks=1
 #SBATCH --mem=20G
 #SBATCH --cpus-per-task=4
 #SBATCH --time=1-00:00:00
