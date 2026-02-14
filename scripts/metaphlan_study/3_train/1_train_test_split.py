@@ -94,9 +94,10 @@ def test_train_split_pcoa_jensenshannon(
     print("Calculating jensen-shannon distance matrix.")
     dist_mat = calculate_js_distances_numba(abundances)
 
+    """ Compute PCoA. """
     from skbio import DistanceMatrix
     dist_mat = DistanceMatrix(data=dist_mat, ids=sample_ids)
-    pcoa_result = pcoa(dist_mat, method='eigh')
+    pcoa_result = pcoa(dist_mat, method='eigh', dimensions=2)
     # noinspection PyTypeHints
     coordinates = pcoa_result.samples.loc[:, ['PC1', 'PC2']].assign(SampleId=sample_ids)
     pc1 = coordinates['PC1'].to_numpy()
