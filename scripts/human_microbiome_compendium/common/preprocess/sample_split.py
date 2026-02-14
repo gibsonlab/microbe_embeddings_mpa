@@ -87,28 +87,55 @@ def weighted_graph_from_matrix(A: np.ndarray, node_names: List[str]):
 
 def train_test_split(
         sample_df: pd.DataFrame,
-        sample_dist_mat_order: List[str],
-        sample_distance_matrix: np.ndarray,
         train_fraction: float,
         test_fraction: float,
         method: str,
+        *args,
+        **kwargs,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, Optional[Any]]:
-    if method == 'spectral-mincut':
+    if method == 'random':
+        print("Using random splitting.")
+        train, test = train_test_split_random(sample_df, train_fraction, test_fraction, *args, **kwargs)
+        return train, test, None
+    elif method == 'spectral-mincut':
         print("Using Min-cut splitting.")
-        return train_test_split_mincut_approximation(sample_df, sample_dist_mat_order, sample_distance_matrix, train_fraction, test_fraction)
+        train, test = train_test_split_mincut_approximation(sample_df, train_fraction, test_fraction, *args, **kwargs)
+        return train, test, None
     elif method == 'pcoa':
         print("Using PCOA-based splitting.")
-        return train_test_split_pcoa(sample_df, sample_dist_mat_order, sample_distance_matrix, train_fraction, test_fraction)
+        return train_test_split_pcoa(sample_df, train_fraction, test_fraction, *args, **kwargs)
     else:
         raise ValueError(f"Unsupported method `{method}`.")
 
 
-def train_test_split_pcoa(
+def train_test_split_random(
         sample_df: pd.DataFrame,
-        sample_dist_mat_order: List[str],
-        sample_distance_matrix: np.ndarray,
         train_fraction: float,
         test_fraction: float,
+        seed: int,
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    rng = np.random.default_rng(seed)
+    indices = np.arange(sample_df.shape[0])
+    rng.shuffle(indices)
+
+    # split the indices.
+    n_train_rows = int(sample_df.shape[0] * train_fraction)
+    n_test_rows = int(sample_df.shape[0] * test_fraction)
+    train_indices = indices[:n_train_rows]
+    test_indices = indices[n_train_rows:n_train_rows + n_test_rows]
+
+    # gather the rows.
+    train_df = sample_df.iloc[train_indices].reset_index(drop=True)
+    test_df = sample_df.iloc[test_indices].reset_index(drop=True)
+    return train_df, test_df
+
+
+def train_test_split_pcoa(
+        sample_df: pd.DataFrame,
+        train_fraction: float,
+        test_fraction: float,
+        sample_dist_mat_order: List[str],
+        sample_distance_matrix: np.ndarray,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     import skbio
     import seaborn as sb
@@ -150,25 +177,25 @@ def train_test_split_pcoa(
     sb.scatterplot(
         coordinates.assign(Label=test_train_labels),
         x='PC1', y='PC2', hue="Label",
-        alpha=0.3, linewidth=0.
+        alpha=0.3, linewidth=0., axis=ax
     )
 
     # Get proportion of variance explained
     prop_var = pcoa_result.proportion_explained
-    plt.xlabel(f'PC1 ({prop_var[0] * 100:.2f}%)')
-    plt.ylabel(f'PC2 ({prop_var[1] * 100:.2f}%)')
-    plt.title('PCoA Plot')
-    plt.grid(True, alpha=0.3)
+    ax.set_xlabel(f'PC1 ({prop_var[0] * 100:.2f}%)')
+    ax.set_ylabel(f'PC2 ({prop_var[1] * 100:.2f}%)')
+    ax.set_title('PCoA Plot')
+    ax.grid(True, alpha=0.3)
     plt.show()
     return train_df, test_df, coordinates
 
 
 def train_test_split_mincut_approximation(
         sample_df: pd.DataFrame,
-        sample_dist_mat_order: List[str],
-        sample_distance_matrix: np.ndarray,
         train_fraction: float,
         test_fraction: float,
+        sample_dist_mat_order: List[str],
+        sample_distance_matrix: np.ndarray,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Splits samples by applying spectral cut algorithm to each CC.
