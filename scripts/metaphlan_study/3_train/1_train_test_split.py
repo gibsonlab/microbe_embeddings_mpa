@@ -139,9 +139,10 @@ def test_train_split_pcoa_jensenshannon(
 
         # Get proportion of variance explained
         prop_var = pcoa_result.proportion_explained
-        print(prop_var)
-        ax.set_xlabel(f'PC1 ({prop_var['PC1'] * 100:.2f}%)')
-        ax.set_ylabel(f'PC2 ({prop_var['PC2'] * 100:.2f}%)')
+        explained_pc1 = prop_var['PC1']
+        explained_pc2 = prop_var['PC2']
+        ax.set_xlabel(f'PC1 ({explained_pc1 * 100:.2f}%)')
+        ax.set_ylabel(f'PC2 ({explained_pc2 * 100:.2f}%)')
         ax.set_title('PCoA Plot')
         ax.grid(True, alpha=0.3)
         plt.savefig(plot_path, bbox_inches='tight')
