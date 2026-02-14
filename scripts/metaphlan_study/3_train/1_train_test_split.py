@@ -18,8 +18,7 @@ from gem.datasets.abundance_profile import MetaphlanProfileParser, MetaphlanProf
 def main(
         profile_tsv_path: Path,
         metadata_tsv_path: Path,
-        train_out_path: Path,
-        test_out_path: Path,
+        out_dir: Path,
         edge_weight_strategy: str,
         optional_newick_tree_path: Optional[Path] = None,
 ):
@@ -42,7 +41,7 @@ def main(
     # else:
     #     raise ValueError(f"Unrecognized edge_weight_strategy option `{edge_weight_strategy}")
     # train_df, test_df = test_train_split_asv_separation(profiles_indexed, metadata_subset, similarity)
-    pcoa_plot_path = train_out_path.parent / "pcoa_plot.png"
+    pcoa_plot_path = out_dir / "pcoa_plot.png"
     train_df, test_df = test_train_split_pcoa_jensenshannon(
         profiles_indexed, metadata_subset,
         train_fraction=0.6,
@@ -50,8 +49,9 @@ def main(
         plot_path=pcoa_plot_path, train_is_left=False
     )
 
-    train_df.to_csv(train_out_path, sep="\t", index=True)
-    test_df.to_csv(test_out_path, sep="\t", index=True)
+    train_df.to_csv(out_dir / "train.tsv", sep="\t", index=True)
+    test_df.to_csv(out_dir / "test.tsv", sep="\t", index=True)
+    pd.concat([train_df, test_df], axis=0).to_csv(out_dir / "both.tsv", sep="\t", index=True)
 
     print("# train samples: {}".format(train_df.shape[0]))
     print("# test samples: {}".format(test_df.shape[0]))
