@@ -4,16 +4,35 @@ set -e
 
 BASEDIR="/data/bwh-comppath-seq/youn/human_microbiome_compendium"
 # Suggest dataset subdir names.
-if [ $# -eq 0 ]; then
+if [[ $# -lt 1 ]]; then
   echo "Error: dataset is required"
-  echo "Usage: $0 <dataset> <analysis>"
+  echo "Usage: $0 <dataset> [--dry-run]"
   echo "Available dataset names:"
   for dir in "${BASEDIR}"/*; do
     echo "-> $(basename "${dir}")"
   done
   exit 1
 fi
-dset_name="$1"
+
+# Get positional argument
+dset_name=$1
+shift
+
+# Parse options
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        *)
+            echo "Unknown option: $1"
+            exit 1
+            ;;
+    esac
+done
+
+# ======================= Script body starts here ====================
 
 dset_dir="${BASEDIR}/${dset_name}"
 EXCLUDE_NODES=""
