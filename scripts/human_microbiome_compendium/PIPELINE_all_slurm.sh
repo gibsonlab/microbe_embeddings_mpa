@@ -19,6 +19,7 @@ dset_name=$1
 shift
 
 # Parse options
+DRY_RUN=false
 while [[ $# -gt 0 ]]; do
     case $1 in
         --dry-run)
@@ -72,7 +73,7 @@ for analysis_subdir in "${dset_dir}"/analyses/*; do
     jobname="${dset_name}:${analysis_name}"
     job_script="${SCRIPT_DIR}/${jobname}.sh"
     if $DRY_RUN; then
-        echo "[Dry run] Submit ${jobname}:  sbatch --exclude=${EXCLUDE_NODES} ${job_script}  -->  bash PIPELINE_all.sh \"${dset_name}\" \"${analysis_name}\""
+        echo "[Dry run] Submit ${jobname}:  sbatch --exclude=\"${EXCLUDE_NODES}\" \"${job_script}\"  -->  bash PIPELINE_all.sh \"${dset_name}\" \"${analysis_name}\""
         continue
     fi
 
