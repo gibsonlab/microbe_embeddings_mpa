@@ -1,12 +1,12 @@
 #!/bin/bash
 #SBATCH --partition=bwh_comppath_long
-#SBATCH --array=1-20
+#SBATCH --array=1-100
 #SBATCH --mem=20G
 #SBATCH --cpus-per-task=4
 #SBATCH --time=1-00:00:00
-#SBATCH --job-name=memmap_test
-#SBATCH --output=logs/memmap_test_%A_%a.out
-#SBATCH --error=logs/memmap_test_%A_%a.err
+#SBATCH --job-name=memmap
+#SBATCH --output=logs/memmap_%A_%a.out
+#SBATCH --error=logs/memmap_%A_%a.err
 set -e
 
 
@@ -21,7 +21,7 @@ embedding_model="$1"
 #SAMPLE_DIR=/data/bwh-comppath-seq/youn/metaphlan_dset/model_training
 SAMPLE_DIR=/data/bwh-comppath-seq/youn/metaphlan_dset/model_training_pcoa_split
 
-TSV_FILE="${SAMPLE_DIR}/test.tsv"
+TSV_FILE="${SAMPLE_DIR}/both.tsv"
 N_LINES_TSV=$(wc -l < $TSV_FILE)   # Total items (replace with your value)
 N_SAMPLES=$((N_LINES_TSV - 1))
 
