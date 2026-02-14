@@ -86,14 +86,14 @@ def test_train_split_pcoa_jensenshannon(
     profile_df = select_profiles_in_metadata(metadata_subset_df, profiles_indexed)
     extractor = MetaphlanProfileParser(profile_df)
 
-    sample_order = list(extractor.samples())
+    abundances = extractor.sgb_profile_df.to_numpy()
+    abundances = abundances / abundances.sum(axis=-1, keepdims=True)
+    sample_ids = [str(sid) for sid in extractor.sgb_profile_df.index]
+
     print("Calculating jensen-shannon distance matrix.")
-    dist_mat = calculate_js_distances_joblib(
-        [sample.abundances_ensure_normalized for sample in sample_order]
-    )
+    dist_mat = calculate_js_distances_numba(abundances)
 
     from skbio import DistanceMatrix
-    sample_ids = [sample.sample_id for sample in sample_order]
     dist_mat = DistanceMatrix(data=dist_mat, ids=sample_ids)
     pcoa_result = pcoa(dist_mat, method='eigh')
     # noinspection PyTypeHints
@@ -162,27 +162,16 @@ def jensen_shannon_symmetrized_kl_numba(p: np.ndarray, q: np.ndarray) -> float:
     return 0.5 * (kl_divergence_numba(p, m) + kl_divergence_numba(q, m))
 
 
-def calculate_js_distances_joblib(samples: List[np.ndarray], n_jobs=-1) -> np.ndarray:
-    n = len(samples)
-    distmat = np.zeros((n, n), dtype=float)
+@njit(parallel=True)
+def calculate_js_distances_numba(samples: np.ndarray) -> np.ndarray:
+    n = samples.shape[0]
+    distmat = np.zeros((n, n), dtype=np.float64)
 
-    # Generate all pairs
-    pairs = [(i, j) for i in range(n) for j in range(i + 1, n)]
-
-    # Compute with progress bar
-    results = Parallel(n_jobs=n_jobs)(
-        delayed(
-            lambda i, j: (
-                i, j, jensen_shannon_symmetrized_kl_numba(samples[i], samples[j])
-            )
-        )(i, j)
-        for i, j in pairs
-    )
-
-    # Fill matrix
-    for i, j, d in results:
-        distmat[i, j] = d
-        distmat[j, i] = d
+    for i in prange(n):
+        for j in range(i + 1, n):
+            d = jensen_shannon_symmetrized_kl_numba(samples[i], samples[j])
+            distmat[i, j] = d
+            distmat[j, i] = d
 
     return distmat
 
