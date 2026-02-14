@@ -91,6 +91,7 @@ for analysis_subdir in "${dset_dir}"/analyses/*; do
 #SBATCH --job-name=${analysis_name}
 #SBATCH --output=${LOG_DIR}/${jobname}.out
 #SBATCH --error=${LOG_DIR}/${jobname}.err
+set -e
 
 # Run the pipeline
 bash PIPELINE_all.sh "${dset_name}" "${analysis_name}"
