@@ -163,16 +163,23 @@ def jensen_shannon_symmetrized_kl_numba(p: np.ndarray, q: np.ndarray) -> float:
     return 0.5 * (kl_divergence_numba(p, m) + kl_divergence_numba(q, m))
 
 
-@njit(parallel=True)
-def calculate_js_distances_numba(samples: np.ndarray) -> np.ndarray:
-    n = samples.shape[0]
-    distmat = np.zeros((n, n), dtype=np.float64)
+def calculate_js_distances_joblib(samples: List[np.ndarray], n_jobs=-1) -> np.ndarray:
+    n = len(samples)
+    distmat = np.zeros((n, n), dtype=float)
 
-    for i in prange(n):
-        for j in range(i + 1, n):
-            d = jensen_shannon_symmetrized_kl_numba(samples[i], samples[j])
-            distmat[i, j] = d
-            distmat[j, i] = d
+    # Generate all pairs
+    pairs = [(i, j) for i in range(n) for j in range(i + 1, n)]
+
+    # Compute with progress bar
+    results = Parallel(n_jobs=n_jobs)(
+        delayed(lambda i, j: (i, j, jensen_shannon_symmetrized_kl_numba(samples[i], samples[j])))(i, j)
+        for i, j in pairs
+    )
+
+    # Fill matrix
+    for i, j, d in results:
+        distmat[i, j] = d
+        distmat[j, i] = d
 
     return distmat
 
