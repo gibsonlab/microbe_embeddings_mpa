@@ -172,7 +172,11 @@ def calculate_js_distances_joblib(samples: List[np.ndarray], n_jobs=-1) -> np.nd
 
     # Compute with progress bar
     results = Parallel(n_jobs=n_jobs)(
-        delayed(lambda i, j: (i, j, jensen_shannon_symmetrized_kl_numba(samples[i], samples[j])))(i, j)
+        delayed(
+            lambda i, j: (
+                i, j, jensen_shannon_symmetrized_kl_numba(samples[i], samples[j])
+            )
+        )(i, j)
         for i, j in pairs
     )
 
