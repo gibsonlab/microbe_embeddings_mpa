@@ -19,7 +19,10 @@ fi
 embedding_model="$1"
 
 
-TSV_FILE=/data/cctm/youn/metaphlan_dset/model_training/test.tsv
+#SAMPLE_DIR=/data/bwh-comppath-seq/youn/metaphlan_dset/model_training
+SAMPLE_DIR=/data/bwh-comppath-seq/youn/metaphlan_dset/model_training_pcoa_split
+
+TSV_FILE="${SAMPLE_DIR}/test.tsv"
 N_LINES_TSV=$(wc -l < $TSV_FILE)   # Total items (replace with your value)
 N_SAMPLES=$((N_LINES_TSV - 1))
 
@@ -51,7 +54,7 @@ pca_dim=200
 python dataset_memmap.py \
   --dataset-tsv "$TSV_FILE" \
   --embedding-dir "/data/bwh-comppath-seq/youn/metaphlan_dset/embeddings/phylophlan_markers/dna/${embedding_model}" \
-  --memmap-dir "/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples/dna/${embedding_model}_d${pca_dim}" \
+  --memmap-dir "${SAMPLE_DIR}/dna/${embedding_model}_d${pca_dim}" \
   --threads 4 \
   --start $start_row \
   --end $end_row \
