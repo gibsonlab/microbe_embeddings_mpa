@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --partition=bwh_comppath_all
-#SBATCH --gres=gpu:1
+#SBATCH --gpus=1
 #SBATCH --mem=80G
 #SBATCH --cpus-per-task=8
 #SBATCH --time=5-00:00:00
