@@ -2,17 +2,17 @@ from abc import abstractmethod, ABC
 from typing import *
 from pathlib import Path
 import itertools
+
+from skbio.stats.ordination import pcoa
 from tqdm import tqdm
 
 from joblib import Parallel, delayed
 
 import numpy as np
+from numba import njit, prange
 import pandas as pd
 from gem.datasets.abundance_profile import MetaphlanProfileParser, MetaphlanProfile
 
-
-def select_profiles_in_metadata(metadata_df, profiles_df) -> pd.DataFrame:
-    return profiles_df.loc[profiles_df.index.isin(metadata_df['Sample ID'])]
 
 
 def main(
@@ -35,13 +35,15 @@ def main(
     ]
     print("Number of samples (Adult & Healthy): {}".format(metadata.shape[0]))
 
-    if edge_weight_strategy == "jaccard":
-        similarity = JaccardSimilarityOracle()
-    elif edge_weight_strategy == "phylogenetic":
-        similarity = PhylogeneticSimilarityOracle(optional_newick_tree_path)
-    else:
-        raise ValueError(f"Unrecognized edge_weight_strategy option `{edge_weight_strategy}")
-    train_df, test_df = test_train_split_asv_separation(profiles_indexed, metadata_subset, similarity)
+    # if edge_weight_strategy == "jaccard":
+    #     similarity = JaccardSimilarityOracle()
+    # elif edge_weight_strategy == "phylogenetic":
+    #     similarity = PhylogeneticSimilarityOracle(optional_newick_tree_path)
+    # else:
+    #     raise ValueError(f"Unrecognized edge_weight_strategy option `{edge_weight_strategy}")
+    # train_df, test_df = test_train_split_asv_separation(profiles_indexed, metadata_subset, similarity)
+    pcoa_plot_path = train_out_path.parent / "pcoa_plot.png"
+    train_df, test_df = test_train_split_pcoa_jensenshannon(profiles_indexed, metadata_subset, plot_path=pcoa_plot_path)
 
     train_df.to_csv(train_out_path, sep="\t", index=True)
     test_df.to_csv(test_out_path, sep="\t", index=True)
@@ -53,10 +55,127 @@ def main(
     ))
 
 
+# ================================================ HELPER CODE: misc.
 def jaccard_similarity(x: Set, y: Set) -> float:
     numer = len(x.intersection(y))
     denom = len(x.union(y))
     return numer / denom
+
+
+# def kl_divergence(p: np.ndarray, q: np.ndarray) -> float:
+#     return scipy_kl_div(p, q).sum()
+#
+#
+# def jensen_shannon_symmetrized_kl(p: np.ndarray, q: np.ndarray) -> float:
+#     m = 0.5 * (p + q)
+#     return 0.5 * (kl_divergence(p, m) + kl_divergence(q, m))
+
+
+def select_profiles_in_metadata(metadata_df, profiles_df) -> pd.DataFrame:
+    return profiles_df.loc[profiles_df.index.isin(metadata_df['Sample ID'])]
+
+
+# ================================================= HELPER CODE: pcoa-based splitting.
+def test_train_split_pcoa_jensenshannon(
+        profiles_indexed: pd.DataFrame,
+        metadata_subset_df: pd.DataFrame,
+        train_fraction: float = 0.8,
+        test_fraction: float = 0.2,
+        plot_path: Optional[Path] = None,
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    profile_df = select_profiles_in_metadata(metadata_subset_df, profiles_indexed)
+    extractor = MetaphlanProfileParser(profile_df)
+
+    sample_order = list(extractor.samples())
+    print("Calculating jensen-shannon distance matrix.")
+    dist_mat = calculate_js_distances_numba(np.stack(
+        [sample.abundances_ensure_normalized for sample in sample_order],
+        axis=0
+    ))
+
+    from skbio import DistanceMatrix
+    sample_ids = [sample.sample_id for sample in sample_order]
+    dist_mat = DistanceMatrix(data=dist_mat, ids=sample_ids)
+    pcoa_result = pcoa(dist_mat, method='eigh')
+    # noinspection PyTypeHints
+    coordinates = pcoa_result.samples.loc[:, ['PC1', 'PC2']].assign(SampleId=sample_ids)
+    pc1 = coordinates['PC1'].to_numpy()
+    left_q = train_fraction
+    right_q = 1 - test_fraction
+
+    # Assign left subset and right subset using the input parameters.
+    left_ub = np.quantile(pc1, q=left_q)
+    right_lb = np.quantile(pc1, q=right_q)
+    print("Using tail cutoff quantiles train < {}, test >= {}".format(left_q, right_q))
+    partition_left = [sample_id for i, sample_id in enumerate(sample_ids) if pc1[i] < left_ub]
+    partition_right = [sample_id for i, sample_id in enumerate(sample_ids) if pc1[i] >= right_lb]
+
+    print("Partition is {} vs. {}".format(len(partition_left), len(partition_right)))
+    training_sample_ids = set(partition_left)
+    test_sample_ids = set(partition_right)
+    train_df = profile_df[profile_df.index.isin(training_sample_ids)]
+    test_df = profile_df[profile_df.index.isin(test_sample_ids)]
+
+    # ============================ plot output.
+    if plot_path is not None:
+        import matplotlib.pyplot as plt
+        import seaborn as sb
+        test_train_labels = []
+        for sample_id in sample_ids:
+            if sample_id in training_sample_ids:
+                test_train_labels.append("Train")
+            elif sample_id in test_sample_ids:
+                test_train_labels.append("Test")
+            else:
+                test_train_labels.append("Excluded")
+
+        fig, ax = plt.subplots(1, 1, figsize=(8, 6))
+        sb.scatterplot(
+            coordinates.assign(Label=test_train_labels),
+            x='PC1', y='PC2', hue="Label",
+            alpha=0.3, linewidth=0., ax=ax
+        )
+
+        # Get proportion of variance explained
+        prop_var = pcoa_result.proportion_explained
+        ax.set_xlabel(f'PC1 ({prop_var[0] * 100:.2f}%)')
+        ax.set_ylabel(f'PC2 ({prop_var[1] * 100:.2f}%)')
+        ax.set_title('PCoA Plot')
+        ax.grid(True, alpha=0.3)
+        plt.savefig(plot_path, bbox_inches='tight')
+    return train_df, test_df
+
+
+@njit
+def kl_divergence_numba(p: np.ndarray, q: np.ndarray) -> float:
+    """Numba-optimized KL divergence"""
+    result = 0.0
+    for i in range(len(p)):
+        if p[i] > 0 and q[i] > 0:
+            result += p[i] * np.log(p[i] / q[i])  # this is safe, since "q = 0.5*(x+y)" will never be zero in this invocation.
+    return result
+
+
+@njit
+def jensen_shannon_symmetrized_kl_numba(p: np.ndarray, q: np.ndarray) -> float:
+    """Numba-optimized Jensen-Shannon divergence"""
+    m = 0.5 * (p + q)
+    return 0.5 * (kl_divergence_numba(p, m) + kl_divergence_numba(q, m))
+
+
+@njit(parallel=True)
+def calculate_js_distances_numba(samples: np.ndarray) -> np.ndarray:
+    n = samples.shape[0]
+    distmat = np.zeros((n, n), dtype=np.float64)
+
+    for i in prange(n):
+        for j in range(i + 1, n):
+            d = jensen_shannon_symmetrized_kl_numba(samples[i], samples[j])
+            distmat[i, j] = d
+            distmat[j, i] = d
+
+    return distmat
+
 
 
 # ================================================= HELPER CODE: fast distance calculation in newick-formatted phylo tree
@@ -453,7 +572,7 @@ def test_train_split_asv_separation(
 
 if __name__ == "__main__":
     DATA_DIR = Path("/data/cctm/youn/metaphlan_dset/dataset")
-    OUT_DIR = Path("/data/cctm/youn/metaphlan_dset/model_training")
+    OUT_DIR = Path("/data/cctm/youn/metaphlan_dset/model_training_pcoa_split")
     print(f"Destination OUT_DIR: {OUT_DIR}")
 
     full_profile_tsv = DATA_DIR / "BlancoMiguezA_2023_profiles.tsv"

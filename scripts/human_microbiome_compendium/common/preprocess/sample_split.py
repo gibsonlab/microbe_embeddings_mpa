@@ -139,7 +139,11 @@ def train_test_split_pcoa(
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     import skbio
     import seaborn as sb
-    pcoa_result = skbio.stats.ordination.pcoa(sample_distance_matrix, method='eigh')
+    from skbio import DistanceMatrix
+    pcoa_result = skbio.stats.ordination.pcoa(
+        distance_matrix=DistanceMatrix(data=sample_distance_matrix, ids=sample_dist_mat_order),
+        method='eigh'
+    )
 
     """ PCoA based coordinate plotting of samples """
     coordinates: pd.DataFrame = pcoa_result.samples[['PC1', 'PC2']].assign(SampleId=sample_dist_mat_order)

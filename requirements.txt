@@ -18,3 +18,5 @@ biopython
 pyfaidx
 zstandard
 joblib
+numba
+scikit-bio
