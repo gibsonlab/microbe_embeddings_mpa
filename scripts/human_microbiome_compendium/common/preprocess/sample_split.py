@@ -177,7 +177,7 @@ def train_test_split_pcoa(
     sb.scatterplot(
         coordinates.assign(Label=test_train_labels),
         x='PC1', y='PC2', hue="Label",
-        alpha=0.3, linewidth=0., axis=ax
+        alpha=0.3, linewidth=0., ax=ax
     )
 
     # Get proportion of variance explained
