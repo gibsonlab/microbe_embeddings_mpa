@@ -77,8 +77,8 @@ for analysis_subdir in "${dset_dir}"/analyses/*; do
         continue
     fi
 
-    rm -f "${LOG_DIR}/${jobname}.out"
-    rm -f "${LOG_DIR}/${jobname}.err"
+    rm -f "${LOG_DIR}/${dset_name}__${analysis_name}.out"
+    rm -f "${LOG_DIR}/${dset_name}__${analysis_name}.err"
 
     # Write SBATCH headers and job commands
     cat > "${job_script}" << EOF
