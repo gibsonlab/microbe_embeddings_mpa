@@ -19,7 +19,7 @@ set -e
 #embedding_model="$1"
 
 if ! [ $# -eq 3 ]; then
-  echo "Error: embed_model_name, pred_model_name, dataset, analysis_name are required"
+  echo "Error: analysis_name, embed_model_name, pred_model_name are required"
   echo "Usage: $0 <analysis_name> <embed_model_name> <pred_model_name>"
   exit 1
 fi
