@@ -88,10 +88,9 @@ def test_train_split_pcoa_jensenshannon(
 
     sample_order = list(extractor.samples())
     print("Calculating jensen-shannon distance matrix.")
-    dist_mat = calculate_js_distances_numba(np.stack(
-        [sample.abundances_ensure_normalized for sample in sample_order],
-        axis=0
-    ))
+    dist_mat = calculate_js_distances_joblib(
+        [sample.abundances_ensure_normalized for sample in sample_order]
+    )
 
     from skbio import DistanceMatrix
     sample_ids = [sample.sample_id for sample in sample_order]
