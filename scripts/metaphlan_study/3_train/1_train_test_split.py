@@ -43,7 +43,7 @@ def main(
     #     raise ValueError(f"Unrecognized edge_weight_strategy option `{edge_weight_strategy}")
     # train_df, test_df = test_train_split_asv_separation(profiles_indexed, metadata_subset, similarity)
     pcoa_plot_path = train_out_path.parent / "pcoa_plot.png"
-    train_df, test_df = test_train_split_pcoa_jensenshannon(profiles_indexed, metadata_subset, plot_path=pcoa_plot_path)
+    train_df, test_df = test_train_split_pcoa_jensenshannon(profiles_indexed, metadata_subset, plot_path=pcoa_plot_path, train_is_left=False)
 
     train_df.to_csv(train_out_path, sep="\t", index=True)
     test_df.to_csv(test_out_path, sep="\t", index=True)
@@ -81,6 +81,7 @@ def test_train_split_pcoa_jensenshannon(
         metadata_subset_df: pd.DataFrame,
         train_fraction: float = 0.8,
         test_fraction: float = 0.2,
+        train_is_left: bool = True,
         plot_path: Optional[Path] = None,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     profile_df = select_profiles_in_metadata(metadata_subset_df, profiles_indexed)
@@ -101,19 +102,22 @@ def test_train_split_pcoa_jensenshannon(
     # noinspection PyTypeHints
     coordinates = pcoa_result.samples.loc[:, ['PC1', 'PC2']].assign(SampleId=sample_ids)
     pc1 = coordinates['PC1'].to_numpy()
-    left_q = train_fraction
-    right_q = 1 - test_fraction
 
-    # Assign left subset and right subset using the input parameters.
-    left_ub = np.quantile(pc1, q=left_q)
-    right_lb = np.quantile(pc1, q=right_q)
-    print("Using tail cutoff quantiles train < {}, test >= {}".format(left_q, right_q))
-    partition_left = [sample_id for i, sample_id in enumerate(sample_ids) if pc1[i] < left_ub]
-    partition_right = [sample_id for i, sample_id in enumerate(sample_ids) if pc1[i] >= right_lb]
+    def split_partition_by_pc1(left_q, right_q) -> Tuple[Set[str], Set[str]]:
+        # Assign left subset and right subset using the input parameters.
+        left_ub = np.quantile(pc1, q=left_q)
+        right_lb = np.quantile(pc1, q=right_q)
+        print("Using tail cutoff quantiles train < {}, test >= {}".format(left_q, right_q))
+        partition_left = {sample_id for i, sample_id in enumerate(sample_ids) if pc1[i] < left_ub}
+        partition_right = {sample_id for i, sample_id in enumerate(sample_ids) if pc1[i] >= right_lb}
+        return partition_left, partition_right
 
-    print("Partition is {} vs. {}".format(len(partition_left), len(partition_right)))
-    training_sample_ids = set(partition_left)
-    test_sample_ids = set(partition_right)
+
+    if train_is_left:
+        training_sample_ids, test_sample_ids = split_partition_by_pc1(train_fraction, 1 - test_fraction)
+    else:
+        test_sample_ids, training_sample_ids = split_partition_by_pc1(test_fraction, 1 - train_fraction)
+
     train_df = profile_df[profile_df.index.isin(training_sample_ids)]
     test_df = profile_df[profile_df.index.isin(test_sample_ids)]
 
@@ -575,7 +579,7 @@ def test_train_split_asv_separation(
 
 if __name__ == "__main__":
     DATA_DIR = Path("/data/cctm/youn/metaphlan_dset/dataset")
-    OUT_DIR = Path("/data/cctm/youn/metaphlan_dset/model_training_pcoa_split")
+    OUT_DIR = Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training_pcoa_split")
     print(f"Destination OUT_DIR: {OUT_DIR}")
 
     full_profile_tsv = DATA_DIR / "BlancoMiguezA_2023_profiles.tsv"
