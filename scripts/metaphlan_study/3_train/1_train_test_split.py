@@ -43,7 +43,12 @@ def main(
     #     raise ValueError(f"Unrecognized edge_weight_strategy option `{edge_weight_strategy}")
     # train_df, test_df = test_train_split_asv_separation(profiles_indexed, metadata_subset, similarity)
     pcoa_plot_path = train_out_path.parent / "pcoa_plot.png"
-    train_df, test_df = test_train_split_pcoa_jensenshannon(profiles_indexed, metadata_subset, plot_path=pcoa_plot_path, train_is_left=False)
+    train_df, test_df = test_train_split_pcoa_jensenshannon(
+        profiles_indexed, metadata_subset,
+        train_fraction=0.6,
+        test_fraction=0.2,
+        plot_path=pcoa_plot_path, train_is_left=False
+    )
 
     train_df.to_csv(train_out_path, sep="\t", index=True)
     test_df.to_csv(test_out_path, sep="\t", index=True)
