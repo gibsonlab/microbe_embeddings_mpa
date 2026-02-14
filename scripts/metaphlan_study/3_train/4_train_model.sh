@@ -33,8 +33,8 @@ pca_dim=200
 embeddings_memmap="/data/bwh-comppath-seq/youn/metaphlan_dset/memmap_samples/dna/${embedding_model}_d${pca_dim}"
 
 
-training_set="/data/cctm/youn/metaphlan_dset/${analysis_name}/train.tsv"
-test_set="/data/cctm/youn/metaphlan_dset/${analysis_name}/test.tsv"
+training_set="/data/bwh-comppath-seq/youn/metaphlan_dset/${analysis_name}/train.tsv"
+test_set="/data/bwh-comppath-seq/youn/metaphlan_dset/${analysis_name}/test.tsv"
 model_config="./model_${pred_model}.yaml"
 if ! [ -f "${model_config}" ]; then
   echo "Model configuration ${model_config} does not exist!"
