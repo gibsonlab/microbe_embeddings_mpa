@@ -4,34 +4,35 @@
 #SBATCH --mem=80G
 #SBATCH --cpus-per-task=8
 #SBATCH --time=5-00:00:00
-#SBATCH --job-name=train_epc
-#SBATCH --output=train_epc_%A_%a.out
-#SBATCH --error=train_epc_%A_%a.err
+#SBATCH --job-name=train_epc_nopool
+#SBATCH --output=train_epc_nopool_%A_%a.out
+#SBATCH --error=train_epc_nopool_%A_%a.err
 
 # Note: this is a Slurm script, meant to be run on ErisXDL compute nodes with GPUs.
 set -e
 
 if [ $# -eq 0 ]; then
-  echo "Error: model_name is required"
-  echo "Usage: $0 <model_name>"
+  echo "Error: embedding_model is required"
+  echo "Usage: $0 <embedding_model>"
   exit 1
 fi
-model_name="$1"
+embedding_model="$1"
 pca_dim=200
 
 # point to the proper pretrained model embeddings
-embeddings_memmap="/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples/dna/${model_name}_d${pca_dim}"
+embeddings_memmap="/data/bwh-comppath-seq/youn/metaphlan_dset/memmap_samples/dna/${embedding_model}_d${pca_dim}"
 
 
-training_set="/data/cctm/youn/metaphlan_dset/model_training/train.tsv"
-test_set="/data/cctm/youn/metaphlan_dset/model_training/test.tsv"
+split_name="model_training_pcoa_split"
+training_set="/data/cctm/youn/metaphlan_dset/${split_name}/train.tsv"
+test_set="/data/cctm/youn/metaphlan_dset/${split_name}/test.tsv"
 model_config="./model_epc_nopool.yaml"
 n_epochs=80
 learning_rate=0.0001
 batch_size=10
 seed=12345
 
-outdir="/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/trained_model/dna/${model_name}_d${pca_dim}/epc_nopool_kl"
+outdir="/data/bwh-comppath-seq/youn/metaphlan_dset/${split_name}/trained_model/dna/${embedding_model}_d${pca_dim}/epc_nopool_kl"
 mkdir -p ${outdir}
 
 metadata="$outdir/metadata.txt"

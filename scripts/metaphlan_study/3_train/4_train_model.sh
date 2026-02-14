@@ -20,18 +20,19 @@ embedding_model="$1"
 pca_dim=200
 
 # point to the proper pretrained model embeddings
-embeddings_memmap="/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples/dna/${embedding_model}_d${pca_dim}"
+embeddings_memmap="/data/bwh-comppath-seq/youn/metaphlan_dset/memmap_samples/dna/${embedding_model}_d${pca_dim}"
 
 
-training_set="/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/train.tsv"
-test_set="/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/test.tsv"
+split_name="model_training_pcoa_split"
+training_set="/data/cctm/youn/metaphlan_dset/${split_name}/train.tsv"
+test_set="/data/cctm/youn/metaphlan_dset/${split_name}/test.tsv"
 model_config="./model_v2_depth3.yaml"
-n_epochs=300
+n_epochs=80
 learning_rate=0.0001
 batch_size=10
 seed=12345
 
-outdir="/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/trained_model/dna/${embedding_model}_d${pca_dim}_v2/depth3_epoch${n_epochs}"
+outdir="/data/bwh-comppath-seq/youn/metaphlan_dset/${split_name}/trained_model/dna/${embedding_model}_d${pca_dim}/v2"
 mkdir -p ${outdir}
 
 metadata="$outdir/metadata.txt"
