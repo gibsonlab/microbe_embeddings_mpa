@@ -37,7 +37,6 @@ def load_model_config(config_file: Path, marker_embed_dim: int, rng_seed: int) -
 
 
 def train_and_save_model(
-        model_version: str,
         model_cfg: Dict,
         model_save_dir: Path,
         loss_name: str,
@@ -54,7 +53,6 @@ def train_and_save_model(
         timer_profile: bool = False,
 ):
     """
-    :param model_version:
     :param model_cfg:
     :param model_save_dir:
     :param loss_name:
@@ -94,14 +92,7 @@ def train_and_save_model(
     """ Create model. """
     ## ======== Model & Optimizer instantiation. ========
     print("Using target cuda device: {}".format(cuda_device_name))
-    if model_version == "V1":
-        torch_embedding_model = SGBAbundancePredictionModel(**model_cfg).to(cuda_device_name)
-    elif model_version == "V2":
-        torch_embedding_model = SGBAbundanceLayeredPredictionModel(**model_cfg).to(cuda_device_name)
-    elif model_version == "EPC":
-        torch_embedding_model = SGBEmbedPoolConcatPredictionModel(**model_cfg).to(cuda_device_name)
-    else:
-        raise ValueError(f"Unsupported model_version `{model_version}`")
+    torch_embedding_model = SGBEmbedPoolConcatPredictionModel(**model_cfg).to(cuda_device_name)
 
     print("Using model class: {}".format(
         torch_embedding_model.__class__.__name__
@@ -165,7 +156,6 @@ def train_and_save_model(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("-v", "--model-version", dest="model_version", required=True, type=str)
     parser.add_argument("-train", "--train", dest="train", required=True, type=str)
     parser.add_argument("-test", "--test", dest="test", required=True, type=str)
     parser.add_argument("-c", "--model-config", dest="model_cfg_path", required=True, type=str)
@@ -244,14 +234,6 @@ def main():
     model_save_dir.mkdir(exist_ok=True, parents=True)
     print(f"Target output directory: {model_save_dir}")
 
-    model_version = args.model_version
-    model_supported_versions = {"V1", "V2", "EPC"}
-    if model_version not in model_supported_versions:
-        raise ValueError(
-            f"Unsupported model version string {model_version}. "
-            f"Must be one of: {list(model_supported_versions)}"
-        )
-
     if args.resume_from_path is not None:
         resume_from_checkpoint_path = Path(args.resume_from_path)
     else:
@@ -259,7 +241,6 @@ def main():
 
 
     train_and_save_model(
-        model_version=model_version,
         model_cfg=model_cfg,
         model_save_dir=model_save_dir,
         load_checkpoint_file=resume_from_checkpoint_path,
