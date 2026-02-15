@@ -7,7 +7,7 @@ from phylodm import PhyloDM
 def main():
     """ Locations """
     data_dir = Path("/data/bwh-comppath-seq/youn/metaphlan_dset/dataset")
-    NEWICK_FILE = data_dir / 'mpa_vJan21_CHOCOPhlAnSGB_202103.nwk'
+    NEWICK_FILE = Path("/data/bwh-comppath-seq/youn/metaphlan_dset/database") / 'mpa_vJan21_CHOCOPhlAnSGB_202103.nwk'
     SGB_SUBSET_ID_PATH = data_dir / "BlancoMiguezA_2023.SGB_subset.txt"
     PRUNED_TREE_PATH = data_dir / "BlancoMiguezA_2023.TREE.nwk"
     DISTMAT_PATH = data_dir / "BlancoMiguezA_2023.DIST_MATRIX.npz"
