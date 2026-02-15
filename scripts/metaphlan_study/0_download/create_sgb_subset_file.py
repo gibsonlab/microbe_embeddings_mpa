@@ -28,7 +28,7 @@ def main(
 
     sgb_ids_subset = set()
     for sample in extractor.samples():
-        sgb_ids_subset.update(sample.taxa_ids)
+        sgb_ids_subset.update(sample.taxa_ids_raw)
 
     print("Found: {} SGBs in healthy-adult sample subset.")
 
