@@ -47,8 +47,8 @@ def main(
         print("Creating directory: {hdf5_parent_dir}")
         hdf5_parent_dir.mkdir(parents=True)
 
-    if model_name.startswith("umap"):
-        print("UMAP embedding requested: using singular CPU device instead of CUDA.")
+    if model_name.startswith("umap") or model_name.startswith("pcoa"):
+        print("UMAP/PCOA embedding requested: using singular CPU device instead of CUDA.")
         cuda_devices = ['cpu']
     precompute_embeddings(asv_seqs, embed_create_fn, hdf5_output_path, embed_batch_size, cuda_devices)
 
@@ -113,6 +113,34 @@ def embedding_model_initializer(model_name: str, **kwargs) -> Callable[[torch.de
 
         from gem.glms.umap import UMAPEmbedding
         embedding = UMAPEmbedding(
+            unaligned_fasta=kwargs['unaligned_fasta'],
+            multi_alignment_fasta=kwargs['multi_alignment_fasta'],
+            embed_dim=embed_dim,
+            rng_seed=rng_seed
+        )
+        model_fn = lambda _: embedding
+    elif model_name.startswith("pcoa"):
+        """ 
+        Format is: pcoa_d<dims>_s<seed> 
+        example: pcoa_d20_s1234 is PCoA trained to output d=20 embeddings, using seed 1234.
+        """
+        error_msg = "Incorrect model name syntax. Expected pcoa_d<dims>_s<seed>, but got {} instead.".format(model_name)
+
+        tokens = model_name.split("_")
+        assert len(tokens) == 3, error_msg
+        umap_str, dim_str, seed_str = tokens
+        assert umap_str == "pcoa" and dim_str.startswith("d") and seed_str.startswith("s"), error_msg
+        try:
+            embed_dim = int(dim_str[1:])
+            rng_seed = int(seed_str[1:])
+        except ValueError:
+            raise RuntimeError(error_msg) from None
+
+        assert 'unaligned_fasta' in kwargs and isinstance(kwargs['unaligned_fasta'], Path), "For PCoA embeddings, the `unaligned_fasta` path is required."
+        assert 'multi_alignment_fasta' in kwargs and isinstance(kwargs['multi_alignment_fasta'], Path), "For PCoA embeddings, the `multi_alignment_fasta` path is required."
+
+        from gem.glms.pcoa import PCoAEmbedding
+        embedding = PCoAEmbedding(
             unaligned_fasta=kwargs['unaligned_fasta'],
             multi_alignment_fasta=kwargs['multi_alignment_fasta'],
             embed_dim=embed_dim,

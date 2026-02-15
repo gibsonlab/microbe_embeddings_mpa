@@ -14,7 +14,7 @@ TOTAL_SGBS=$(wc -l < $SGB_SUBSET_FILE)   # Total items (replace with your value)
 EVO_CHECKPOINT="evo-1-131k-base"
 NUM_HYENA_LAYERS=32
 
-outdir="/data/bwh-comppath-seq/youn/metaphlan_dset/embeddings/phylophlan_markers/aa/${EVO_CHECKPOINT}_hyena${NUM_HYENA_LAYERS}/complete"
+outdir="/data/bwh-comppath-seq/youn/metaphlan_dset/embeddings/phylophlan_markers/aa/${EVO_CHECKPOINT}_hyena${NUM_HYENA_LAYERS}/part1"
 breadcrumb=$outdir/.embed.DONE
 if [ -f "$breadcrumb" ]; then
     echo "Task already finished previously."

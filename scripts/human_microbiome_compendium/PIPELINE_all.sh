@@ -59,7 +59,18 @@ embed_names_all=()
 embed_names_all+=("dnabert-s")
 embed_names_all+=("evo-1-8k-base_hyena5")
 embed_names_all+=("evo2_7b_hyena10")
+
+embed_names_all+=("umap_d20_s1000")
+embed_names_all+=("umap_d40_s1000")
+embed_names_all+=("umap_d60_s1000")
+embed_names_all+=("umap_d80_s1000")
 embed_names_all+=("umap_d100_s1000")
+
+embed_names_all+=("pcoa_d20_s1000")
+embed_names_all+=("pcoa_d40_s1000")
+embed_names_all+=("pcoa_d60_s1000")
+embed_names_all+=("pcoa_d80_s1000")
+embed_names_all+=("pcoa_d100_s1000")
 
 for embed_name in "${embed_names_all[@]}"; do
   bash 2_embed.sh "$embed_name" "$dset_name"
