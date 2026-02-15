@@ -46,6 +46,10 @@ def main(
     if not hdf5_parent_dir.exists():
         print("Creating directory: {hdf5_parent_dir}")
         hdf5_parent_dir.mkdir(parents=True)
+
+    if model_name.startswith("umap"):
+        print("UMAP embedding requested: using singular CPU device instead of CUDA.")
+        cuda_devices = ['cpu']
     precompute_embeddings(asv_seqs, embed_create_fn, hdf5_output_path, embed_batch_size, cuda_devices)
 
 
@@ -108,13 +112,13 @@ def embedding_model_initializer(model_name: str, **kwargs) -> Callable[[torch.de
         assert 'multi_alignment_fasta' in kwargs and isinstance(kwargs['multi_alignment_fasta'], Path), "For UMAP embeddings, the `multi_alignment_fasta` path is required."
 
         from gem.glms.umap import UMAPEmbedding
-        model_fn = lambda device: UMAPEmbedding(
+        embedding = UMAPEmbedding(
             unaligned_fasta=kwargs['unaligned_fasta'],
             multi_alignment_fasta=kwargs['multi_alignment_fasta'],
             embed_dim=embed_dim,
-            rng_seed=rng_seed,
-            device=device
+            rng_seed=rng_seed
         )
+        model_fn = lambda _: embedding
     else:
         raise ValueError("Unknown model name {}".format(model_name))
     return model_fn

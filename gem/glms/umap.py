@@ -23,7 +23,7 @@ def parse_fasta_numpy(fasta_path: Path) -> Tuple[List[str], np.ndarray]:
     for seq_id, seq in parse_fasta_raw(fasta_path):
         ids.append(seq_id)
         seqs.append(
-            np.frombuffer(seq.upper().encode('ascii'), dtype=np.uint8)
+            np.frombuffer(str(seq).upper().encode('ascii'), dtype=np.uint8)
         )
     return ids, np.stack(seqs, axis=0)
 
@@ -52,15 +52,13 @@ class UMAPEmbedding(GenomeEmbedding):
     The distance metric is the hamming distance between aligned sequences.
     Thus, this embedding only makes sense for homologous sequences (e.g. ASVs from the same amplicon region).
     """
-    def __init__(self, unaligned_fasta: Path, multi_alignment_fasta: Path, embed_dim: int, rng_seed: int, device: torch.device):
+    def __init__(self, unaligned_fasta: Path, multi_alignment_fasta: Path, embed_dim: int, rng_seed: int):
         """
         :param unaligned_fasta: The sequences that will be used to query this model.
         :param multi_alignment_fasta: The multiple alignments used to compute hamming distances for UMAP's kNN queries.
         :param embed_dim: The target output embedding dim.
         :param rng_seed: The seed to use for UMAP fitting (UMAP is a randomized embedding).
-        :param device: The output torch device to instantiate the embeddings on.
         """
-        self.device = device
         self.embed_dim = embed_dim
         self.rng_seed = rng_seed
 
@@ -85,7 +83,7 @@ class UMAPEmbedding(GenomeEmbedding):
         }
 
     def device(self) -> torch.device:
-        return self.device
+        return torch.device("cpu")
 
     def embed_dim(self) -> int:
         return self.embed_dim
@@ -93,7 +91,7 @@ class UMAPEmbedding(GenomeEmbedding):
     def embed_sequence(self, x: str) -> Tensor:
         try:
             embedding = self.seq_embeddings[x]
-            return torch.from_numpy(embedding).to(self.device)
+            return torch.from_numpy(embedding)  # cpu tensor
         except KeyError:
             raise KeyError(f"Sequence {x} not found in non-parametric UMAP embedding training set.") from None
 
