@@ -38,15 +38,25 @@ def parse_fasta_str(fasta_path: Path) -> Tuple[List[str], List[str]]:
     return ids, seqs
 
 
-def hamming_distance_matrix(alignments: np.ndarray) -> np.ndarray:
+def hamming_distance_matrix(alignments: np.ndarray, chunk_size: int) -> np.ndarray:
     """
     Given an (N x d) feature vector array (e.g. each feature vector is the aligned nucleotide seqs)
     output an N x N pairwise hamming-distance matrix.
     :param alignments:
     :return:
     """
-    X = alignments
-    hamming_distances = (X[:, None, :] != X[None, :, :]).sum(axis=2)
+    N = alignments.shape[0]
+    hamming_distances = np.zeros((N, N), dtype=np.int32)  # use int32 instead of int64 if possible
+
+    # Compute in chunks to avoid memory issues
+    for i in range(0, N, chunk_size):
+        i_end = min(i + chunk_size, N)
+        chunk = alignments[i:i_end]
+
+        # Compare this chunk against all alignments
+        # Shape: (chunk_size, N, d) but computed efficiently
+        hamming_distances[i:i_end, :] = (chunk[:, None, :] != alignments[None, :, :]).sum(axis=2)
+
     return hamming_distances
 
 
@@ -63,12 +73,13 @@ class PCoAEmbedding(GenomeEmbedding):
     Since the distance metric is hamming distance of multiple alignments, this embedding only makes sense for
     homologous sequences (e.g. ASVs from the same amplicon region).
     """
-    def __init__(self, unaligned_fasta: Path, multi_alignment_fasta: Path, embed_dim: int, rng_seed: int):
+    def __init__(self, unaligned_fasta: Path, multi_alignment_fasta: Path, embed_dim: int, rng_seed: int, chunk_size: int):
         """
         :param unaligned_fasta: The sequences that will be used to query this model.
         :param multi_alignment_fasta: The multiple alignments used to compute hamming distances for UMAP's kNN queries.
         :param embed_dim: The target output embedding dim.
         :param rng_seed: The seed to use for UMAP fitting (UMAP is a randomized embedding).
+        :param chunk_size: the chunk size to ues for computing the pairwise hamming distance matrix. Smaller = slower, but smaller memory footprint.
         """
         self.embed_dim = embed_dim
         self.rng_seed = rng_seed
@@ -85,7 +96,7 @@ class PCoAEmbedding(GenomeEmbedding):
                 ))
 
         distance_matrix = DistanceMatrix(
-            data=hamming_distance_matrix(aln_seq_array),
+            data=hamming_distance_matrix(aln_seq_array, chunk_size=chunk_size),
             ids=aln_seq_ids,
         )
         pcoa_results = pcoa(distance_matrix, dimensions=embed_dim, seed=rng_seed)
