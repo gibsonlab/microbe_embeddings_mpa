@@ -27,10 +27,17 @@ def main(
     extractor = MetaphlanProfileParser(profile_df)
 
     sgb_ids_subset = set()
+    n_samples = 0
     for sample in extractor.samples():
         sgb_ids_subset.update(sample.taxa_ids_raw)
+        n_samples += 1
 
-    print("Found: {} SGBs in healthy-adult sample subset.")
+    print("# of samples in healthy-adult subset: {}".format(
+        n_samples
+    ))
+    print("Found: {} SGBs in healthy-adult sample subset.".format(
+        len(sgb_ids_subset)
+    ))
 
 
 if __name__ == '__main__':
