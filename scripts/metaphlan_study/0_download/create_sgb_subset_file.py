@@ -16,15 +16,15 @@ def main(
     profiles_indexed = profiles.set_index("clade_name").transpose()
     profiles_indexed.index.name = "SampleID"
 
-    metadata = pd.read_csv(metadata_tsv, sep="\t")
-    print("Number of samples (All): {}".format(metadata.shape[0]))
-    metadata_subset = metadata.loc[
-        (metadata['age_category'] == 'adult')
-        & (metadata['disease'] == 'healthy')
-    ]
+    # metadata = pd.read_csv(metadata_tsv, sep="\t")
+    # print("Number of samples (All): {}".format(metadata.shape[0]))
+    # metadata_subset = metadata.loc[
+    #     (metadata['age_category'] == 'adult')
+    #     & (metadata['disease'] == 'healthy')
+    # ]
 
-    profile_df = select_profiles_in_metadata(metadata_subset, profiles_indexed)
-    extractor = MetaphlanProfileParser(profile_df)
+    # profile_df = select_profiles_in_metadata(metadata_subset, profiles_indexed)
+    extractor = MetaphlanProfileParser(profiles_indexed)
 
     sgb_ids_subset = set()
     n_samples = 0
