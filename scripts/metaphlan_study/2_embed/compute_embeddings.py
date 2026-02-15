@@ -81,8 +81,6 @@ def compute_embedding(
 
     logger.info("Loading embedding model.")
     embedding_model = create_embed_model()
-    padding_embedding = embedding_model.embed_empty_sequence().cpu().float().numpy()
-    logger.info("Got padding embedding of shape {}".format(padding_embedding.shape))
 
     logger.info("Target # shards = {}".format(math.ceil(n_seqs / shard_size)))
     pbar = tqdm(total=n_seqs)

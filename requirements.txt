@@ -20,3 +20,4 @@ zstandard
 joblib
 numba
 scikit-bio
+umap-learn

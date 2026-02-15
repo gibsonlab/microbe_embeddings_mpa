@@ -22,6 +22,7 @@ def main(
         model_name: str,
         embed_batch_size: int,
         cuda_devices: List[torch.device],
+        multi_alignment_fasta: Optional[Path],
 ):
     """
     :param asv_fasta_file: Path to a multi-FASTA nucleotide sequence file, where each record is
@@ -30,10 +31,16 @@ def main(
     :param model_name:
     :param embed_batch_size:
     :param cuda_devices:
+    :param multi_alignment_fasta: Path to the multi-FASTA alignment file, which is the multiple alignment of all
+    sequences in asv_fasta_file. Required only if requested model is UMAP.
     :return:
     """
     asv_seqs = load_fasta_dict(asv_fasta_file)
-    embed_create_fn = embedding_model_initializer(model_name)
+    embed_create_fn = embedding_model_initializer(
+        model_name,
+        unaligned_fasta=asv_fasta_file,
+        multi_alignment_fasta=multi_alignment_fasta
+    )
 
     hdf5_parent_dir = hdf5_output_path.parent
     if not hdf5_parent_dir.exists():
@@ -42,8 +49,12 @@ def main(
     precompute_embeddings(asv_seqs, embed_create_fn, hdf5_output_path, embed_batch_size, cuda_devices)
 
 
-def embedding_model_initializer(model_name: str) -> Callable[[torch.device], GenomeEmbedding]:
+def embedding_model_initializer(model_name: str, **kwargs) -> Callable[[torch.device], GenomeEmbedding]:
     if model_name.startswith("evo-1"):
+        """
+        format is: <evo1_checkpoint_name>_hyena<n_layers>
+        example: evo-1-8k-base_hyena5 is the "evo-1-8k-base" checkpoint, using the first 5 hyena layers.
+        """
         tokens = model_name.split("_hyena")
         if len(tokens) == 1:
             evo_checkpoint_name = tokens[0]
@@ -57,6 +68,10 @@ def embedding_model_initializer(model_name: str) -> Callable[[torch.device], Gen
         from gem.glms.evo import EvoWrapper
         model_fn = lambda device: EvoWrapper(device=device, num_hyena_layers=num_hyena_layers, checkpoint_name=evo_checkpoint_name)
     elif model_name.startswith("evo2"):
+        """
+        Format is: <evo2_checkpoint_name>_hyena<n_layers>
+        example: evo2_7b_hyena10 is the "evo2_7b" checkpoint, using the first 10 hyena layers.
+        """
         tokens = model_name.split("_hyena")
         if len(tokens) == 1:
             evo2_checkpoint_name = tokens[0]
@@ -72,6 +87,34 @@ def embedding_model_initializer(model_name: str) -> Callable[[torch.device], Gen
     elif model_name == 'dnabert-s':
         from gem.glms.dnabert import DNABertSWrapper
         model_fn = lambda device: DNABertSWrapper(device=device)
+    elif model_name.startswith("umap"):
+        """ 
+        Format is: umap_d<dims>_s<seed> 
+        example: umap_d20_s1234 is UMAP trained to output d=20 embeddings, initialized with seed 1234.
+        """
+        error_msg = "Incorrect model name syntax. Expected umap_d<dims>_s<seed>, but got {} instead.".format(model_name)
+
+        tokens = model_name.split("_")
+        assert len(tokens) == 3, error_msg
+        umap_str, dim_str, seed_str = tokens
+        assert umap_str == "umap" and dim_str.startswith("d") and seed_str.startswith("s"), error_msg
+        try:
+            embed_dim = int(dim_str[1:])
+            rng_seed = int(seed_str[1:])
+        except ValueError:
+            raise RuntimeError(error_msg) from None
+
+        assert 'unaligned_fasta' in kwargs and isinstance(kwargs['unaligned_fasta'], Path), "For UMAP embeddings, the `unaligned_fasta` path is required."
+        assert 'multi_alignment_fasta' in kwargs and isinstance(kwargs['multi_alignment_fasta'], Path), "For UMAP embeddings, the `multi_alignment_fasta` path is required."
+
+        from gem.glms.umap import UMAPEmbedding
+        model_fn = lambda device: UMAPEmbedding(
+            unaligned_fasta=kwargs['unaligned_fasta'],
+            multi_alignment_fasta=kwargs['multi_alignment_fasta'],
+            embed_dim=embed_dim,
+            rng_seed=rng_seed,
+            device=device
+        )
     else:
         raise ValueError("Unknown model name {}".format(model_name))
     return model_fn
@@ -111,15 +154,22 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--model_name", type=str, required=True)
     parser.add_argument("--embed_batch_size", type=int, required=True)
     parser.add_argument("--cuda_device_ids", type=str, required=True)
+    parser.add_argument("--multi_align_path", type=str, required=False, default="")
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
+    if len(args.multi_align_path) == 0:
+        multi_align_path = None
+    else:
+        multi_align_path = Path(args.multi_align_path)
+
     main(
         asv_fasta_file=Path(args.asv_fasta_file),
         hdf5_output_path=Path(args.hdf5_output_path),
         model_name=args.model_name,
         embed_batch_size=args.embed_batch_size,
         cuda_devices=parse_cuda_device_ids(args.cuda_device_ids),
+        multi_alignment_fasta=multi_align_path,
     )

@@ -52,7 +52,16 @@ if ! [ -d "${ANALYSIS_DIR}" ]; then
 fi
 
 
-for embed_name in "dnabert-s" "evo2_7b_hyena10" "evo-1-8k-base_hyena5"; do
+# Initialize empty array
+embed_names_all=()
+
+# Append entries one by one
+embed_names_all+=("dnabert-s")
+embed_names_all+=("evo-1-8k-base_hyena5")
+embed_names_all+=("evo2_7b_hyena10")
+embed_names_all+=("umap_d100_s1000")
+
+for embed_name in "${embed_names_all[@]}"; do
   bash 2_embed.sh "$embed_name" "$dset_name"
   bash 3_train_model.sh "$dset_name" "$analysis_name" "$embed_name" "epc_pool"
   bash 3_train_model.sh "$dset_name" "$analysis_name" "$embed_name" "epc_pool_1"

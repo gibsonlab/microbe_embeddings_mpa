@@ -82,6 +82,7 @@ else
       --hdf5_output_path "${EMBEDDING_DIR}/${OUT_FNAME}" \
       --model_name "${embed_model_name}" \
       --embed_batch_size 20 \
-      --cuda_device_ids "0"
+      --cuda_device_ids "0" \
+      --multi_align_path "${ASV_SEQ_PROCESSING_DIR}/asv_alignment.fasta"
 fi
 echo "Done."

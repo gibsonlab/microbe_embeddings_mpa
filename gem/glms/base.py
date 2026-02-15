@@ -23,10 +23,6 @@ class GenomeEmbedding(ABC):
     def embed_batch(self, strs: List[str]) -> Tensor:
         raise NotImplementedError()
 
-    @abstractmethod
-    def embed_empty_sequence(self) -> Tensor:
-        raise NotImplementedError()
-
 
 def kwargs_torch_convert_device(kwargs_dict: Dict, device: str) -> Dict:
     """ In a kwargs dict, transfer any tensors to the specified device. """
