@@ -115,22 +115,25 @@ def precompute_embeddings(
             # Update progress bar (thread-safe)
             pbar.update(len(asv_id_batch))
 
-    # Create and start worker threads
-    threads = []
-    for worker_idx in range(n_workers):
-        device = cuda_device_list[worker_idx]
-        worker_asv_ids = worker_assignments[worker_idx]
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    import sys
+    with ThreadPoolExecutor(max_workers=n_workers) as executor:
+        # Submit all tasks
+        futures = []
+        for worker_idx in range(n_workers):
+            device = cuda_device_list[worker_idx]
+            worker_asv_ids = worker_assignments[worker_idx]
 
-        thread = threading.Thread(
-            target=worker_fn,
-            args=(worker_idx, device, worker_asv_ids)
-        )
-        thread.start()
-        threads.append(thread)
+            future = executor.submit(worker_fn, worker_idx, device, worker_asv_ids)
+            futures.append(future)
 
-    # Wait for all workers to complete
-    for thread in threads:
-        thread.join()
+        # Wait for completion and handle exceptions
+        for future in as_completed(futures):
+            try:
+                future.result()  # This will raise if the worker raised
+            except Exception as e:
+                print(f"Worker crashed: {e}", file=sys.stderr)
+                executor.shutdown(wait=False, cancel_futures=True)
+                sys.exit(1)
     print("All workers finished.")
-
     pbar.close()
