@@ -45,11 +45,14 @@ def hamming_distance_matrix(alignments: np.ndarray, chunk_size: int) -> np.ndarr
     :param alignments:
     :return:
     """
+    print("Number of aligned seqs: {}, align_len = {}".format(alignments.shape[0], alignments.shape[1]))
+    print(f"Computing hamming distance matrix with chunk_len = {chunk_size}")
     N = alignments.shape[0]
     hamming_distances = np.zeros((N, N), dtype=np.int32)  # use int32 instead of int64 if possible
 
     # Compute in chunks to avoid memory issues
-    for i in range(0, N, chunk_size):
+    from tqdm import tqdm
+    for i in tqdm(range(0, N, chunk_size)):
         i_end = min(i + chunk_size, N)
         chunk = alignments[i:i_end]
 

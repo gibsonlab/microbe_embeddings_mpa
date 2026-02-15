@@ -145,7 +145,7 @@ def embedding_model_initializer(model_name: str, **kwargs) -> Callable[[torch.de
             multi_alignment_fasta=kwargs['multi_alignment_fasta'],
             embed_dim=embed_dim,
             rng_seed=rng_seed,
-            chunk_size=5,
+            chunk_size=20,
         )
         model_fn = lambda _: embedding
     else:
