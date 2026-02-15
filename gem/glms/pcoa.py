@@ -102,6 +102,8 @@ class PCoAEmbedding(GenomeEmbedding):
             data=hamming_distance_matrix(aln_seq_array, chunk_size=chunk_size),
             ids=aln_seq_ids,
         )
+
+        print(f"Running PCoA embedding. dim = {embed_dim}, seed = {rng_seed}")
         pcoa_results = pcoa(distance_matrix, dimensions=embed_dim, seed=rng_seed)
         coordinates = pcoa_results.samples.values
 
