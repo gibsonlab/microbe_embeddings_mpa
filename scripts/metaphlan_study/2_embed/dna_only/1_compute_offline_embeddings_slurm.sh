@@ -26,7 +26,7 @@ seed=1000
 outdir="/data/bwh-comppath-seq/youn/metaphlan_dset/embeddings/phylogenetic_distance"
 mkdir -p "${outdir}"
 
-outfile="${outdir}/${embed_method}.h5"
+outfile="${outdir}/${embed_method}_d${embed_dim}_s${seed}.h5"
 python ../compute_offline_embeddings.py \
   --method "${embed_method}" \
   --embed-dim "${embed_dim}" \
