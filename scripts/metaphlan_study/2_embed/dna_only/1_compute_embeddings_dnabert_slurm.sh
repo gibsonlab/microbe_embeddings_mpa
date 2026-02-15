@@ -2,7 +2,7 @@
 #SBATCH --partition=bwh_comppath
 #SBATCH --array=1-8
 #SBATCH --ntasks=1
-#SBATCH --gres=gpu:1
+#SBATCH --gpus=1
 #SBATCH --mem=12G
 #SBATCH --cpus-per-task=4
 #SBATCH --time=1-00:00:00
@@ -17,7 +17,7 @@ set -e
 HF_TOKEN_FILE=/data/bwh-comppath-seq/youn/metaphlan_dset/hf_token.txt
 SGB_SUBSET_FILE=/data/bwh-comppath-seq/youn/metaphlan_dset/dataset/BlancoMiguezA_2023.SGB_subset.txt
 SGB_INDEX_FILE=/data/bwh-comppath-seq/youn/metaphlan_dset/phylophlan_data/processed/all/sgb_marker_index.json.zst
-FASTA_FILE=/data/bwh-comppath-seq/metaphlan_dset/phylophlan_data/processed/all/all_markers.fna
+FASTA_FILE=/data/cctm/bwh-comppath-seq/youn/metaphlan_dset/phylophlan_data/processed/all/all_markers.fna
 
 HF_TOKEN=$(cat $HF_TOKEN_FILE)
 HF_HOME="/data/cctm/youn/huggingface_cache"
