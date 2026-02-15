@@ -44,7 +44,7 @@ def main(
     pcoa_plot_path = out_dir / "pcoa_plot.png"
     train_df, test_df = test_train_split_pcoa_jensenshannon(
         profiles_indexed, metadata_subset,
-        train_fraction=0.6,
+        train_fraction=0.8,
         test_fraction=0.2,
         plot_path=pcoa_plot_path, train_is_left=False
     )
