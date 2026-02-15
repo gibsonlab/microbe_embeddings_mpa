@@ -41,7 +41,7 @@ if ! [ -f "${model_config}" ]; then
   exit 1
 fi
 
-n_epochs=80
+n_epochs=100
 learning_rate=0.0001
 batch_size=10
 seed=12345
