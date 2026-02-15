@@ -32,7 +32,7 @@ def main(
         (metadata['age_category'] == 'adult')
         & (metadata['disease'] == 'healthy')
     ]
-    print("Number of samples (Adult & Healthy): {}".format(metadata.shape[0]))
+    print("Number of samples (Adult & Healthy): {}".format(metadata_subset.shape[0]))
 
     # if edge_weight_strategy == "jaccard":
     #     similarity = JaccardSimilarityOracle()
@@ -96,6 +96,7 @@ def test_train_split_pcoa_jensenshannon(
     abundances = abundances / abundances.sum(axis=-1, keepdims=True)
     sample_ids = [str(sid) for sid in extractor.sgb_profile_df.index]
     print("Sample IDS preview: {} ...".format(sample_ids[:5]))
+    print("# sample IDs = {}".format(len(sample_ids)))
 
     print("Calculating jensen-shannon distance matrix.")
     dist_mat = calculate_js_distances_numba(abundances)
