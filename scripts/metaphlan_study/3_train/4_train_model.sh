@@ -3,7 +3,7 @@
 #SBATCH --gpus=1
 #SBATCH --mem=80G
 #SBATCH --cpus-per-task=8
-#SBATCH --time=5-00:00:00
+#SBATCH --time=1-00:00:00
 #SBATCH --job-name=train
 #SBATCH --output=logs/train_%A_%a.out
 #SBATCH --error=logs/train_%A_%a.err
