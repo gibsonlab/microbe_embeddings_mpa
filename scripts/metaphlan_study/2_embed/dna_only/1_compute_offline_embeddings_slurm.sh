@@ -19,7 +19,7 @@ fi
 embed_method="$1"
 
 
-DISTMAT_FILE="/data/bwh-comppath-seq/youn/metaphlan_dset/MetaPhlAn4_paper_profile_SGBs.DIST_MATRIX.npz"
+DISTMAT_FILE="/data/bwh-comppath-seq/youn/metaphlan_dset/dataset/MetaPhlAn4_paper_profile_SGBs.DIST_MATRIX.npz"
 embed_dim=100
 seed=1000
 
