@@ -578,8 +578,8 @@ def evaluate_baseline_model(
 def main(model_options: List[str], plot_dir: Path, eval_device: str = 'cuda'):
     plot_dir.mkdir(exist_ok=True, parents=True)
     torch.set_float32_matmul_precision('high')
-    train_df = pd.read_csv("/data/cctm/youn/metaphlan_dset/model_training/train.tsv", sep="\t", index_col="SampleID")
-    test_df = pd.read_csv("/data/cctm/youn/metaphlan_dset/model_training/test.tsv", sep="\t", index_col="SampleID")
+    train_df = pd.read_csv("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/train.tsv", sep="\t", index_col="SampleID")
+    test_df = pd.read_csv("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/test.tsv", sep="\t", index_col="SampleID")
 
     test_dset = MetaphlanPreembeddedDatasetMemmapped(list(test_df.index))
     test_dset.load_memmap_tensors(Path("/data/bwh-comppath-seq/youn/metaphlan_dset/model_training/memmap_samples"))
@@ -629,7 +629,7 @@ def main(model_options: List[str], plot_dir: Path, eval_device: str = 'cuda'):
                 ).to_csv(plot_dir / 'uniform.tsv', sep='\t')
         elif model_option == "neighbor":
             nearest_neighbor_baseline_method = NearestNeighborAveragingPredictor(
-                sgb_phylogenetic_tree_file=Path("/data/cctm/youn/metaphlan_dset/database/mpa_vJan21_CHOCOPhlAnSGB_202103.nwk"), 
+                sgb_phylogenetic_tree_file=Path("/data/bwh-comppath-seq/youn/metaphlan_dset/database/mpa_vJan21_CHOCOPhlAnSGB_202103.nwk"),
                 train_df=train_df,
             )
 
