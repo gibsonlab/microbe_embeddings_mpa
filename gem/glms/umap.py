@@ -11,7 +11,7 @@ from torch import Tensor
 from .base import GenomeEmbedding
 
 
-def parse_fasta_raw(fasta_path: Path) -> Generator[Tuple[str, Seq]]:
+def parse_fasta_raw(fasta_path: Path) -> Generator[Tuple[str, Seq], None, None]:
     with open(fasta_path, "rt") as f:
         for record in SeqIO.parse(f, "fasta"):
             yield record.id, record.seq
