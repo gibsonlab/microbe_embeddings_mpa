@@ -60,12 +60,19 @@ def embed_pcoa(
     return coordinates
 
 
-def store_embeddings(embeddings: np.ndarray, sgb_id_order: List[str], out_path: Path):
-    assert len(sgb_id_order) == embeddings.shape[0]
+def store_embeddings(full_sgb_ids: List[str], embeddings: np.ndarray, embedding_id_order: List[str], out_path: Path):
+    assert len(embedding_id_order) == embeddings.shape[0]
     embed_dim = embeddings.shape[1]
-    logger.info(f"Storing {len(sgb_id_order)} embeddings of dimension {embed_dim} into {out_path}")
+    if len(full_sgb_ids) != len(embedding_id_order):
+        leftover = set(full_sgb_ids).difference(set(embedding_id_order))
+        logger.warning("Following SGBs were not provided in the distance matrix: {}".format(
+            ",".join(str(s) for s in leftover)
+        ))
+    else:
+        leftover = set()
+    logger.info(f"Storing {len(embedding_id_order)} embeddings of dimension {embed_dim} into {out_path}")
 
-    memmap_shape = (len(sgb_id_order), 1, embed_dim)
+    memmap_shape = (len(full_sgb_ids), 1, embed_dim)
     print("Allocating memory-mapped array of shape {}".format(memmap_shape))
     print("Allocation target: {}".format(out_path))
     memmap_array = np.memmap(
@@ -75,8 +82,13 @@ def store_embeddings(embeddings: np.ndarray, sgb_id_order: List[str], out_path: 
         shape=memmap_shape
     )
 
-    for sgb_idx, (sgb_id, sgb_embedding) in enumerate(zip(sgb_id_order, embeddings)):
-        memmap_array[sgb_idx, 0, :] = sgb_embedding
+    embedding_order = {s_id: _i for _i, s_id in enumerate(embedding_id_order)}
+    for sgb_idx, sgb_id in enumerate(full_sgb_ids):
+        if sgb_id in embedding_order:
+            _i = embedding_order[sgb_id]
+            memmap_array[sgb_idx, 0, :] = embeddings[_i]
+        else:
+            memmap_array[sgb_idx, 0, :] = np.nan
 
     with open(out_path.with_suffix(".meta"), "wt") as f:
         print("float32", file=f)
