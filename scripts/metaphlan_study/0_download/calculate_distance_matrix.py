@@ -28,7 +28,7 @@ def main():
     """ Prune the tree leaf nodes, and save it. """
     tree = dendropy.Tree.get(path=str(NEWICK_FILE), schema='newick')
     taxa_to_retain = [taxon for taxon in tree.taxon_namespace if taxon.label in target_leaf_names]
-    missing_taxa = set(target_leaf_names).difference({str(t) for t in taxa_to_retain})
+    missing_taxa = set(target_leaf_names).difference({t.label for t in taxa_to_retain})
     print("Missing SGBs:", missing_taxa)
     print("Pruning tree.")
     tree.retain_taxa(taxa_to_retain)
