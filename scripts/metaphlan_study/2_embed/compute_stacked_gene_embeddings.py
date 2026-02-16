@@ -99,6 +99,7 @@ class MarkerIndex:
     from SGB ID -> (List of seq IDs) is stored as a ZSTD-compressed json object.
     """
     def __init__(self, fasta_file: Path, json_zstd_catalogue: Path):
+        print(f"Parsing marker index resource from {fasta_file}")
         with zstd.open(json_zstd_catalogue, "rt") as f:
             sgb_marker_index = json.load(f)
 
