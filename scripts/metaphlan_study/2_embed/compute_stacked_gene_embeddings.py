@@ -14,6 +14,8 @@ import torch
 from pyfaidx import Fasta
 
 from gem.glms import GenomeEmbedding
+from gem.glms.picker import pick_model_function
+from gem.util import parse_cuda_device_ids
 
 logging.basicConfig(
     level=logging.INFO,
@@ -21,75 +23,6 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger()
-
-
-def parse_cuda_device_ids(cuda_device_ids: str) -> List[torch.device]:
-    cuda_device_ids = [int(x) for x in cuda_device_ids.split(",") if len(x) > 0]
-    if len(cuda_device_ids) == 0:
-        print(f"At least one CUDA device ID must be specified. Got: {cuda_device_ids}")
-        exit(1)
-
-    cuda_devices = []
-    if torch.cuda.is_available():
-        device_count = torch.cuda.device_count()
-        print(f"Total CUDA devices available: {device_count}")
-
-        for device_id in cuda_device_ids:
-            if device_id < device_count:
-                print(f"CUDA device :{device_id} exists and is available.")
-                # You can now create a device object for it
-                device = torch.device(f"cuda:{device_id}")
-                cuda_devices.append(device)
-            else:
-                print(f"CUDA device :{device_id} does not exist. Only devices 0 to {device_count - 1} are available.")
-                exit(1)
-    else:
-        print("CUDA is not available on this system.")
-
-    assert len(cuda_devices) > 0, "Unexpected error: parsed zero CUDA devices."
-    return cuda_devices
-
-
-def get_model_fn(model_name: str) -> Tuple[Callable[[torch.device], GenomeEmbedding], int]:
-    """
-    Parse the model creation function.
-    :return: A callable which takes a torch.device (specifying which CUDA/CPU device to run the embedding model on,
-     and outputs the requested GenomeEmbedding instance. Also returns the (Expected/hard-coded) embed dimension.
-    """
-    if model_name.startswith("evo-1"):
-        tokens = model_name.split(":")
-        if len(tokens) == 1:
-            evo_checkpoint_name = tokens[0]
-            num_hyena_layers = 32
-        elif len(tokens) == 2:
-            evo_checkpoint_name = tokens[0]
-            num_hyena_layers = int(tokens[-1])
-        else:
-            raise RuntimeError("Incorrect model name syntax. Expected '<evo_checkpoint_name>:<n_layers>', but got {} instead.".format(model_name))
-
-        from gem.glms.evo import EvoWrapper
-        model_fn = lambda device: EvoWrapper(device=device, num_hyena_layers=num_hyena_layers, checkpoint_name=evo_checkpoint_name)
-        return model_fn, 4096
-    elif model_name.startswith("evo2"):
-        tokens = model_name.split(":")
-        if len(tokens) == 1:
-            evo2_checkpoint_name = tokens[0]
-            num_hyena_layers = 32
-        elif len(tokens) == 2:
-            evo2_checkpoint_name = tokens[0]
-            num_hyena_layers = int(tokens[-1])
-        else:
-            raise RuntimeError("Incorrect model name syntax. Expected '<evo2_checkpoint_name>:<n_layers>', but got {} instead.".format(model_name))
-
-        from gem.glms.evo2 import Evo2Wrapper
-        model_fn = lambda device: Evo2Wrapper(device=device, num_hyena_layers=num_hyena_layers, checkpoint_name=evo2_checkpoint_name)
-        return model_fn, 4096
-    elif model_name == 'dnabert-s':
-        from gem.glms.dnabert import DNABertSWrapper
-        model_fn = lambda device: DNABertSWrapper(device=device)
-        return model_fn, 768
-    else:
-        raise ValueError("Unknown model name {}".format(model_name))
 
 
 # ================================================
@@ -278,7 +211,7 @@ def do_job(
     :param output_path: Path to the output file, which is a numpy memmap array file.
     :return:
     """
-    model_fn, expected_embed_dim = get_model_fn(model_name)
+    model_fn, expected_embed_dim = pick_model_function(model_name)
     max_num_markers = max(sgb_marker_index.num_sgb_markers(sgb_id) for sgb_id in sgb_subset)
 
     # Initialize empty memmap
