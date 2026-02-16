@@ -151,11 +151,11 @@ def precompute_embeddings(
             global_idx = _idx_offset + sgb_idx
             if n_markers > 0:
                 try:
-                    marker_embeddings = embedding_model.embed_batch(marker_seqs).cpu().numpy()
+                    marker_embeddings = embedding_model.embed_batch(marker_seqs).to("cpu").float().numpy()
                 except RuntimeError:
                     # Fallback to unbatched mode. Error likely caused by out-of-memory allocation errors.
                     marker_embeddings = np.stack([
-                        embedding_model.embed_sequence(seq).cpu().numpy()
+                        embedding_model.embed_sequence(seq).to("cpu").float().numpy()
                         for seq in marker_seqs
                     ], axis=0)
                 with memmap_lock:
