@@ -101,16 +101,17 @@ class NumpyMemmappedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedData
             sgb_mask[sample_idx, :len(sample.taxa_ids)] = True
             targets[sample_idx, :len(sample.taxa_ids)] = torch.from_numpy(sample.abundances_ensure_normalized).to(self.dtype)
 
-            if sample.sample_id == "SAMEA7041148":
-                # print(f"sgb: {sgb_id}")
-                # print(torch.from_numpy(embed_slice).to(dtype=self.dtype))
-                # print("marker mask = ", torch.from_numpy(~np.isnan(embed_slice).any(axis=-1)))
-                # print("# markers =", torch.from_numpy(~np.isnan(embed_slice).any(axis=-1)).sum())
-                for sgb_idx in range(max_sgbs):
-                    if sgb_mask[sample_idx, sgb_idx].item() == True:
-                        assert torch.isnan(features[sample_idx, sgb_idx, :]).sum() == 0
-
-            raise Exception("ASDF")
+            # if sample.sample_id == "SAMEA7041148":
+            #     # print(f"sgb: {sgb_id}")
+            #     # print(torch.from_numpy(embed_slice).to(dtype=self.dtype))
+            #     # print("marker mask = ", torch.from_numpy(~np.isnan(embed_slice).any(axis=-1)))
+            #     # print("# markers =", torch.from_numpy(~np.isnan(embed_slice).any(axis=-1)).sum())
+            #     n_sgbs = len(sample.taxa_ids)
+            #     assert n_sgbs == sgb_mask[sample_idx, :n_sgbs].sum().item()
+            #     for sgb_idx, sgb_id in enumerate(sample.taxa_ids):
+            #         sgb_embed = features[sample_idx, ]
+            #
+            # raise Exception("ASDF")
         return sample_ids, features, marker_mask, sgb_mask, targets
 
     def __len__(self) -> int:
