@@ -190,8 +190,11 @@ def precompute_embeddings(
                 future.result()  # This will raise if the worker raised
             except Exception as e:
                 print(f"Worker crashed: {e}", file=sys.stderr)
-                executor.shutdown(wait=False, cancel_futures=True)
-                sys.exit(1)
+                # Cancel all pending futures
+                for f in futures:
+                    f.cancel()
+                # Re-raise to exit the context manager and terminate
+                raise
     print("All workers finished.")
     pbar.close()
 
