@@ -16,7 +16,7 @@
 set -e
 HF_TOKEN_FILE="/data/bwh-comppath-seq/youn/metaphlan_dset/hf_token.txt"
 SGB_SUBSET_FILE="/data/bwh-comppath-seq/youn/metaphlan_dset/dataset/BlancoMiguezA_2023.SGB_subset.txt"
-SGB_INDEX_DIR="/data/bwh-comppath-seq/youn/metaphlan_dset/phylophlan_data/processed/all"
+SGB_INDEX_DIR="/data/bwh-comppath-seq/youn/metaphlan_dset/phylophlan_data/processed/dna"
 
 HF_TOKEN=$(cat $HF_TOKEN_FILE)
 HF_HOME="/data/cctm/youn/huggingface_cache"
