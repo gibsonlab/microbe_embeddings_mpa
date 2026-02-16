@@ -197,7 +197,8 @@ def precompute_embeddings(
 
 
 def do_job(
-        model_name: str,
+        model_fn: Callable,
+        embed_dim: int,
         cuda_devices: List[torch.device],
         sgb_subset: Set[str],
         sgb_marker_index: Union[MarkerIndex, CompoundMarkerIndex],
@@ -211,11 +212,10 @@ def do_job(
     :param output_path: Path to the output file, which is a numpy memmap array file.
     :return:
     """
-    model_fn, expected_embed_dim = pick_model_function(model_name)
     max_num_markers = max(sgb_marker_index.num_sgb_markers(sgb_id) for sgb_id in sgb_subset)
 
     # Initialize empty memmap
-    memmap_shape = (len(sgb_subset), max_num_markers, expected_embed_dim)
+    memmap_shape = (len(sgb_subset), max_num_markers, embed_dim)
     print("Allocating memory-mapped array of shape {}".format(memmap_shape))
     print("Allocation target: {}".format(output_path))
     memmap_array = np.memmap(
@@ -252,6 +252,8 @@ def parse_args() -> argparse.Namespace:
 if __name__ == "__main__":
     args = parse_args()
 
+    model_fn, expected_embed_dim = pick_model_function(args.model_name)
+
     with open(args.sgb_subset_file, "rt") as f:
         _sgb_subset = {l.strip() for l in f if len(l.strip()) > 0}
 
@@ -277,7 +279,8 @@ if __name__ == "__main__":
 
     with CompoundMarkerIndex(marker_indices) as compound_index:
         do_job(
-            model_name=args.model_name,
+            model_fn=model_fn,
+            embed_dim=expected_embed_dim,
             cuda_devices=_cuda_devices,
             sgb_subset=_sgb_subset,
             sgb_marker_index=compound_index,
