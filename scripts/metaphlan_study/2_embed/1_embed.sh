@@ -11,7 +11,7 @@
 
 # Note: this is a Slurm script, meant to be run on ErisXDL compute nodes with 8 A100s.
 # This script runs compute_stacked_gene_embeddings.py, which evaluates a numpy.memmap representation of SGB marker embeddings.
-if ! [ $# -lt 1 ]; then
+if [ $# -lt 1 ]; then
   echo "Error: embed_model_name is required. (Suggestions: dnabert-s, evo-1-8k-base_hyena5, evo2_7b_hyena10)"
   echo "Usage: $0 <embed_model_name>"
   exit 1
