@@ -20,8 +20,6 @@ def main():
     def cleanup_id(x: str) -> str:
         if x.startswith("SGB"):
             x = x[3:]
-        if x.endswith("_group"):
-            x = x[:-len("_group")]
         return x
 
     target_leaf_names = [cleanup_id(sgb_id) for sgb_id in target_leaf_names]
@@ -30,6 +28,8 @@ def main():
     """ Prune the tree leaf nodes, and save it. """
     tree = dendropy.Tree.get(path=str(NEWICK_FILE), schema='newick')
     taxa_to_retain = [taxon for taxon in tree.taxon_namespace if taxon.label in target_leaf_names]
+    missing_taxa = set(target_leaf_names).difference({str(t) for t in taxa_to_retain})
+    print("Missing SGBs:", missing_taxa)
     print("Pruning tree.")
     tree.retain_taxa(taxa_to_retain)
     tree.write_to_path(PRUNED_TREE_PATH, "newick")
