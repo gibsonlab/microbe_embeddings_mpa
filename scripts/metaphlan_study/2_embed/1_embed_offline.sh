@@ -22,7 +22,7 @@ embed_seed=1000
 
 set -e
 DISTMAT_FILE="/data/bwh-comppath-seq/youn/metaphlan_dset/dataset/BlancoMiguezA_2023.DIST_MATRIX.npz"
-
+SGB_LIST_FILE="/data/bwh-comppath-seq/youn/metaphlan_dset/dataset/BlancoMiguezA_2023.SGB_subset.txt"
 
 out_dir="/data/bwh-comppath-seq/youn/metaphlan_dset/embeddings/offline"
 mkdir -p "${out_dir}"
@@ -33,6 +33,7 @@ echo "Embedding method: ${embed_method}"
 echo "Target file: ${out_dir}/${out_file}"
 python compute_offline_embeddings.py \
   --method "${embed_method}" \
+  --full-sgbs "${SGB_LIST_FILE}" \
   --embed-dim "${embed_dim}" \
   --seed "${embed_seed}" \
   --distance-matrix "${DISTMAT_FILE}" \

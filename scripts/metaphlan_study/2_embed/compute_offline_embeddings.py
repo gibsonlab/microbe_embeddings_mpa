@@ -21,6 +21,7 @@ logger = logging.getLogger()
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("-m", "--method", dest="method", type=str)
+    parser.add_argument("-f", "--full-sgbs", dest="full_sgb_list", type=str)
     parser.add_argument("-e", "--embed-dim", dest="embed_dim", type=int)
     parser.add_argument("-s", "--seed", dest="rng_seed", type=int)
     parser.add_argument("-d", "--distance-matrix", dest="distance_matrix", type=str)
@@ -97,26 +98,30 @@ def store_embeddings(full_sgb_ids: List[str], embeddings: np.ndarray, embedding_
 
 def do_job(
         method: str,
+        full_id_path: Path,
         embed_dim: int,
         rng_seed: int,
         distance_matrix_file: Path,
         out_path: Path,
 ):
+    with open(full_id_path, "rt") as f:
+        full_ids = [l.strip() for l in f if len(l.strip()) > 0]
+
     logger.info(f"Target SGB embedding output directory: {out_path}")
     dist_mat_zip = np.load(distance_matrix_file)
     dist_mat = dist_mat_zip['mat']
-    sgb_id_order = dist_mat_zip['labels']
+    embedding_order = dist_mat_zip['labels']
     if method == 'umap':
         logger.info(f"Computing UMAP embeddings (d={embed_dim}, seed={rng_seed})")
         embeddings = embed_umap(rng_seed, embed_dim, dist_mat)
     elif method == 'pcoa':
         logger.info(f"Computing PCoA embeddings (d={embed_dim}, seed={rng_seed})")
-        embeddings = embed_pcoa(rng_seed, embed_dim, dist_mat, sgb_id_order)
+        embeddings = embed_pcoa(rng_seed, embed_dim, dist_mat, embedding_order)
     else:
         raise ValueError(f"Unrecognized embedding method `{method}`")
 
     logger.info("Storing results.")
-    store_embeddings(embeddings, sgb_id_order, out_path)
+    store_embeddings(full_ids, embeddings, embedding_order, out_path)
 
 
 if __name__ == "__main__":
@@ -124,6 +129,7 @@ if __name__ == "__main__":
 
     do_job(
         method=args.method,
+        full_id_path=Path(args.full_sgb_list),
         embed_dim=args.embed_dim,
         rng_seed=args.rng_seed,
         distance_matrix_file=Path(args.distance_matrix),
