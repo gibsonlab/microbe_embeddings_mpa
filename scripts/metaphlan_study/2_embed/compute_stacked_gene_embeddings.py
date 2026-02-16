@@ -191,8 +191,8 @@ def precompute_embeddings(
             except Exception as e:
                 print(f"Worker crashed: {e}", file=sys.stderr)
                 # Cancel all pending futures
-                for f in futures:
-                    f.cancel()
+                for fut in futures:
+                    fut.cancel()
                 # Re-raise to exit the context manager and terminate
                 raise
     print("All workers finished.")
