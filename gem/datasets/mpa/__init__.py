@@ -9,3 +9,4 @@ from .dataset import AbstractMetaphlanPreembeddedDataset, MetaphlanPreembeddedDa
 from .dataset_memmap import MetaphlanPreembeddedDatasetMemmapped, MetaphlanPreembeddedDatasetMemmappedTensorDict, perform_allocation
 from .dataset_hdf5 import MetaphlanHDF5PreembeddedDataset, HDF5BatchShuffledSampler
 from .dataset_memmap_large import MetaphlanPreembeddedDatasetMemmappedLarge
+from .dataset_numpy_memmap import NumpyMemmappedMetaphlanPreembeddedDataset

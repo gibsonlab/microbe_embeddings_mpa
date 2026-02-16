@@ -21,3 +21,4 @@ joblib
 numba
 scikit-bio
 umap-learn
+dendropy
