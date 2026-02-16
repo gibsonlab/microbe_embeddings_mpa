@@ -33,7 +33,7 @@ pred_model="$3"
 
 
 # point to the proper pretrained model embeddings
-embeddings_file="${EMBEDDING_BASE_DIR}/${embed_model}"
+embedding_file="${EMBEDDING_BASE_DIR}/${embed_model}.npy"
 
 analysis_subdir="${ANALYSIS_BASE_DIR}/${analysis_name}"
 training_set="${analysis_subdir}/train.tsv"
@@ -66,7 +66,7 @@ python train_model.py \
   --model-config "$model_config" \
   --out-dir "$outdir" \
   --loss "kl" \
-  --memmap-tensor-dir "$embeddings_memmap" \
+  --embed-memmap-file "${embedding_file}" \
   --epochs "$n_epochs" \
   --learning-rate "$learning_rate" \
   --batch-size "$batch_size" \

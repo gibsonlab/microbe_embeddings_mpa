@@ -163,11 +163,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("-o", "--out-dir", dest="model_save_dir", required=True, type=str)
     parser.add_argument("-loss", "--loss", dest="loss_name", required=True, type=str,
                         help="Name of loss function. Either 'kl' or 'mse'")
-    # parser.add_argument(
-    #     "-mt", "--memmap-tensor-dir", dest="memmap_tensor_sample_dir", required=True, type=str,
-    #     help="The output of the previous step (3_memmap_test.sh, 3_memmap_train.sh), where the "
-    #          "memmapped samples' tensordicts are stored."
-    # )
+    parser.add_argument("-e", "--embed-memmap-file", dest="embed_memmap_file", required=True, type=str)
 
     parser.add_argument("-epochs", "--epochs", dest="n_epochs", type=int, required=True)
     parser.add_argument("-lr", "--learning-rate", dest="lr", type=float, required=True)
@@ -264,7 +260,7 @@ if __name__ == "__main__":
 
     main(
         train_df=_train_df, test_df=_test_df,
-        embed_memmap_file=asdf,
+        embed_memmap_file=Path(_args.embed_memmap_file),
         seed=_args.seed,
         model_cfg_path=Path(_args.model_cfg_path),
         model_save_dir=_model_save_dir,
