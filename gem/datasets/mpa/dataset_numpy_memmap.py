@@ -66,7 +66,7 @@ class NumpyMemmappedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedData
                 embed_slice = self.array[arr_idx]
                 features[sgb_idx] = torch.from_numpy(embed_slice)
                 marker_mask[sgb_idx] = torch.from_numpy(
-                    np.isnan(embed_slice).any(axis=-1)
+                    ~np.isnan(embed_slice).any(axis=-1)
                 )
             else:
                 # leave the features/marker mask at zero (sgb mask is still True, so this asks models to still produce a guess.)
@@ -95,7 +95,7 @@ class NumpyMemmappedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedData
                     arr_idx = self.sgb_indices[sgb_id]
                     embed_slice = self.array[arr_idx]
                     features[sample_idx, sgb_idx] = torch.from_numpy(embed_slice).to(dtype=self.dtype)
-                    marker_mask[sample_idx, sgb_idx] = torch.from_numpy(np.isnan(embed_slice).any(axis=-1))
+                    marker_mask[sample_idx, sgb_idx] = torch.from_numpy(~np.isnan(embed_slice).any(axis=-1))
                 else:
                     pass  # leave features and mask at zero.
             sgb_mask[sample_idx, :len(sample.taxa_ids)] = True
