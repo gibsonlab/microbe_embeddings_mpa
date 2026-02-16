@@ -28,6 +28,8 @@ def main(
 
     with open(out_path, "w") as f:
         for sgb_id in sorted(sgb_ids_subset):
+            if sgb_id.endswith("_group"):
+                sgb_id = sgb_id[:-len("_group")]
             print(sgb_id, file=f)
     print("Wrote SGB IDs to {}".format(out_path))
 
