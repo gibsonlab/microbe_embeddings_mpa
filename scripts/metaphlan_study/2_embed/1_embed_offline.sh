@@ -21,7 +21,7 @@ embed_dim=100
 embed_seed=1000
 
 set -e
-DISTMAT_FILE="/data/bwh-comppath-seq/youn/metaphlan_dset/dataset/BlancoMiguezA_2023.DIST_MATRIX.txt"
+DISTMAT_FILE="/data/bwh-comppath-seq/youn/metaphlan_dset/dataset/BlancoMiguezA_2023.DIST_MATRIX.npz"
 
 
 out_dir="/data/bwh-comppath-seq/youn/metaphlan_dset/embeddings/offline"
