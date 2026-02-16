@@ -224,6 +224,9 @@ def do_job(
         mode='w+',
         shape=memmap_shape
     )
+    with open(output_path.with_suffix(".meta"), "wt") as f:
+        print("float32", file=f)
+        print(','.join(str(s) for s in memmap_shape), file=f)
 
     precompute_embeddings(
         model_fn,
