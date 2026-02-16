@@ -66,7 +66,8 @@ def store_embeddings(full_sgb_ids: List[str], embeddings: np.ndarray, embedding_
     embed_dim = embeddings.shape[1]
     if len(full_sgb_ids) != len(embedding_id_order):
         leftover = set(full_sgb_ids).difference(set(embedding_id_order))
-        logger.warning("Following SGBs were not provided in the distance matrix: {}".format(
+        logger.warning("Following {} SGBs were not provided in the distance matrix: {}".format(
+            len(leftover),
             ",".join(str(s) for s in leftover)
         ))
     else:
