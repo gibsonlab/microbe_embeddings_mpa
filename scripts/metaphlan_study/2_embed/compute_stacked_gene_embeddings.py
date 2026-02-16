@@ -201,22 +201,22 @@ def do_job(
         model_fn: Callable,
         embed_dim: int,
         cuda_devices: List[torch.device],
-        sgb_subset: Set[str],
+        sgb_order: List[str],
         sgb_marker_index: Union[MarkerIndex, CompoundMarkerIndex],
         output_path: Path,
 ):
     """
     :param model_name:
     :param cuda_devices: A list of torch CUDA devices.
-    :param sgb_subset: A list of SGB ids to include. Only SGBs in this collection will be embedded.
+    :param sgb_order: A list of SGB ids to include. Only SGBs in this collection will be embedded.
     :param sgb_marker_index: A MarkerIndex object.
     :param output_path: Path to the output file, which is a numpy memmap array file.
     :return:
     """
-    max_num_markers = max(sgb_marker_index.num_sgb_markers(sgb_id) for sgb_id in sgb_subset)
+    max_num_markers = max(sgb_marker_index.num_sgb_markers(sgb_id) for sgb_id in sgb_order)
 
     # Initialize empty memmap
-    memmap_shape = (len(sgb_subset), max_num_markers, embed_dim)
+    memmap_shape = (len(sgb_order), max_num_markers, embed_dim)
     print("Allocating memory-mapped array of shape {}".format(memmap_shape))
     print("Allocation target: {}".format(output_path))
     memmap_array = np.memmap(
@@ -229,12 +229,15 @@ def do_job(
         print("float32", file=f)
         print(','.join(str(s) for s in memmap_shape), file=f)
         print("MISSING=0", file=f)
+    with open(output_path.with_suffix(".sgb.txt"), "wt") as f:
+        for sgb_id in sgb_order:
+            print(sgb_id, file=f)
 
     precompute_embeddings(
         model_fn,
         memmap_array,
         cuda_devices,
-        sorted(sgb_subset),
+        sgb_order,
         sgb_marker_index,
     )
     del memmap_array
@@ -287,7 +290,7 @@ if __name__ == "__main__":
             model_fn=model_fn,
             embed_dim=expected_embed_dim,
             cuda_devices=_cuda_devices,
-            sgb_subset=_sgb_subset,
+            sgb_order=_sgb_order,
             sgb_marker_index=compound_index,
             output_path=Path(args.output_path),
         )
