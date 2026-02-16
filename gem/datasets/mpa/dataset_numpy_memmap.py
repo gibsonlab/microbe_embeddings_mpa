@@ -22,6 +22,7 @@ class NumpyMemmappedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedData
         self.samples = list(MetaphlanProfileParser(dataset_df).samples())
         self.dtype = dtype
 
+        print("target numpy memmap array: {}".format(file_path))
         meta_path = file_path.with_suffix(".meta")
         assert meta_path.exists(), f"Metadata file for memmap embedding file {file_path.name} not found!"
         with open(meta_path, "rt") as f:
