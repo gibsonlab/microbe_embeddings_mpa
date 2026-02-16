@@ -26,7 +26,7 @@ DISTMAT_FILE="/data/bwh-comppath-seq/youn/metaphlan_dset/dataset/BlancoMiguezA_2
 
 out_dir="/data/bwh-comppath-seq/youn/metaphlan_dset/embeddings/offline"
 mkdir -p "${out_dir}"
-out_file="${embed_method}_d${embed_dim}_s${embed_seed}.h5"
+out_file="${embed_method}_d${embed_dim}_s${embed_seed}.npy"
 
 
 echo "Embedding method: ${embed_method}"

@@ -7,7 +7,6 @@ import sys
 import argparse
 from pathlib import Path
 
-import h5py
 import numpy as np
 
 
@@ -66,9 +65,18 @@ def store_embeddings(embeddings: np.ndarray, sgb_id_order: List[str], out_path: 
     embed_dim = embeddings.shape[1]
     logger.info(f"Storing {len(sgb_id_order)} embeddings of dimension {embed_dim} into {out_path}")
 
-    with h5py.File(out_path, 'w') as f:
-        for sgb_id, sgb_embedding in zip(sgb_id_order, embeddings):
-            f.create_dataset(sgb_id, data=sgb_embedding, compression='lzf')
+    memmap_shape = (len(sgb_id_order), 1, embed_dim)
+    print("Allocating memory-mapped array of shape {}".format(memmap_shape))
+    print("Allocation target: {}".format(out_path))
+    memmap_array = np.memmap(
+        out_path,
+        dtype='float32',
+        mode='w+',
+        shape=memmap_shape
+    )
+
+    for sgb_idx, (sgb_id, sgb_embedding) in enumerate(zip(sgb_id_order, embeddings)):
+        memmap_array[sgb_idx, 0, :] = sgb_embedding
 
 
 def do_job(
