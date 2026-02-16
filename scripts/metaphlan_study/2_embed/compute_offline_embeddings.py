@@ -95,6 +95,8 @@ def store_embeddings(full_sgb_ids: List[str], embeddings: np.ndarray, embedding_
     with open(out_path.with_suffix(".meta"), "wt") as f:
         print("float32", file=f)
         print(','.join(str(s) for s in memmap_shape), file=f)
+        print("MISSING:")
+        print(",".join(leftover))
 
 
 def do_job(
