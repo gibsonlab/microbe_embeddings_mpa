@@ -29,7 +29,7 @@ class NumpyMemmappedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedData
             _dtype = f.readline().strip()
             _shape = tuple(map(int, f.readline().split(',')))
             missing_line = f.readline().strip()
-            assert missing_line.startswith("MISSING=")
+            assert missing_line.startswith("MISSING="), "Invalid line format. got: {}".format(missing_line)
             missing_ct = int(missing_line.split("=")[1])
             for _ in range(missing_ct):
                 s_id = f.readline().strip()
