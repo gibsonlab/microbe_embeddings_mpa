@@ -1,0 +1,6 @@
+# marker_embed_dim are determined by the dataset.
+sgb_model_dim: 32
+hidden_dim: 64
+use_sgb_pooling: False
+mlp_hidden_layers: 3
+dropout_rate: 0.0
