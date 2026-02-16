@@ -97,6 +97,7 @@ class NumpyMemmappedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedData
                     features[sample_idx, sgb_idx] = torch.from_numpy(embed_slice).to(dtype=self.dtype)
                     marker_mask[sample_idx, sgb_idx] = torch.from_numpy(~np.isnan(embed_slice).any(axis=-1))
                 else:
+                    print(f"{sample.sample_id}: SGB {sgb_id} missing!")
                     pass  # leave features and mask at zero.
             sgb_mask[sample_idx, :len(sample.taxa_ids)] = True
             targets[sample_idx, :len(sample.taxa_ids)] = torch.from_numpy(sample.abundances_ensure_normalized).to(self.dtype)
