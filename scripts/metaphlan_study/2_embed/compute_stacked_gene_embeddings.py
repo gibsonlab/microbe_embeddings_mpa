@@ -221,10 +221,10 @@ def precompute_embeddings(
                     marker_embeddings = embedding_model.embed_batch(marker_seqs).cpu().numpy()
                 except RuntimeError:
                     # Fallback to unbatched mode. Error likely caused by out-of-memory allocation errors.
-                    marker_embeddings = torch.stack([
+                    marker_embeddings = np.stack([
                         embedding_model.embed_sequence(seq).cpu().numpy()
                         for seq in marker_seqs
-                    ], dim=0)
+                    ], axis=0)
                 with memmap_lock:
                     memmap_array[global_idx, :n_markers, :] = marker_embeddings
                     memmap_array[global_idx, n_markers:, :] = np.nan  # fill rest with padding value (np.nan)
