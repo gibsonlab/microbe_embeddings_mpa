@@ -43,6 +43,7 @@ def main():
     pdm = PhyloDM.load_from_newick_path(PRUNED_TREE_PATH)
     dm = pdm.dm(norm=False)
     labels = pdm.taxa()
+    labels = [f'SGB{label}' for label in labels]
     np.savez(DISTMAT_PATH, mat=dm, labels=labels)
     print("Done! Wrote {} x {} distance matrix to: {}".format(
         dm.shape[0], dm.shape[1], DISTMAT_PATH
