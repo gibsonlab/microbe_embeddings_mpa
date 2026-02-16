@@ -84,10 +84,10 @@ class NumpyMemmappedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedData
         embed_dim = self.array.shape[2]
 
         sample_ids = [s.sample_id for s in samples]
-        features = torch.empty((batch_sz, max_sgbs, max_markers, embed_dim), dtype=self.dtype)
+        features = torch.zeros((batch_sz, max_sgbs, max_markers, embed_dim), dtype=self.dtype)
         marker_mask = torch.zeros((batch_sz, max_sgbs, max_markers), dtype=torch.bool)
         sgb_mask = torch.zeros((batch_sz, max_sgbs), dtype=torch.bool)
-        targets = torch.empty((batch_sz, max_sgbs), dtype=self.dtype)
+        targets = torch.zeros((batch_sz, max_sgbs), dtype=self.dtype)
 
         for sample_idx, sample in enumerate(samples):
             for sgb_idx, sgb_id in enumerate(sample.taxa_ids):
