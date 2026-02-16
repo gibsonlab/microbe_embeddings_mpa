@@ -22,9 +22,9 @@ logger = logging.getLogger()
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("-m", "--method", dest="method", type=str)
-    parser.add_argument("-e", "--embed-dim", dest="embed_dim", type=str)
-    parser.add_argument("-s", "--seed", dest="rng_seed", type=str)
-    parser.add_argument("-d", "--distance-matrix", dest="distance_matrix", type=Path)
+    parser.add_argument("-e", "--embed-dim", dest="embed_dim", type=int)
+    parser.add_argument("-s", "--seed", dest="rng_seed", type=int)
+    parser.add_argument("-d", "--distance-matrix", dest="distance_matrix", type=str)
     parser.add_argument("-o", "--out", dest="out_path", type=str, help='A path to the h5 file to create.')
     return parser.parse_args()
 
