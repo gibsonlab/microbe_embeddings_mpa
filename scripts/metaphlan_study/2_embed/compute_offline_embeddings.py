@@ -98,6 +98,9 @@ def store_embeddings(full_sgb_ids: List[str], embeddings: np.ndarray, embedding_
         print("MISSING={}".format(len(leftover)), file=f)
         for s_id in leftover:
             print(s_id, file=f)
+    with open(out_path.with_suffix(".sgb.txt"), "wt") as f:
+        for sgb_id in full_sgb_ids:
+            print(sgb_id, file=f)
 
 
 def do_job(
