@@ -209,11 +209,11 @@ def main(
     train_rng = torch.Generator()
     train_rng.manual_seed(seed + 2)
     train_dloader = train_dset.create_dataloader(
-        batch_size=batch_size, shuffle=True, rng=train_rng,
+        batch_size=batch_size, shuffle=True, generator=train_rng,
         drop_last=False, num_workers=num_workers, prefetch_factor=batch_prefetch_factor,
     )
     test_dloader = test_dset.create_dataloader(
-        batch_size=batch_size, shuffle=False, rng=None,
+        batch_size=batch_size, shuffle=False, generator=None,
         drop_last=False, num_workers=num_workers, prefetch_factor=batch_prefetch_factor,
     )
 
