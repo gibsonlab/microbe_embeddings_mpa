@@ -274,11 +274,14 @@ def do_job(
     max_num_markers = max(sgb_marker_index.num_sgb_markers(sgb_id) for sgb_id in sgb_subset)
 
     # Initialize empty memmap
+    memmap_shape = (len(sgb_subset), max_num_markers, expected_embed_dim)
+    print("Allocating memory-mapped array of shape {}".format(memmap_shape))
+    print("Allocation target: {}".format(output_path))
     memmap_array = np.memmap(
         output_path,
         dtype='float32',
         mode='w+',
-        shape=(len(sgb_subset), max_num_markers, expected_embed_dim)
+        shape=memmap_shape
     )
 
     precompute_embeddings(
