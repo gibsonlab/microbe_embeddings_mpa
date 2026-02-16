@@ -78,7 +78,7 @@ def store_embeddings(embeddings: np.ndarray, sgb_id_order: List[str], out_path: 
     for sgb_idx, (sgb_id, sgb_embedding) in enumerate(zip(sgb_id_order, embeddings)):
         memmap_array[sgb_idx, 0, :] = sgb_embedding
 
-    with open(out_path.with_suffix("meta"), "wt") as f:
+    with open(out_path.with_suffix(".meta"), "wt") as f:
         print("float32", file=f)
         print(','.join(memmap_shape), file=f)
 
