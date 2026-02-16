@@ -78,7 +78,7 @@ def do_job(
         distance_matrix_file: Path,
         out_path: Path,
 ):
-    logger.info("Target SGB embedding output directory: ", out_path)
+    logger.info(f"Target SGB embedding output directory: {out_path}")
     dist_mat_zip = np.load(distance_matrix_file)
     dist_mat = dist_mat_zip['mat']
     sgb_id_order = dist_mat_zip['labels']
