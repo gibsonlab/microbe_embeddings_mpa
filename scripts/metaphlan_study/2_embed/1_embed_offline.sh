@@ -21,10 +21,10 @@ embed_dim=100
 embed_seed=1000
 
 set -e
-SGB_SUBSET_FILE="/data/bwh-comppath-seq/youn/metaphlan_dset/dataset/BlancoMiguezA_2023.SGB_subset.txt"
+DISTMAT_FILE="/data/bwh-comppath-seq/youn/metaphlan_dset/dataset/BlancoMiguezA_2023.DIST_MATRIX.txt"
 
 
-out_dir="/data/bwh-comppath-seq/youn/metaphlan_dset/embeddings/offline/"
+out_dir="/data/bwh-comppath-seq/youn/metaphlan_dset/embeddings/offline"
 mkdir -p "${out_dir}"
 out_file="${embed_method}_d${embed_dim}_s${embed_seed}.h5"
 
