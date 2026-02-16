@@ -26,6 +26,23 @@ SGB_INDEX_DIR="/data/bwh-comppath-seq/youn/metaphlan_dset/phylophlan_database/pr
 HF_TOKEN=$(cat $HF_TOKEN_FILE)
 HF_HOME="/data/cctm/youn/huggingface_cache"
 SCRIPT_DIR="$(pwd)"
+
+# Bash function, which finds the project root directory.
+# This function repeatedly traverses upwards, until it finds an ancestor with the subdirectory "gem".
+find_gem_project_dir() {
+    local dir="$PWD"
+
+    while [ "$dir" != "/" ]; do
+        if [ -d "$dir/gem" ]; then
+            echo "$dir"
+            return 0
+        fi
+        dir="$(dirname "$dir")"
+    done
+
+    echo "No ancestor directory containing 'gem' folder found" >&2
+    return 1
+}
 PROJECT_ROOT_DIR=$(find_gem_project_dir)
 
 out_dir="/data/bwh-comppath-seq/youn/metaphlan_dset/embeddings/phylophlan"
