@@ -164,6 +164,7 @@ def precompute_embeddings(
                     memmap_array.flush()
                     pbar.update(1)
             else:
+                print(f"[WARNING] SGB {sgb_id} has no markers to embed.")
                 with memmap_lock:
                     memmap_array[global_idx, :, :] = np.nan
                     memmap_array.flush()
@@ -227,6 +228,7 @@ def do_job(
     with open(output_path.with_suffix(".meta"), "wt") as f:
         print("float32", file=f)
         print(','.join(str(s) for s in memmap_shape), file=f)
+        print("MISSING=0", file=f)
 
     precompute_embeddings(
         model_fn,
