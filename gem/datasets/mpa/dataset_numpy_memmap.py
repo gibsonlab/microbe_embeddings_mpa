@@ -42,7 +42,7 @@ class NumpyMemmappedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedData
             dtype=_dtype,
             mode='r',
             shape=_shape,
-        )
+        ).copy()
         with open(file_path.with_suffix(".sgb.txt"), "rt") as f:
             self.sgb_order = [l.strip() for l in f if len(l.strip()) > 0]
         assert len(self.sgb_order) == self.array.shape[0], "SGB id length ({}) does not match memmap shape ({})".format(
