@@ -77,6 +77,8 @@ if [[ $embed_model_name == evo2* ]]; then
           --cuda-device-ids "0,1,2,3,4,5,6,7" \
           --output-path "/out_dir/${out_file}"
 else
+  HF_HOME=$HF_HOME \
+  HF_TOKEN=$HF_TOKEN \
   python compute_stacked_gene_embeddings.py \
     --model-name "${embed_model_name}" \
     --sgb-subset-file "${SGB_SUBSET_FILE}" \
