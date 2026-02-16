@@ -263,7 +263,7 @@ if __name__ == "__main__":
     model_fn, expected_embed_dim = pick_model_function(args.model_name)
 
     with open(args.sgb_subset_file, "rt") as f:
-        _sgb_subset = {l.strip() for l in f if len(l.strip()) > 0}
+        _sgb_order = [l.strip() for l in f if len(l.strip()) > 0]
 
     _cuda_devices = parse_cuda_device_ids(args.cuda_device_ids)
 
