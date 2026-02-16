@@ -80,7 +80,7 @@ def store_embeddings(embeddings: np.ndarray, sgb_id_order: List[str], out_path: 
 
     with open(out_path.with_suffix(".meta"), "wt") as f:
         print("float32", file=f)
-        print(','.join(memmap_shape), file=f)
+        print(','.join(str(s) for s in memmap_shape), file=f)
 
 
 def do_job(
