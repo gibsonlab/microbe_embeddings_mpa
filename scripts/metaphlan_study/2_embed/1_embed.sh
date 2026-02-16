@@ -50,7 +50,7 @@ mkdir -p "${out_dir}"
 out_file="${embed_model_name}.npy"
 
 
-if [ "${embed_model_name}" == "pcoa" ] | [ "${embed_model_name}" == "umap" ]; then
+if [ "${embed_model_name}" == "pcoa" ] || [ "${embed_model_name}" == "umap" ]; then
     echo "Will create symlinks to pre-computed embeddings."
     echo "Please run '1_embed_offline.sh ${embed_model_name}'"
     ln -s /data/bwh-comppath-seq/youn/metaphlan_dset/embeddings/offline/${embed_model_name}_d100_s1000.* ${out_dir}/
