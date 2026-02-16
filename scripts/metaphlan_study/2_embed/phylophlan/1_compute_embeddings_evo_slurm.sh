@@ -16,8 +16,8 @@ set -e
 
 HF_TOKEN_FILE=/data/bwh-comppath-seq/youn/metaphlan_dset/hf_token.txt
 SGB_SUBSET_FILE=/data/bwh-comppath-seq/youn/metaphlan_dset/dataset/BlancoMiguezA_2023.SGB_subset.txt
-SGB_INDEX_FILE=/data/bwh-comppath-seq/youn/metaphlan_dset/phylophlan_data/processed/dna_only/sgb_marker_index.json.zst
-FASTA_FILE=/data/cctm/bwh-comppath-seq/youn/metaphlan_dset/phylophlan_data/processed/dna_only/markers.fna
+SGB_INDEX_FILE=/data/bwh-comppath-seq/youn/metaphlan_dset/phylophlan_database/processed/dna_only/sgb_marker_index.json.zst
+FASTA_FILE=/data/cctm/bwh-comppath-seq/youn/metaphlan_dset/phylophlan_database/processed/dna_only/markers.fna
 
 HF_TOKEN=$(cat $HF_TOKEN_FILE)
 HF_HOME="/data/cctm/youn/huggingface_cache"

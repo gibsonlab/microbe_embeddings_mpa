@@ -30,7 +30,9 @@ class MarkerIndex:
                 gene_and_sgb = record_name.split("__")[0]
                 tokens = gene_and_sgb.split(":")
                 assert len(tokens) == 2, f"Unexpected parse of ID: {record_name}"
-                gene_id, sgb_id = tokens
+                gene_id, sgb_numeric_id = tokens
+
+                sgb_id = f'SGB{sgb_numeric_id}'
                 index[sgb_id].append(record_name)
         return index
 
@@ -61,6 +63,6 @@ def main(
 
 if __name__ == "__main__":
     main(
-        marker_fasta_file=Path("/data/bwh-comppath-seq/youn/metaphlan_dset/phylophlan_data/processed/dna_only") / "markers.fna",
-        output_json_path=Path("/data/bwh-comppath-seq/youn/metaphlan_dset/phylophlan_data/processed/dna_only") / "sgb_marker_index.json.zst",  # should end with ".zst" extension -- will be compressed using zstd.
+        marker_fasta_file=Path("/data/bwh-comppath-seq/youn/metaphlan_dset/phylophlan_database/processed/dna_only") / "markers.fna",
+        output_json_path=Path("/data/bwh-comppath-seq/youn/metaphlan_dset/phylophlan_database/processed/dna_only") / "sgb_marker_index.json.zst",  # should end with ".zst" extension -- will be compressed using zstd.
     )

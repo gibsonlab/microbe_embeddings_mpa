@@ -629,7 +629,7 @@ def main(model_options: List[str], plot_dir: Path, eval_device: str = 'cuda'):
                 ).to_csv(plot_dir / 'uniform.tsv', sep='\t')
         elif model_option == "neighbor":
             nearest_neighbor_baseline_method = NearestNeighborAveragingPredictor(
-                sgb_phylogenetic_tree_file=Path("/data/bwh-comppath-seq/youn/metaphlan_dset/database/mpa_vJan21_CHOCOPhlAnSGB_202103.nwk"),
+                sgb_phylogenetic_tree_file=Path("/data/bwh-comppath-seq/youn/metaphlan_dset/metaphlan_database/mpa_vJan21_CHOCOPhlAnSGB_202103.nwk"),
                 train_df=train_df,
             )
 

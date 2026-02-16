@@ -52,6 +52,6 @@ def main(
 
 if __name__ == "__main__":
     main(
-        Path("/data/bwh-comppath-seq/youn/metaphlan_dset/phylophlan_data/PhyloPhlAn_output/markers_dna"),
-        Path("/data/bwh-comppath-seq/youn/metaphlan_dset/phylophlan_data/processed/dna_only")
+        Path("/data/bwh-comppath-seq/youn/metaphlan_dset/phylophlan_database/PhyloPhlAn_output/markers_dna"),
+        Path("/data/bwh-comppath-seq/youn/metaphlan_dset/phylophlan_database/processed/dna_only")
     )

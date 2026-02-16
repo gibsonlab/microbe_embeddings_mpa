@@ -21,7 +21,7 @@ hyena_layers="$1"
 
 training_set="/data/cctm/youn/metaphlan_dset/model_training/train.tsv"
 test_set="/data/cctm/youn/metaphlan_dset/model_training/test.tsv"
-marker_sequence_dir="/data/cctm/youn/metaphlan_dset/phylophlan_data/processed/dna_only"
+marker_sequence_dir="/data/cctm/youn/metaphlan_dset/phylophlan_database/processed/dna_only"
 model_config="./model_epc_pool.yaml"
 n_epochs=80
 learning_rate=0.0001

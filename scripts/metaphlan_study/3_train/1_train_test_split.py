@@ -591,7 +591,7 @@ if __name__ == "__main__":
 
     full_profile_tsv = DATA_DIR / "BlancoMiguezA_2023_profiles.tsv"
     metadata_tsv = DATA_DIR / "BlancoMiguezA_2023_metadata.tsv"
-    tree_path = Path("/data/bwh-comppath-seq/youn/metaphlan_dset/database/mpa_vJan21_CHOCOPhlAnSGB_202103.nwk")
+    tree_path = Path("/data/bwh-comppath-seq/youn/metaphlan_dset/metaphlan_database/mpa_vJan21_CHOCOPhlAnSGB_202103.nwk")
 
     OUT_DIR.mkdir(exist_ok=True, parents=True)
     main(
