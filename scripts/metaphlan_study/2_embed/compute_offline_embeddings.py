@@ -7,6 +7,7 @@ import sys
 import argparse
 from pathlib import Path
 
+import torch
 import numpy as np
 
 
@@ -61,7 +62,12 @@ def embed_pcoa(
     return coordinates
 
 
-def store_embeddings(full_sgb_ids: List[str], embeddings: np.ndarray, embedding_id_order: List[str], out_path: Path):
+def store_embeddings(
+        full_sgb_ids: List[str],
+        embeddings: np.ndarray,
+        embedding_id_order: List[str],
+        output_path: Path
+):
     assert len(embedding_id_order) == embeddings.shape[0]
     embed_dim = embeddings.shape[1]
     if len(full_sgb_ids) != len(embedding_id_order):
@@ -72,35 +78,38 @@ def store_embeddings(full_sgb_ids: List[str], embeddings: np.ndarray, embedding_
         ))
     else:
         leftover = set()
-    logger.info(f"Storing {len(embedding_id_order)} embeddings of dimension {embed_dim} into {out_path}")
+    logger.info(f"Storing {len(embedding_id_order)} embeddings of dimension {embed_dim} into {output_path}")
 
-    memmap_shape = (len(full_sgb_ids), 1, embed_dim)
-    print("Allocating memory-mapped array of shape {}".format(memmap_shape))
-    print("Allocation target: {}".format(out_path))
-    memmap_array = np.memmap(
-        out_path,
-        dtype='float32',
-        mode='w+',
-        shape=memmap_shape
+    # Initialize empty memmap
+    tensor_shape = (len(full_sgb_ids), 1, embed_dim)
+    print("Allocating stacked embeddings tensor of shape {}".format(tensor_shape))
+    print("Save target: {}".format(output_path))
+    full_tensor = torch.full(
+        tensor_shape,
+        fill_value=torch.nan,
+        dtype=torch.float32,
     )
 
     embedding_order = {s_id: _i for _i, s_id in enumerate(embedding_id_order)}
     for sgb_idx, sgb_id in enumerate(full_sgb_ids):
         if sgb_id in embedding_order:
             _i = embedding_order[sgb_id]
-            memmap_array[sgb_idx, 0, :] = embeddings[_i]
+            full_tensor[sgb_idx, 0, :] = torch.from_numpy(embeddings[_i])
         else:
-            memmap_array[sgb_idx, 0, :] = np.nan
+            full_tensor[sgb_idx, 0, :] = torch.nan
 
-    with open(out_path.with_suffix(".meta"), "wt") as f:
-        print("float32", file=f)
-        print(','.join(str(s) for s in memmap_shape), file=f)
-        print("MISSING={}".format(len(leftover)), file=f)
+    with open(output_path.with_suffix(".meta"), "wt") as meta_f:
+        print("float32", file=meta_f)
+        print(','.join(str(s) for s in tensor_shape), file=meta_f)
+        print("MISSING={}".format(len(leftover)), file=meta_f)
         for s_id in leftover:
-            print(s_id, file=f)
-    with open(out_path.with_suffix(".sgb.txt"), "wt") as f:
+            print(s_id, file=meta_f)
+    with open(output_path.with_suffix(".sgb.txt"), "wt") as sgb_f:
         for sgb_id in full_sgb_ids:
-            print(sgb_id, file=f)
+            print(sgb_id, file=sgb_f)
+
+    torch.save(full_tensor, output_path)
+    print("Saved tensor to {}".format(output_path))
 
 
 def do_job(

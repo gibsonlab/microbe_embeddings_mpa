@@ -121,7 +121,7 @@ class PCoAEmbedding(GenomeEmbedding):
     def embed_sequence(self, x: str) -> Tensor:
         try:
             embedding = self.seq_embeddings[x]
-            return torch.from_numpy(embedding)  # cpu tensor
+            return torch.from_numpy(embedding)  # cpu tensor, float32
         except KeyError:
             raise KeyError(f"Sequence {x} not found in non-parametric PCoA embedding training set.") from None
 

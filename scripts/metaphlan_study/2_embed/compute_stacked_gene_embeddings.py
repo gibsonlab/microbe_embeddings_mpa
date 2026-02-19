@@ -213,9 +213,8 @@ def do_job(
     """
     max_num_markers = max(sgb_marker_index.num_sgb_markers(sgb_id) for sgb_id in sgb_order)
 
-    # Initialize empty memmap
+    # Initialize empty tensor
     tensor_shape = (len(sgb_order), max_num_markers, embed_dim)
-
     print("Allocating stacked embeddings tensor of shape {}".format(tensor_shape))
     print("Save target: {}".format(output_path))
 
@@ -261,7 +260,7 @@ def parse_args() -> argparse.Namespace:
 if __name__ == "__main__":
     args = parse_args()
 
-    model_fn, expected_embed_dim = pick_model_function(args.model_name)
+    model_fn, expected_embed_dim, embed_dtype = pick_model_function(args.model_name)
 
     with open(args.sgb_subset_file, "rt") as f:
         _sgb_order = [l.strip() for l in f if len(l.strip()) > 0]
@@ -290,6 +289,7 @@ if __name__ == "__main__":
         do_job(
             model_fn=model_fn,
             embed_dim=expected_embed_dim,
+            embed_dtype=embed_dtype,
             cuda_devices=_cuda_devices,
             sgb_order=_sgb_order,
             sgb_marker_index=compound_index,

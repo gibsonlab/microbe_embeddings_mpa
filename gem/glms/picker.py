@@ -4,7 +4,7 @@ import torch
 from .base import GenomeEmbedding
 
 
-InitializerType=Tuple[Callable[[torch.device], GenomeEmbedding], int]
+InitializerType=Tuple[Callable[[torch.device], GenomeEmbedding], int, torch.dtype]
 
 
 def evo1_initializer(model_name: str) -> InitializerType:
@@ -27,7 +27,7 @@ def evo1_initializer(model_name: str) -> InitializerType:
     from gem.glms.evo import EvoWrapper
     model_fn = lambda device: EvoWrapper(device=device, num_hyena_layers=num_hyena_layers,
                                          checkpoint_name=evo_checkpoint_name)
-    return model_fn, 4096
+    return model_fn, 4096, torch.bfloat16
 
 
 def evo2_initializer(model_name: str) -> InitializerType:
@@ -50,13 +50,13 @@ def evo2_initializer(model_name: str) -> InitializerType:
     from gem.glms.evo2 import Evo2Wrapper
     model_fn = lambda device: Evo2Wrapper(device=device, num_hyena_layers=num_hyena_layers,
                                           checkpoint_name=evo2_checkpoint_name)
-    return model_fn, 4096
+    return model_fn, 4096, torch.bfloat16
 
 
 def dnabert_s_initializer():
     from gem.glms.dnabert import DNABertSWrapper
     model_fn = lambda device: DNABertSWrapper(device=device)
-    return model_fn, 768
+    return model_fn, 768, torch.float32
 
 
 def umap_initializer(model_name: str, **kwargs):
@@ -89,7 +89,7 @@ def umap_initializer(model_name: str, **kwargs):
         rng_seed=rng_seed
     )
     model_fn = lambda _: embedding
-    return model_fn, embed_dim
+    return model_fn, embed_dim, torch.float32
 
 
 def pcoa_initializer(model_name: str, **kwargs):
@@ -123,7 +123,7 @@ def pcoa_initializer(model_name: str, **kwargs):
         chunk_size=20,
     )
     model_fn = lambda _: embedding
-    return model_fn, embed_dim
+    return model_fn, embed_dim, torch.float32
 
 
 def pick_model_function(model_name: str, **kwargs) -> InitializerType:

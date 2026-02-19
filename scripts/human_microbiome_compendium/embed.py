@@ -36,7 +36,7 @@ def main(
     :return:
     """
     asv_seqs = load_fasta_dict(asv_fasta_file)
-    embed_create_fn, _ = pick_model_function(
+    embed_create_fn, _, _ = pick_model_function(
         model_name,
         unaligned_fasta=asv_fasta_file,
         multi_alignment_fasta=multi_alignment_fasta
