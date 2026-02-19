@@ -95,11 +95,15 @@ EOF
 #  echo "Submitted job ${jobname}"
 }
 
-create_job_submission "pcoa_split" "phylophlan" "pcoa_d100_s1000" "epc_pool"
-create_job_submission "pcoa_split" "phylophlan" "pcoa_d100_s1000" "epc_nopool"
+create_job_submission "pcoa_split" "offline" "pcoa_d100_s1000" "epc_pool"
+create_job_submission "pcoa_split" "offline" "pcoa_d100_s1000" "epc_nopool"
 
-create_job_submission "pcoa_split" "phylophlan" "umap_d100_s1000" "epc_pool"
-create_job_submission "pcoa_split" "phylophlan" "umap_d100_s1000" "epc_nopool"
+create_job_submission "pcoa_split" "offline" "umap_d100_s1000" "epc_pool"
+create_job_submission "pcoa_split" "offline" "umap_d100_s1000" "epc_nopool"
 
+create_job_submission "pcoa_split" "phylophlan" "dnabert-s" "epc_pool"
+create_job_submission "pcoa_split" "phylophlan" "dnabert-s" "epc_nopool"
 
+create_job_submission "pcoa_split" "phylophlan" "evo2_7b_hyena10" "epc_pool"
+create_job_submission "pcoa_split" "phylophlan" "evo2_7b_hyena10" "epc_nopool"
 
