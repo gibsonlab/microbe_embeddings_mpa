@@ -155,6 +155,9 @@ def precompute_embeddings(
                     embedding_model.embed_sequence(seq).to("cpu")
                     for seq in marker_seqs
                 ], dim=0)
+                assert marker_embeddings.dtype == full_tensor.dtype, "Marker embeddings dtype ({}) doesn't match full tensor dtype ({})".format(
+                    marker_embeddings.dtype, full_tensor.dtype
+                )
                 with tensor_lock:
                     full_tensor[global_idx, :n_markers, :] = marker_embeddings
                     full_tensor[global_idx, n_markers:, :] = torch.nan
