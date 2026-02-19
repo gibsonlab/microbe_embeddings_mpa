@@ -79,7 +79,7 @@ create_job_submission () {
 #SBATCH --gpus=1
 #SBATCH --mem=40G
 #SBATCH --cpus-per-task=8
-#SBATCH --time=12:00:00
+#SBATCH --time=24:00:00
 #SBATCH --job-name=${jobname}
 #SBATCH --output=${logfile}
 #SBATCH --error=${errfile}
