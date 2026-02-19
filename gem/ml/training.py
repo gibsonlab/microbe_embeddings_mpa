@@ -169,8 +169,8 @@ def main_training_loop(
                     # note: bfloat16 historically has had better numerical stability, causing fewer NaN issues.
                     test_y_hat = model(
                         test_batch_features.to(model_device, dtype=torch.float32, non_blocking=True),
-                        test_marker_mask.to(model_device, dtype=torch.float32, non_blocking=True),
-                        test_taxa_mask.to(model_device, dtype=torch.float32, non_blocking=True)
+                        test_marker_mask.to(model_device, non_blocking=True),
+                        test_taxa_mask.to(model_device, non_blocking=True)
                     )
 
                     # assert test_y_hat.shape == test_y.shape, f"Neural Network output and ground truth have different shapes: {test_y_hat.shape} (NN) vs {test_y.shape} (truth)"
@@ -242,8 +242,8 @@ def main_training_loop(
                 with timer("Model-With-Grad ({}/{})".format(batch_idx+1, len(train_dloader)), enabled=timer_profile):
                     training_y_hat = model(
                         training_batch_features.to(model_device, dtype=torch.float32, non_blocking=True),
-                        training_marker_mask.to(model_device, dtype=torch.float32, non_blocking=True),
-                        training_taxa_mask.to(model_device, dtype=torch.float32, non_blocking=True),
+                        training_marker_mask.to(model_device, non_blocking=True),
+                        training_taxa_mask.to(model_device, non_blocking=True),
                     )
 
                 # assert training_y_hat.shape == training_y.shape, f"Neural Network output and ground truth have different shapes: {training_y_hat.shape} (NN) vs {training_y.shape} (truth)"
