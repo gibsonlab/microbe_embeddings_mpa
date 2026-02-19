@@ -26,7 +26,7 @@ class EvoWrapper(GenomeEmbedding):
             assert torch.cuda.is_available(), "CUDA is unavailable!"
             torch.cuda.empty_cache()
 
-        evo_model = Evo(checkpoint_name, device=device)
+        evo_model = Evo(checkpoint_name, device='cpu')
         hyena_model, tokenizer = evo_model.model, evo_model.tokenizer
 
         ### not needed, StripedHyena already in bfloat16 mode for weights.
@@ -52,7 +52,7 @@ class EvoWrapper(GenomeEmbedding):
         self.tokenizer = tokenizer
 
         for model_component in [self.preembedding_layer] + list(self.hyena_layers):
-            # model_component.to(device)
+            model_component.to(device)
             model_component.eval()
 
         if num_hyena_layers < len(hyena_model.blocks):
