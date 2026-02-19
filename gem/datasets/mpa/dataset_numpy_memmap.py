@@ -117,6 +117,7 @@ class NumpyMemmappedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedData
                 sample.abundances_ensure_normalized
             ).to(self.dtype)
 
+        features[np.isnan(features)] = 0.0
         features = torch.from_numpy(features_np)
 
 
@@ -133,7 +134,7 @@ class NumpyMemmappedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedData
         #         sample.abundances_ensure_normalized
         #     ).to(self.dtype)
 
-        features[torch.isnan(features)] = 0.0
+        # features[torch.isnan(features)] = 0.0
         return sample_ids, features, marker_mask, sgb_mask, targets
 
     def __len__(self) -> int:
