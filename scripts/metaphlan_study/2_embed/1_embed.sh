@@ -43,7 +43,6 @@ find_gem_project_dir() {
     echo "No ancestor directory containing 'gem' folder found" >&2
     return 1
 }
-PROJECT_ROOT_DIR=$(find_gem_project_dir)
 
 out_dir="/data/bwh-comppath-seq/youn/metaphlan_dset/embeddings/phylophlan"
 mkdir -p "${out_dir}"
@@ -51,6 +50,7 @@ out_file="${embed_model_name}.pt"
 
 
 if [[ $embed_model_name == evo2* ]]; then
+    PROJECT_ROOT_DIR=$(find_gem_project_dir)
     APPTAINER_IMAGE=/data/cctm/youn/docker_images/evo2_gem.sif
     echo "Evo2 model detected. Running using Apptainer (${APPTAINER_IMAGE})."
 
