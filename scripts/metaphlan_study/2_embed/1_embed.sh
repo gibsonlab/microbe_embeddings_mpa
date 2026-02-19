@@ -4,7 +4,7 @@
 #SBATCH --mem=12G
 #SBATCH --cpus-per-task=40
 #SBATCH --time=2-00:00:00
-#SBATCH --job-name=mpa_embed_dnabert
+#SBATCH --job-name=mpa_embed
 #SBATCH --output=logs/embed_dnabert_%A_%a.out
 #SBATCH --error=logs/embed_dnabert_%A_%a.err
 
