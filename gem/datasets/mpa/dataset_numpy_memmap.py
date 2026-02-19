@@ -74,6 +74,7 @@ class NumpyMemmappedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedData
 
         sgb_mask = torch.ones(n_sgbs, dtype=torch.bool)
         targets = torch.from_numpy(sample.abundances_ensure_normalized).to(self.dtype)
+        features[torch.isnan(features)] = 0.0
         return sample.sample_id, features, marker_mask, sgb_mask, targets
 
     def __getitems__(self, indices: List[int]) -> Tuple[List[str], Tensor, Tensor, Tensor, Tensor]:
@@ -112,6 +113,7 @@ class NumpyMemmappedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedData
             #         sgb_embed = features[sample_idx, ]
             #
             # raise Exception("ASDF")
+        features[torch.isnan(features)] = 0.0
         return sample_ids, features, marker_mask, sgb_mask, targets
 
     def __len__(self) -> int:
