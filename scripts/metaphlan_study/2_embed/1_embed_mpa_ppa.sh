@@ -43,7 +43,7 @@ find_gem_project_dir() {
     return 1
 }
 
-out_dir="/data/bwh-comppath-seq/youn/metaphlan_dset/embeddings/phylophlan"
+out_dir="/data/bwh-comppath-seq/youn/metaphlan_dset/embeddings/phylophlan_metaphlan"
 mkdir -p "${out_dir}"
 out_file="${embed_model_name}.pt"
 
