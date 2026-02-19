@@ -9,7 +9,6 @@ from pathlib import Path
 import itertools
 
 from tqdm import tqdm
-import numpy as np
 import torch
 from pyfaidx import Fasta
 
@@ -108,7 +107,7 @@ class CompoundMarkerIndex:
 
 def precompute_embeddings(
         model_fn: Callable[[torch.device], GenomeEmbedding],
-        memmap_array: np.memmap,
+        full_tensor: torch.Tensor,
         cuda_devices: List[torch.device],
         sgb_ids: List[str],
         sgb_marker_index: Union[MarkerIndex, CompoundMarkerIndex],
@@ -135,7 +134,7 @@ def precompute_embeddings(
 
     # Shared progress bar and lock for HDF5 file access
     pbar = tqdm(total=len(sgb_ids))
-    memmap_lock = threading.Lock()
+    tensor_lock = threading.Lock()
     embedding_models_for_workers = [model_fn(device) for device in cuda_devices]
 
     def worker_fn(_worker_idx: int, _idx_offset: int, _model: GenomeEmbedding, _worker_sgb_ids: List[str]):
@@ -152,20 +151,18 @@ def precompute_embeddings(
             n_markers = len(marker_seqs)
             global_idx = _idx_offset + sgb_idx
             if n_markers > 0:
-                marker_embeddings = np.stack([
-                    embedding_model.embed_sequence(seq).to("cpu").float().numpy()
+                marker_embeddings = torch.stack([
+                    embedding_model.embed_sequence(seq).to("cpu")
                     for seq in marker_seqs
-                ], axis=0)
-                with memmap_lock:
-                    memmap_array[global_idx, :n_markers, :] = marker_embeddings
-                    memmap_array[global_idx, n_markers:, :] = np.nan  # fill rest with padding value (np.nan)
-                    memmap_array.flush()
+                ], dim=0)
+                with tensor_lock:
+                    full_tensor[global_idx, :n_markers, :] = marker_embeddings
+                    full_tensor[global_idx, n_markers:, :] = torch.nan
                     pbar.update(1)
             else:
                 print(f"[WARNING] SGB {sgb_id} has no markers to embed.")
-                with memmap_lock:
-                    memmap_array[global_idx, :, :] = np.nan
-                    memmap_array.flush()
+                with tensor_lock:
+                    full_tensor[global_idx, :, :] = torch.nan
                     pbar.update(1)
 
     """ Multithreading task start, distributed across GPUs. """
@@ -200,13 +197,14 @@ def precompute_embeddings(
 def do_job(
         model_fn: Callable,
         embed_dim: int,
+        embed_dtype: torch.dtype,
         cuda_devices: List[torch.device],
         sgb_order: List[str],
         sgb_marker_index: Union[MarkerIndex, CompoundMarkerIndex],
         output_path: Path,
 ):
     """
-    :param model_name:
+    :param model_fn:
     :param cuda_devices: A list of torch CUDA devices.
     :param sgb_order: A list of SGB ids to include. Only SGBs in this collection will be embedded.
     :param sgb_marker_index: A MarkerIndex object.
@@ -216,32 +214,34 @@ def do_job(
     max_num_markers = max(sgb_marker_index.num_sgb_markers(sgb_id) for sgb_id in sgb_order)
 
     # Initialize empty memmap
-    memmap_shape = (len(sgb_order), max_num_markers, embed_dim)
-    print("Allocating memory-mapped array of shape {}".format(memmap_shape))
-    print("Allocation target: {}".format(output_path))
-    memmap_array = np.memmap(
-        output_path,
-        dtype='float32',
-        mode='w+',
-        shape=memmap_shape
+    tensor_shape = (len(sgb_order), max_num_markers, embed_dim)
+
+    print("Allocating stacked embeddings tensor of shape {}".format(tensor_shape))
+    print("Save target: {}".format(output_path))
+
+    full_tensor = torch.full(
+        tensor_shape,
+        fill_value=torch.nan,
+        dtype=embed_dtype,
     )
-    memmap_array[:] = np.nan
-    with open(output_path.with_suffix(".meta"), "wt") as f:
-        print("float32", file=f)
-        print(','.join(str(s) for s in memmap_shape), file=f)
-        print("MISSING=0", file=f)
-    with open(output_path.with_suffix(".sgb.txt"), "wt") as f:
+    with open(output_path.with_suffix(".meta"), "wt") as meta_f:
+        print(str(embed_dtype), file=meta_f)
+        print(','.join(str(s) for s in full_tensor), file=meta_f)
+        print("MISSING=0", file=meta_f)
+
+    with open(output_path.with_suffix(".sgb.txt"), "wt") as sgb_f:
         for sgb_id in sgb_order:
-            print(sgb_id, file=f)
+            print(sgb_id, file=sgb_f)
 
     precompute_embeddings(
         model_fn,
-        memmap_array,
+        full_tensor,
         cuda_devices,
         sgb_order,
         sgb_marker_index,
     )
-    del memmap_array
+    torch.save(full_tensor, output_path)
+    print("Saved tensor to {}".format(output_path))
 
 
 def parse_args() -> argparse.Namespace:
