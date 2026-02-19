@@ -5,8 +5,8 @@
 #SBATCH --cpus-per-task=40
 #SBATCH --time=2-00:00:00
 #SBATCH --job-name=mpa_embed
-#SBATCH --output=logs/embed_dnabert_%A_%a.out
-#SBATCH --error=logs/embed_dnabert_%A_%a.err
+#SBATCH --output=logs/embed_%j.out
+#SBATCH --error=logs/embed_%j.err
 
 
 # Note: this is a Slurm script, meant to be run on ErisXDL compute nodes with 8 A100s.
