@@ -57,6 +57,7 @@ batch_size=10
 seed=12345
 
 outdir="${analysis_subdir}/trained_model/${embed_family}/${embed_model}/${pred_model}"
+echo "Target outdir: ${outdir}"
 mkdir -p ${outdir}
 
 metadata="$outdir/metadata.txt"
