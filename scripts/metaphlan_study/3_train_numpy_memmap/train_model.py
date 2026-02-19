@@ -180,6 +180,10 @@ def parse_args() -> argparse.Namespace:
         "-cd", "--cuda-device", dest="cuda_device_name", type=str, default="cuda",
         help="Specify which CUDA device name to use. (Example: cuda, cuda:0, cuda:1)",
     )
+    parser.add_argument(
+        '--use-half-precision', dest='use_half_precision', action='store_true',
+        default=False, help='Provide flag to load all feature tensors in float16. (These tensors are auto-converted to float32 in CUDA during training.)'
+    )
     return parser.parse_args()
 
 
@@ -199,11 +203,17 @@ def main(
         resume_from_checkpoint_path: Union[Path, None],
         checkpoint_every: int,
         print_every: int,
+        use_half_precision: bool,
         cuda_device_name: str = "cuda"
 ):
+    if use_half_precision:
+        embed_dtype = torch.float16
+    else:
+        embed_dtype = torch.float32
+
     """ Create datasets. """
-    train_dset = NumpyMemmappedMetaphlanPreembeddedDataset(train_df, embed_memmap_file, dtype=torch.float32)
-    test_dset = NumpyMemmappedMetaphlanPreembeddedDataset(test_df, embed_memmap_file, dtype=torch.float32)
+    train_dset = NumpyMemmappedMetaphlanPreembeddedDataset(train_df, embed_memmap_file, dtype=embed_dtype)
+    test_dset = NumpyMemmappedMetaphlanPreembeddedDataset(test_df, embed_memmap_file, dtype=embed_dtype)
 
     """ Create dataloaders. """
     train_rng = torch.Generator()
@@ -276,4 +286,5 @@ if __name__ == "__main__":
         checkpoint_every=_args.checkpoint_every,
         print_every=_args.print_every,
         cuda_device_name=_args.cuda_device_name,
+        use_half_precision=_args.use_half_precision,
     )
