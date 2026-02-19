@@ -21,7 +21,12 @@ class EvoWrapper(GenomeEmbedding):
         :param device: device to use
         """
         print(f"Using Evo checkpoint '{checkpoint_name}'")
-        evo_model = Evo(checkpoint_name)
+
+        if device.type == 'cuda':
+            assert torch.cuda.is_available(), "CUDA is unavailable!"
+            torch.cuda.empty_cache()
+
+        evo_model = Evo(checkpoint_name, device=device)
         hyena_model, tokenizer = evo_model.model, evo_model.tokenizer
 
         ### not needed, StripedHyena already in bfloat16 mode for weights.
@@ -29,10 +34,6 @@ class EvoWrapper(GenomeEmbedding):
         #     # Use half precision (13GB instead of 26GB)
         #     print("using half precision")
         #     model = model.half()
-
-        if device.type == 'cuda':
-            assert torch.cuda.is_available(), "CUDA is unavailable!"
-            torch.cuda.empty_cache()
 
         self.device = device
 
@@ -51,7 +52,7 @@ class EvoWrapper(GenomeEmbedding):
         self.tokenizer = tokenizer
 
         for model_component in [self.preembedding_layer] + list(self.hyena_layers):
-            model_component.to(device)
+            # model_component.to(device)
             model_component.eval()
 
         if num_hyena_layers < len(hyena_model.blocks):
