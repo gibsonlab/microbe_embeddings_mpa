@@ -91,8 +91,8 @@ touch "${breadcrumb}"
 EOF
 
   # Submit the job
-  #sbatch --exclude="${EXCLUDE_NODES}" "${job_script}"
-#  echo "Submitted job ${jobname}"
+  sbatch --exclude="${EXCLUDE_NODES}" "${job_script}"
+  echo "Submitted job ${jobname}"
 }
 
 create_job_submission "pcoa_split" "offline" "pcoa_d100_s1000" "epc_pool"
