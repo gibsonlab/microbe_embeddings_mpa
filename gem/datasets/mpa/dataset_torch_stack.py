@@ -38,6 +38,7 @@ class TorchStackedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedDatase
 
         self.embeddings = torch.load(file_path)
         self.all_marker_masks = ~(torch.isnan(self.embeddings).any(dim=-1))
+        self.embeddings[torch.isnan(self.embeddings)] = 0.0
 
         with open(file_path.with_suffix(".sgb.txt"), "rt") as f:
             self.sgb_order = [l.strip() for l in f if len(l.strip()) > 0]
@@ -67,7 +68,6 @@ class TorchStackedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedDatase
 
         sgb_mask = torch.ones(n_sgbs, dtype=torch.bool)
         targets = torch.from_numpy(sample.abundances_ensure_normalized).to(self.dtype)
-        features[torch.isnan(features)] = 0.0
         return sample.sample_id, features, marker_mask, sgb_mask, targets
 
     def __getitems__(self, indices: List[int]) -> Tuple[List[str], Tensor, Tensor, Tensor, Tensor]:
@@ -100,7 +100,6 @@ class TorchStackedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedDatase
             sgb_mask[sample_idx, :len(sample.taxa_ids)] = True
             targets[sample_idx, :len(sample.taxa_ids)] = torch.from_numpy(sample.abundances_ensure_normalized).to(self.dtype)
 
-        features[torch.isnan(features)] = 0.0
         return sample_ids, features, marker_mask, sgb_mask, targets
 
     def __len__(self) -> int:
@@ -113,10 +112,10 @@ class TorchStackedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedDatase
         return max(len(sample.taxa_ids) for sample in self.samples)
 
     def max_num_markers(self) -> int:
-        return self.array.shape[1]
+        return self.embeddings.shape[1]
 
     def embed_feature_dim(self) -> int:
-        return self.array.shape[-1]
+        return self.embeddings.shape[-1]
 
     def true_abundance_profile(self, idx: int) -> Tensor:
         sample = self.samples[idx]

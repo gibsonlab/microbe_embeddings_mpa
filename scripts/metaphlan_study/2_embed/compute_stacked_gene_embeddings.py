@@ -228,7 +228,7 @@ def do_job(
     )
     with open(output_path.with_suffix(".meta"), "wt") as meta_f:
         print(str(embed_dtype), file=meta_f)
-        print(','.join(str(s) for s in full_tensor), file=meta_f)
+        print(','.join(str(s) for s in tensor_shape), file=meta_f)
         print("MISSING=0", file=meta_f)
 
     with open(output_path.with_suffix(".sgb.txt"), "wt") as sgb_f:
