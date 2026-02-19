@@ -136,16 +136,15 @@ def precompute_embeddings(
     # Shared progress bar and lock for HDF5 file access
     pbar = tqdm(total=len(sgb_ids))
     memmap_lock = threading.Lock()
+    embedding_models_for_workers = [model_fn(device) for device in cuda_devices]
 
-    def worker_fn(_worker_idx: int, _idx_offset: int, _device: torch.device, _worker_sgb_ids: List[str]):
+    def worker_fn(_worker_idx: int, _idx_offset: int, _model: GenomeEmbedding, _worker_sgb_ids: List[str]):
         """Worker function that processes a subset of ASV IDs on a specific device."""
-        torch.cuda.set_device(_device)  # initialize CUDA context in this thread
-        torch.cuda.init()
 
         # Create model instance for this worker
         print(f"Initializing worker {_worker_idx} [SGB index {_idx_offset} -- {_idx_offset + len(_worker_sgb_ids) - 1} (inclusive)]...")
-        embedding_model = model_fn(_device)
-        print(f"Created embedding model {embedding_model.__class__.__name__} on worker {_worker_idx}")
+        embedding_model = _model
+        print(f"Assigned embedding model {embedding_model.__class__.__name__} to worker {_worker_idx}")
 
         # Process one SGB at a time
         for sgb_idx, sgb_id in enumerate(_worker_sgb_ids):
@@ -176,11 +175,10 @@ def precompute_embeddings(
         # Submit all tasks
         futures = []
         for worker_idx in range(n_workers):
-            device = cuda_devices[worker_idx]
             worker_sgb_ids = worker_assignments[worker_idx]
             offset = worker_start_indices[worker_idx]
 
-            future = executor.submit(worker_fn, worker_idx, offset, device, worker_sgb_ids)
+            future = executor.submit(worker_fn, worker_idx, offset, embedding_models_for_workers[worker_idx], worker_sgb_ids)
             futures.append(future)
 
         # Wait for completion and handle exceptions
