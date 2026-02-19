@@ -9,7 +9,7 @@ import torch
 from torch import optim
 from torch.utils.data import DataLoader
 
-from gem.datasets.mpa import NumpyMemmappedMetaphlanPreembeddedDataset
+from gem.datasets.mpa import TorchStackedMetaphlanPreembeddedDataset
 from gem.ml import *
 from gem.ml.models import *
 
@@ -202,8 +202,8 @@ def main(
         cuda_device_name: str = "cuda"
 ):
     """ Create datasets. """
-    train_dset = NumpyMemmappedMetaphlanPreembeddedDataset(train_df, embed_memmap_file, dtype=torch.float32)
-    test_dset = NumpyMemmappedMetaphlanPreembeddedDataset(test_df, embed_memmap_file, dtype=torch.float32)
+    train_dset = TorchStackedMetaphlanPreembeddedDataset(train_df, embed_memmap_file, dtype=torch.float32)
+    test_dset = TorchStackedMetaphlanPreembeddedDataset(test_df, embed_memmap_file, dtype=torch.float32)
 
     """ Create dataloaders. """
     train_rng = torch.Generator()
