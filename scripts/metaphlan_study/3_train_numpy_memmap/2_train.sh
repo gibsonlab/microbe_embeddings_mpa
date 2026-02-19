@@ -56,7 +56,7 @@ learning_rate=0.0001
 batch_size=10
 seed=12345
 
-outdir="${analysis_subdir}/trained_model/${embed_model}/${pred_model}"
+outdir="${analysis_subdir}/trained_model/${embed_family}/${embed_model}/${pred_model}"
 mkdir -p ${outdir}
 
 metadata="$outdir/metadata.txt"
