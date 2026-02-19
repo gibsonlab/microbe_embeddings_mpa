@@ -26,7 +26,7 @@ SGB_LIST_FILE="/data/bwh-comppath-seq/youn/metaphlan_dset/dataset/BlancoMiguezA_
 
 out_dir="/data/bwh-comppath-seq/youn/metaphlan_dset/embeddings/offline"
 mkdir -p "${out_dir}"
-out_file="${embed_method}_d${embed_dim}_s${embed_seed}.npy"
+out_file="${embed_method}_d${embed_dim}_s${embed_seed}.pt"
 
 
 echo "Embedding method: ${embed_method}"

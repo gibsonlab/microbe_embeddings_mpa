@@ -47,7 +47,7 @@ PROJECT_ROOT_DIR=$(find_gem_project_dir)
 
 out_dir="/data/bwh-comppath-seq/youn/metaphlan_dset/embeddings/phylophlan"
 mkdir -p "${out_dir}"
-out_file="${embed_model_name}.npy"
+out_file="${embed_model_name}.pt"
 
 
 if [[ $embed_model_name == evo2* ]]; then
