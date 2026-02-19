@@ -105,18 +105,33 @@ class NumpyMemmappedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedData
         bulk = self.array[needed_arr_indices]  # one read, shape: (N, markers, embed_dim)
         bulk_map = {arr_idx: i for i, arr_idx in enumerate(needed_arr_indices)}
 
+        # build a numpy array first, then convert to tensor once
+        features_np = np.zeros((batch_sz, max_sgbs, max_markers, embed_dim), dtype=np.float32)
         for sample_idx, sample in enumerate(samples):
             for sgb_idx, sgb_id in enumerate(sample.taxa_ids):
                 if sgb_id not in self.sgbs_without_embedding and sgb_id in self.sgb_indices:
-                    sgb_arr_idx = self.sgb_indices[sgb_id]
-                    embed_slice = bulk[bulk_map[sgb_arr_idx]]
-                    features[sample_idx, sgb_idx] = torch.from_numpy(embed_slice).to(dtype=self.dtype)
-                    marker_mask[sample_idx, sgb_idx] = torch.from_numpy(self.all_marker_masks[sgb_arr_idx])
+                    features_np[sample_idx, sgb_idx] = bulk[bulk_map[self.sgb_indices[sgb_id]]]
 
             sgb_mask[sample_idx, :len(sample.taxa_ids)] = True
             targets[sample_idx, :len(sample.taxa_ids)] = torch.from_numpy(
                 sample.abundances_ensure_normalized
             ).to(self.dtype)
+
+        features = torch.from_numpy(features_np)
+
+
+        # for sample_idx, sample in enumerate(samples):
+        #     for sgb_idx, sgb_id in enumerate(sample.taxa_ids):
+        #         if sgb_id not in self.sgbs_without_embedding and sgb_id in self.sgb_indices:
+        #             sgb_arr_idx = self.sgb_indices[sgb_id]
+        #             embed_slice = bulk[bulk_map[sgb_arr_idx]]
+        #             features[sample_idx, sgb_idx] = torch.from_numpy(embed_slice).to(dtype=self.dtype)
+        #             marker_mask[sample_idx, sgb_idx] = torch.from_numpy(self.all_marker_masks[sgb_arr_idx])
+        #
+        #     sgb_mask[sample_idx, :len(sample.taxa_ids)] = True
+        #     targets[sample_idx, :len(sample.taxa_ids)] = torch.from_numpy(
+        #         sample.abundances_ensure_normalized
+        #     ).to(self.dtype)
 
         features[torch.isnan(features)] = 0.0
         return sample_ids, features, marker_mask, sgb_mask, targets
