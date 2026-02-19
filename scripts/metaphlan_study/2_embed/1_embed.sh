@@ -53,7 +53,11 @@ out_file="${embed_model_name}.npy"
 if [ "${embed_model_name}" == "pcoa" ] || [ "${embed_model_name}" == "umap" ]; then
     echo "Will create symlinks to pre-computed embeddings."
     echo "Symlinks created. Please run '1_embed_offline.sh ${embed_model_name}'"
-    ln -s /data/bwh-comppath-seq/youn/metaphlan_dset/embeddings/offline/${embed_model_name}_d100_s1000.* ${out_dir}/
+    cd "$out_dir"
+    for f in ../offline/${embed_model_name}_d100_s1000.*; do
+      ln -s "${f}" "./"
+    done
+    cd -
 elif [[ $embed_model_name == evo2* ]]; then
     APPTAINER_IMAGE=/data/cctm/youn/docker_images/evo2_gem.sif
     echo "Evo2 model detected. Running using Apptainer (${APPTAINER_IMAGE})."

@@ -12,32 +12,39 @@
 set -e
 
 
+EMBEDDING_BASE_DIR="/data/bwh-comppath-seq/youn/metaphlan_dset/embeddings"
 ANALYSIS_BASE_DIR="/data/bwh-comppath-seq/youn/metaphlan_dset/analyses"
-EMBEDDING_BASE_DIR="/data/bwh-comppath-seq/youn/metaphlan_dset/embeddings/phylophlan"
-if ! [ $# -eq 3 ]; then
+if ! [ $# -eq 4 ]; then
   echo "Error: analysis_name, embed_model_name, pred_model_name are required"
-  echo "Usage: $0 <analysis_name> <embed_model_name> <pred_model_name>"
+  echo "Usage: $0 <analysis_name> <embed_family> <embed_model_name> <pred_model_name>"
   echo "Available analysis names:"
   for dir in "${ANALYSIS_BASE_DIR}"/*; do
     echo "-> $(basename "${dir}")"
   done
-  echo "Available embedding names:"
-  for dir in "${EMBEDDING_BASE_DIR}"/*.npy; do
+  echo "Available embedding families:"
+  for dir in "${EMBEDDING_BASE_DIR}"/*; do
     echo "-> $(basename "${dir}")"
   done
   exit 1
 fi
 analysis_name="$1"
-embed_model="$2"
-pred_model="$3"
+embed_family="$2"
+embed_model="$3"
+pred_model="$4"
 
 
 # point to the proper pretrained model embeddings
-embedding_file="${EMBEDDING_BASE_DIR}/${embed_model}.npy"
+embedding_file="${EMBEDDING_BASE_DIR}/${embed_family}/${embed_model}.npy"
+echo "Input embedding file: ${embedding_file}"
 
 analysis_subdir="${ANALYSIS_BASE_DIR}/${analysis_name}"
 training_set="${analysis_subdir}/train.tsv"
 test_set="${analysis_subdir}/test.tsv"
+
+echo "Training set: ${training_set}"
+echo "Test set: ${test_set}"
+
+
 model_config="./model_${pred_model}.yaml"
 if ! [ -f "${model_config}" ]; then
   echo "Model configuration ${model_config} does not exist!"
