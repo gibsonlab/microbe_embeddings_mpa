@@ -77,6 +77,9 @@ class MarkerIndex:
 class CompoundMarkerIndex:
     def __init__(self, indices: List[MarkerIndex]):
         self.indices = indices
+        print("Using compount marker index.")
+        for _i, idx in enumerate(self.indices):
+            print(f"Source #{_i+1}: {idx.fasta_file}")
 
     def __contains__(self, sgb_id: str) -> bool:
         return any(sgb_id in index for index in self.indices)
