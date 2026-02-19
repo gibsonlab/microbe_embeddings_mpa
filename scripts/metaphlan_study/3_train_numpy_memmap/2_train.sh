@@ -68,7 +68,7 @@ echo "batch_size=${batch_size}" | tee -a $metadata
 echo "seed=${seed}" | tee -a $metadata
 echo "===================="
 
-if [[ "$myvar" == evo* ]]; then
+if [[ "$embed_model" == evo* ]]; then
     echo "Evo embeddings requested. Using half (float16) precision input features."
     python train_model.py \
     --train "$training_set" \
