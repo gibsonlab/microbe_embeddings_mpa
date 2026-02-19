@@ -68,41 +68,22 @@ echo "batch_size=${batch_size}" | tee -a $metadata
 echo "seed=${seed}" | tee -a $metadata
 echo "===================="
 
-if [[ "$embed_model" == evo* ]]; then
-    echo "Evo embeddings requested. Using half (float16) precision input features."
-    python train_model.py \
-    --train "$training_set" \
-    --test "$test_set" \
-    --model-config "$model_config" \
-    --out-dir "$outdir" \
-    --loss "kl" \
-    --embed-memmap-file "${embedding_file}" \
-    --epochs "$n_epochs" \
-    --learning-rate "$learning_rate" \
-    --batch-size "$batch_size" \
-    --print-every 5 \
-    --workers 10 \
-    --seed "$seed" \
-    --prefetch-factor 2 \
-    --cuda-device "cuda" \
-    --use-half-precision
-else
-    python train_model.py \
-    --train "$training_set" \
-    --test "$test_set" \
-    --model-config "$model_config" \
-    --out-dir "$outdir" \
-    --loss "kl" \
-    --embed-memmap-file "${embedding_file}" \
-    --epochs "$n_epochs" \
-    --learning-rate "$learning_rate" \
-    --batch-size "$batch_size" \
-    --print-every 5 \
-    --workers 10 \
-    --seed "$seed" \
-    --prefetch-factor 2 \
-    --cuda-device "cuda"
-fi
+
+python train_model.py \
+--train "$training_set" \
+--test "$test_set" \
+--model-config "$model_config" \
+--out-dir "$outdir" \
+--loss "kl" \
+--embed-memmap-file "${embedding_file}" \
+--epochs "$n_epochs" \
+--learning-rate "$learning_rate" \
+--batch-size "$batch_size" \
+--print-every 5 \
+--workers 10 \
+--seed "$seed" \
+--prefetch-factor 2 \
+--cuda-device "cuda"
 
 
 echo "Done."
