@@ -108,8 +108,22 @@ class CompoundMarkerIndex:
             index.__exit__(exc_type, exc_val, exc_tb)
 
 
+def batchify(seqs: List[str], batch_size: int) -> Generator[List[str], None, None]:
+    for i in range(0, len(seqs), batch_size):
+        yield seqs[i:i + batch_size]
+
+
+def embed_all_seqs(embedding_model: GenomeEmbedding, sequences: List[str], batch_size: int) -> torch.Tensor:
+    batched_tensors = [
+        embedding_model.embed_batch(batched_seqs).to("cpu")
+        for batched_seqs in batchify(sequences, batch_size)
+    ]
+    return torch.concat(batched_tensors, dim=0)
+
+
 def precompute_embeddings(
         model_fn: Callable[[torch.device], GenomeEmbedding],
+        embed_batch_sz: int,
         full_tensor: torch.Tensor,
         cuda_devices: List[torch.device],
         sgb_ids: List[str],
@@ -154,10 +168,7 @@ def precompute_embeddings(
             n_markers = len(marker_seqs)
             global_idx = _idx_offset + sgb_idx
             if n_markers > 0:
-                marker_embeddings = torch.stack([
-                    embedding_model.embed_sequence(seq).to("cpu")
-                    for seq in marker_seqs
-                ], dim=0)
+                marker_embeddings = embed_all_seqs(embedding_model, marker_seqs, embed_batch_sz)
                 assert marker_embeddings.dtype == full_tensor.dtype, "Marker embeddings dtype ({}) doesn't match full tensor dtype ({})".format(
                     marker_embeddings.dtype, full_tensor.dtype
                 )
@@ -202,6 +213,7 @@ def precompute_embeddings(
 
 def do_job(
         model_fn: Callable,
+        embed_batch_sz: int,
         embed_dim: int,
         embed_dtype: torch.dtype,
         cuda_devices: List[torch.device],
@@ -240,6 +252,7 @@ def do_job(
 
     precompute_embeddings(
         model_fn,
+        embed_batch_sz,
         full_tensor,
         cuda_devices,
         sgb_order,
@@ -255,6 +268,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('-s', '--sgb-subset-file', type=str, required=True)
     parser.add_argument('-idx', '--sgb-marker-index', dest='sgb_marker_indices', type=str, required=True, nargs='+')
     parser.add_argument('-c', '--cuda-device-ids', type=str, required=True)
+    parser.add_argument('-b', '--embed-batch-sz', type=int, dest='embed_batch_sz', required=False, default=5)
     parser.add_argument(
         '-o', '--output-path', type=str, required=True,
         help='The output embedding file path. The format is a numpy memmap array file.'
@@ -291,9 +305,13 @@ if __name__ == "__main__":
         for (fasta_path, json_path) in index_dirs
     ]
 
+    embed_batch_sz = args.embed_batch_sz
+    print(f"Embedding will be done using a batch size of {embed_batch_sz}")
+
     with CompoundMarkerIndex(marker_indices) as compound_index:
         do_job(
             model_fn=model_fn,
+            embed_batch_sz=embed_batch_sz,
             embed_dim=expected_embed_dim,
             embed_dtype=embed_dtype,
             cuda_devices=_cuda_devices,
