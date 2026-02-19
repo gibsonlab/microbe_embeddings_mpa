@@ -80,7 +80,7 @@ python train_model.py \
 --learning-rate "$learning_rate" \
 --batch-size "$batch_size" \
 --print-every 5 \
---workers 10 \
+--workers 20 \
 --seed "$seed" \
 --prefetch-factor 2 \
 --cuda-device "cuda"
