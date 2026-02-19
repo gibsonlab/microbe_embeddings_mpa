@@ -139,6 +139,9 @@ def precompute_embeddings(
 
     def worker_fn(_worker_idx: int, _idx_offset: int, _device: torch.device, _worker_sgb_ids: List[str]):
         """Worker function that processes a subset of ASV IDs on a specific device."""
+        torch.cuda.set_device(_device)  # initialize CUDA context in this thread
+        torch.cuda.init()
+
         # Create model instance for this worker
         print(f"Initializing worker {_worker_idx} [SGB index {_idx_offset} -- {_idx_offset + len(_worker_sgb_ids) - 1} (inclusive)]...")
         embedding_model = model_fn(_device)
