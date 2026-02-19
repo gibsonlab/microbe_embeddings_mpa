@@ -210,10 +210,12 @@ def main(
     train_rng.manual_seed(seed + 2)
     train_dloader = train_dset.create_dataloader(
         batch_size=batch_size, shuffle=True, generator=train_rng,
+        pin_memory=True,
         drop_last=False, num_workers=num_workers, prefetch_factor=batch_prefetch_factor,
     )
     test_dloader = test_dset.create_dataloader(
         batch_size=batch_size, shuffle=False, generator=None,
+        pin_memory=True,
         drop_last=False, num_workers=num_workers, prefetch_factor=batch_prefetch_factor,
     )
 

@@ -168,13 +168,7 @@ class NumpyMemmappedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedData
     def create_dataloader(self, **kwargs) -> DataLoader:
         return DataLoader(
             dataset=self,
-            collate_fn=lambda batch: (
-                batch[0],  # sample_ids, unpinned
-                batch[1].pin_memory(),  # features
-                batch[2].pin_memory(),  # marker_mask
-                batch[3].pin_memory(),  # sgb_mask
-                batch[4].pin_memory(),  # targets
-            ),
+            collate_fn=lambda batch: batch,
             **kwargs
         )
 
