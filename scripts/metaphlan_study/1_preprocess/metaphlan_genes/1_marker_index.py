@@ -17,35 +17,27 @@ class MarkerIndex:
         assert self.fai_path.exists(), "pyfaidx did not index the fasta file as expected."
         self.dict_index = self.preindex()
 
+        print("Max # markers: {}".format(
+            max(len(v) for _, v in self.dict_index.items())
+        ))
+
     def preindex(self) -> Dict[str, List[str]]:
         """
         Collect the FASTA ids, and group them by the SGB ID.
         """
         index = defaultdict(list)
+        print(f"Reading from index file {self.fai_path.name}")
         with open(self.fai_path, "rt") as fai_file:
             for line in fai_file:
                 record_name = line.split("\t")[0]
+                if not record_name.startswith("SGB"):
+                    continue
 
-                # Each record name is of the form {gene_name}:{sgb_id}__{genome_acc}
-                gene_and_sgb = record_name.split("__")[0]
-                tokens = gene_and_sgb.split(":")
-                assert len(tokens) == 2, f"Unexpected parse of ID: {record_name}"
-                gene_id, sgb_numeric_id = tokens
-
-                sgb_id = f'SGB{sgb_numeric_id}'
+                # Each record name is of the form {sgb_id}__{gene_name}, note that gene_name can be duplicated across SGBs, as these are uniprot names.
+                sgb_id = record_name.split("__")[0]
+                assert sgb_id[-1].isnumeric(), "SGB ID must end with a numeric character. Got: {}".format(sgb_id)
                 index[sgb_id].append(record_name)
         return index
-
-    def fetch_marker_names(self, sgb_id: str) -> List[str]:
-        """
-        Answers the query for input genome ID by returning the list of constituent marker fasta record IDs.
-        """
-        if sgb_id not in self.dict_index:
-            raise KeyError(f"SGB id {sgb_id} not found in index.")
-        return self.dict_index[sgb_id]
-
-    def items(self) -> Iterator[Tuple[str, List[str]]]:
-        yield from self.dict_index.items()
 
 
 def main(
@@ -63,6 +55,6 @@ def main(
 
 if __name__ == "__main__":
     main(
-        marker_fasta_file=Path("/data/bwh-comppath-seq/youn/metaphlan_dset/phylophlan_database/processed/dna_only") / "markers.fna",
-        output_json_path=Path("/data/bwh-comppath-seq/youn/metaphlan_dset/phylophlan_database/processed/dna_only") / "sgb_marker_index.json.zst",  # should end with ".zst" extension -- will be compressed using zstd.
+        marker_fasta_file=Path("/data/bwh-comppath-seq/youn/metaphlan_dset/metaphlan_database") / "markers.fna",
+        output_json_path=Path("/data/bwh-comppath-seq/youn/metaphlan_dset/metaphlan_database") / "sgb_marker_index.json.zst",  # should end with ".zst" extension -- will be compressed using zstd.
     )
