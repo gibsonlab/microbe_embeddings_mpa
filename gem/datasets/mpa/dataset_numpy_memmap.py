@@ -42,7 +42,9 @@ class NumpyMemmappedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedData
             dtype=_dtype,
             mode='r',
             shape=_shape,
-        ).copy()
+        )
+        self.all_marker_masks = ~(np.isnan(self.array).any(axis=-1))
+
         with open(file_path.with_suffix(".sgb.txt"), "rt") as f:
             self.sgb_order = [l.strip() for l in f if len(l.strip()) > 0]
         assert len(self.sgb_order) == self.array.shape[0], "SGB id length ({}) does not match memmap shape ({})".format(
@@ -90,29 +92,32 @@ class NumpyMemmappedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedData
         sgb_mask = torch.zeros((batch_sz, max_sgbs), dtype=torch.bool)
         targets = torch.zeros((batch_sz, max_sgbs), dtype=self.dtype)
 
+        # Collect all array indices needed across the whole batch
+        needed_arr_indices = set()
+        for sample in samples:
+            for sgb_id in sample.taxa_ids:
+                if sgb_id not in self.sgbs_without_embedding and sgb_id in self.sgb_indices:
+                    needed_arr_indices.add(self.sgb_indices[sgb_id])
+
+        # Single bulk read from memmap, store in RAM.
+        needed_arr_indices = sorted(needed_arr_indices)
+        assert len(needed_arr_indices) > 0, "Each __getitems__ call must invoke at least one memmap index!"
+        bulk = self.array[needed_arr_indices]  # one read, shape: (N, markers, embed_dim)
+        bulk_map = {arr_idx: i for i, arr_idx in enumerate(needed_arr_indices)}
+
         for sample_idx, sample in enumerate(samples):
             for sgb_idx, sgb_id in enumerate(sample.taxa_ids):
-                if sgb_id not in self.sgbs_without_embedding:
-                    arr_idx = self.sgb_indices[sgb_id]
-                    embed_slice = self.array[arr_idx]
+                if sgb_id not in self.sgbs_without_embedding and sgb_id in self.sgb_indices:
+                    sgb_arr_idx = self.sgb_indices[sgb_id]
+                    embed_slice = bulk[bulk_map[sgb_arr_idx]]
                     features[sample_idx, sgb_idx] = torch.from_numpy(embed_slice).to(dtype=self.dtype)
-                    marker_mask[sample_idx, sgb_idx] = torch.from_numpy(~np.isnan(embed_slice).any(axis=-1))
-                else:
-                    pass  # leave features and mask at zero.
-            sgb_mask[sample_idx, :len(sample.taxa_ids)] = True
-            targets[sample_idx, :len(sample.taxa_ids)] = torch.from_numpy(sample.abundances_ensure_normalized).to(self.dtype)
+                    marker_mask[sample_idx, sgb_idx] = torch.from_numpy(self.all_marker_masks[sgb_arr_idx])
 
-            # if sample.sample_id == "SAMEA7041148":
-            #     # print(f"sgb: {sgb_id}")
-            #     # print(torch.from_numpy(embed_slice).to(dtype=self.dtype))
-            #     # print("marker mask = ", torch.from_numpy(~np.isnan(embed_slice).any(axis=-1)))
-            #     # print("# markers =", torch.from_numpy(~np.isnan(embed_slice).any(axis=-1)).sum())
-            #     n_sgbs = len(sample.taxa_ids)
-            #     assert n_sgbs == sgb_mask[sample_idx, :n_sgbs].sum().item()
-            #     for sgb_idx, sgb_id in enumerate(sample.taxa_ids):
-            #         sgb_embed = features[sample_idx, ]
-            #
-            # raise Exception("ASDF")
+            sgb_mask[sample_idx, :len(sample.taxa_ids)] = True
+            targets[sample_idx, :len(sample.taxa_ids)] = torch.from_numpy(
+                sample.abundances_ensure_normalized
+            ).to(self.dtype)
+
         features[torch.isnan(features)] = 0.0
         return sample_ids, features, marker_mask, sgb_mask, targets
 
