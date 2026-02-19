@@ -225,6 +225,7 @@ def do_job(
         mode='w+',
         shape=memmap_shape
     )
+    memmap_array[:] = np.nan
     with open(output_path.with_suffix(".meta"), "wt") as f:
         print("float32", file=f)
         print(','.join(str(s) for s in memmap_shape), file=f)
