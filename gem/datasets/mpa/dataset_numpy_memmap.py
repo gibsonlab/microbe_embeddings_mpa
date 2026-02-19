@@ -87,9 +87,9 @@ class NumpyMemmappedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedData
         embed_dim = self.array.shape[2]
 
         sample_ids = [s.sample_id for s in samples]
-        marker_mask = torch.zeros((batch_sz, max_sgbs, max_markers), dtype=torch.bool).pin_memory()
-        sgb_mask = torch.zeros((batch_sz, max_sgbs), dtype=torch.bool).pin_memory()
-        targets = torch.zeros((batch_sz, max_sgbs), dtype=self.dtype).pin_memory()
+        marker_mask = torch.zeros((batch_sz, max_sgbs, max_markers), dtype=torch.bool)
+        sgb_mask = torch.zeros((batch_sz, max_sgbs), dtype=torch.bool)
+        targets = torch.zeros((batch_sz, max_sgbs), dtype=self.dtype)
 
         # Collect all array indices needed across the whole batch
         needed_arr_indices = set()
@@ -117,7 +117,7 @@ class NumpyMemmappedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedData
             ).to(self.dtype)
 
         features_np[np.isnan(features_np)] = 0.0
-        features = torch.from_numpy(features_np).pin_memory()
+        features = torch.from_numpy(features_np)
 
         assert features.shape == torch.Size([batch_sz, max_sgbs, max_markers, embed_dim])
 
@@ -168,7 +168,13 @@ class NumpyMemmappedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedData
     def create_dataloader(self, **kwargs) -> DataLoader:
         return DataLoader(
             dataset=self,
-            collate_fn=lambda batch: batch,
+            collate_fn=lambda batch: (
+                batch[0],  # sample_ids, unpinned
+                batch[1].pin_memory(),  # features
+                batch[2].pin_memory(),  # marker_mask
+                batch[3].pin_memory(),  # sgb_mask
+                batch[4].pin_memory(),  # targets
+            ),
             **kwargs
         )
 
