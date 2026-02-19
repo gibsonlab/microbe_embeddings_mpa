@@ -34,7 +34,7 @@ pred_model="$4"
 
 
 # point to the proper pretrained model embeddings
-embedding_file="${EMBEDDING_BASE_DIR}/${embed_family}/${embed_model}.npy"
+embedding_file="${EMBEDDING_BASE_DIR}/${embed_family}/${embed_model}.pt"
 echo "Input embedding file: ${embedding_file}"
 
 analysis_subdir="${ANALYSIS_BASE_DIR}/${analysis_name}"
