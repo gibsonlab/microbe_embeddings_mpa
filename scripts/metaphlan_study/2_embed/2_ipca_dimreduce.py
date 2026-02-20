@@ -66,16 +66,17 @@ def incremental_pca_on_tensor(
     chunks = []
     for start in trange(0, n_total_to_embed, batch_size, desc='iPCA:Transform'):
         batch = X_all[start : start + batch_size]
+        batch_out = np.full((batch.shape[0], target_dim), fill_value=np.nan, dtype=np.float32)
         valid_idxs, = np.where(~np.isnan(batch).any(axis=-1))
 
-        # batch_all_xformed = np.full(batch.shape, fill_value=np.nan, dtype=batch.dtype)
-        batch_out = np.full((len(batch), target_dim), fill_value=np.nan, dtype=np.float32)
         if len(valid_idxs) > 0:
             batch_out[valid_idxs, :] = ipca.transform(batch[valid_idxs, :])
 
         chunks.append(batch_out)
 
-    X_reduced = np.concatenate(chunks, axis=0)  # (1_743_000, n_components)
+    X_reduced = np.concatenate(chunks, axis=0)
+    assert X_reduced.shape[0] == X_all.shape[0]
+    assert X_reduced.shape[1] == target_dim
 
     # Convert back to torch and reshape
     result = torch.from_numpy(X_reduced).reshape(*original_shape[:-1], target_dim)   # shape: (*, target_dim)
