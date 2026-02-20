@@ -11,6 +11,7 @@ def dim_reduce_ipca(
         target_dim: int,
         batch_size: int = 10_000,
 ):
+    print(f"Transforming input: {input_tensor_path}")
     if out_tensor_path.exists():
         print(f"Output tensor already exists: {out_tensor_path}")
         return
