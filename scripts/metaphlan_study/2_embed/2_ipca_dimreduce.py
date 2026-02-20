@@ -15,6 +15,9 @@ def dim_reduce_ipca(
     if out_tensor_path.exists():
         print(f"Output tensor already exists: {out_tensor_path}")
         return
+    if not input_tensor_path.exists():
+        print(f"[ERROR] Input tensor does not exist: {input_tensor_path}")
+        return
 
     feature_tensor = torch.load(input_tensor_path)
     print(f"Got input tensor of shape: {feature_tensor.shape}")

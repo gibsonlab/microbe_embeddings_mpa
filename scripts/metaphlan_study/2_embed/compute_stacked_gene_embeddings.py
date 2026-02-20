@@ -268,7 +268,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('-s', '--sgb-subset-file', type=str, required=True)
     parser.add_argument('-idx', '--sgb-marker-index', dest='sgb_marker_indices', type=str, required=True, nargs='+')
     parser.add_argument('-c', '--cuda-device-ids', type=str, required=True)
-    parser.add_argument('-b', '--embed-batch-sz', type=int, dest='embed_batch_sz', required=False, default=10)
+    parser.add_argument('-b', '--embed-batch-sz', type=int, dest='embed_batch_sz', required=False, default=5)
     parser.add_argument(
         '-o', '--output-path', type=str, required=True,
         help='The output embedding file path. The format is a numpy memmap array file.'
