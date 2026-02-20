@@ -39,28 +39,35 @@ def incremental_pca_on_tensor(
     feature_dim = original_shape[-1]
 
     # Flatten to 2D: (1_743_000, 768)
-    X = feature_tensor.reshape(-1, feature_dim)
+    X_torch = feature_tensor.reshape(-1, feature_dim)
+    X_all = X_torch.float().detach().cpu().numpy()  # Note: this converts "bfloat16" to "float32" if necessary.
+    print("Total vectors: {}".format(X_all.shape[0]))
 
-    # Convert to numpy if needed
-    if isinstance(X, torch.Tensor):
-        X = X.detach().cpu().numpy()
+    X_valid = X_all[~np.isnan(X_all).any(axis=-1), :]
+    print("Non-NaN vectors: {}".format(X_valid.shape[0]))
 
-    n_samples = X.shape[0]
+    n_total_to_embed = X_valid.shape[0]
 
     # Fit IncrementalPCA
     ipca = IncrementalPCA(n_components=target_dim, batch_size=batch_size)
 
     print("Fitting Incremental-PCA...")
-    for start in trange(0, n_samples, batch_size, desc='iPCA:Fit'):
-        batch = X[start : start + batch_size]
+    for start in trange(0, n_total_to_embed, batch_size, desc='iPCA:Fit'):
+        batch = X_valid[start : start + batch_size]
         ipca.partial_fit(batch)
 
     # Transform in batches (avoids materializing full output at once)
     print("Transforming...")
     chunks = []
-    for start in trange(0, n_samples, batch_size, desc='iPCA:Transform'):
-        batch = X[start : start + batch_size]
-        chunks.append(ipca.transform(batch))
+    for start in trange(0, n_total_to_embed, batch_size, desc='iPCA:Transform'):
+        batch = X_all[start : start + batch_size]
+        valid_idxs, = np.where(~np.isnan(batch).any(axis=-1))
+
+        batch_all_xformed = np.full(batch.shape, fill_value=np.nan, dtype=batch.dtype)
+        if len(valid_idxs) > 0:
+            batch_all_xformed[valid_idxs, :] = ipca.transform(batch[valid_idxs, :])
+
+        chunks.append(batch_all_xformed)
 
     X_reduced = np.concatenate(chunks, axis=0)  # (1_743_000, n_components)
 

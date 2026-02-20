@@ -7,7 +7,7 @@
 #SBATCH --job-name=ipca
 #SBATCH --output=logs/ipca_%j.out
 #SBATCH --error=logs/ipca_%j.err
-
+set -e
 
 python 2_ipca_dimreduce.py
 echo "Done."
