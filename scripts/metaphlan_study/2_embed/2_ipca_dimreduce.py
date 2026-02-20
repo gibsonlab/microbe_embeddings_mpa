@@ -84,7 +84,7 @@ def incremental_pca_on_tensor(
 
 if __name__ == "__main__":
     embed_dir = Path("/data/bwh-comppath-seq/youn/metaphlan_dset/embeddings")
-    reduced_dim = 100
+    reduced_dim = 200
     dim_reduce_ipca(embed_dir / "phylophlan" /  "dnabert-s.pt",
                     embed_dir / "phylophlan" / f"dnabert-s.ipca_d{reduced_dim}.pt", target_dim=reduced_dim)
     dim_reduce_ipca(embed_dir / "phylophlan" / "evo-1-8k-base_hyena5.pt",
