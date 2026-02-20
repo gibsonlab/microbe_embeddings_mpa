@@ -71,18 +71,18 @@ def incremental_pca_on_tensor(
 
 if __name__ == "__main__":
     embed_dir = Path("/data/bwh-comppath-seq/youn/metaphlan_dset/embeddings")
-    target_dim = 100
+    reduced_dim = 100
     dim_reduce_ipca(embed_dir / "phylophlan" /  "dnabert-s.pt",
-                    embed_dir / "phylophlan" / f"dnabert-s.ipca_d{target_dim}.pt", target_dim=target_dim)
+                    embed_dir / "phylophlan" / f"dnabert-s.ipca_d{reduced_dim}.pt", target_dim=reduced_dim)
     dim_reduce_ipca(embed_dir / "phylophlan" / "evo-1-8k-base_hyena5.pt",
-                    embed_dir / "phylophlan" / f"evo-1-8k-base_hyena5.ipca_d{target_dim}.pt", target_dim=target_dim)
+                    embed_dir / "phylophlan" / f"evo-1-8k-base_hyena5.ipca_d{reduced_dim}.pt", target_dim=reduced_dim)
     dim_reduce_ipca(embed_dir / "phylophlan" / "evo2_7b_hyena10.pt",
-                    embed_dir / "phylophlan" / f"evo2_7b_hyena10.ipca_d{target_dim}.pt", target_dim=target_dim)
+                    embed_dir / "phylophlan" / f"evo2_7b_hyena10.ipca_d{reduced_dim}.pt", target_dim=reduced_dim)
 
     dim_reduce_ipca(embed_dir / "phylophlan_metaphlan" / "dnabert-s.pt",
-                    embed_dir / "phylophlan_metaphlan" / f"dnabert-s.ipca_d{target_dim}.pt", target_dim=target_dim)
+                    embed_dir / "phylophlan_metaphlan" / f"dnabert-s.ipca_d{reduced_dim}.pt", target_dim=reduced_dim)
     dim_reduce_ipca(embed_dir / "phylophlan_metaphlan" / "evo-1-8k-base_hyena5.pt",
-                    embed_dir / "phylophlan_metaphlan" / f"evo-1-8k-base_hyena5.ipca_d{target_dim}.pt", target_dim=target_dim)
+                    embed_dir / "phylophlan_metaphlan" / f"evo-1-8k-base_hyena5.ipca_d{reduced_dim}.pt", target_dim=reduced_dim)
     dim_reduce_ipca(embed_dir / "phylophlan_metaphlan" / "evo2_7b_hyena10.pt",
-                    embed_dir / "phylophlan_metaphlan" / f"evo2_7b_hyena10.ipca_d{target_dim}.pt", target_dim=target_dim)
+                    embed_dir / "phylophlan_metaphlan" / f"evo2_7b_hyena10.ipca_d{reduced_dim}.pt", target_dim=reduced_dim)
 
