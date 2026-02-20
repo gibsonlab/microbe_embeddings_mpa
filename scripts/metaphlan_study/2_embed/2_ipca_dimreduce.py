@@ -67,11 +67,12 @@ def incremental_pca_on_tensor(
         batch = X_all[start : start + batch_size]
         valid_idxs, = np.where(~np.isnan(batch).any(axis=-1))
 
-        batch_all_xformed = np.full(batch.shape, fill_value=np.nan, dtype=batch.dtype)
+        # batch_all_xformed = np.full(batch.shape, fill_value=np.nan, dtype=batch.dtype)
+        batch_out = np.full((len(batch), target_dim), fill_value=np.nan, dtype=np.float32)
         if len(valid_idxs) > 0:
-            batch_all_xformed[valid_idxs, :] = ipca.transform(batch[valid_idxs, :])
+            batch_out[valid_idxs, :] = ipca.transform(batch[valid_idxs, :])
 
-        chunks.append(batch_all_xformed)
+        chunks.append(batch_out)
 
     X_reduced = np.concatenate(chunks, axis=0)  # (1_743_000, n_components)
 
