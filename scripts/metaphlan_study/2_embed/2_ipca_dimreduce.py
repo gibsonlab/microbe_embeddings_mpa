@@ -51,14 +51,14 @@ def incremental_pca_on_tensor(
     ipca = IncrementalPCA(n_components=target_dim, batch_size=batch_size)
 
     print("Fitting Incremental-PCA...")
-    for start in trange(start=0, stop=n_samples, step=batch_size, desc='iPCA:Fit'):
+    for start in trange(0, n_samples, batch_size, desc='iPCA:Fit'):
         batch = X[start : start + batch_size]
         ipca.partial_fit(batch)
 
     # Transform in batches (avoids materializing full output at once)
     print("Transforming...")
     chunks = []
-    for start in trange(start=0, stop=n_samples, step=batch_size, desc='iPCA:Transform'):
+    for start in trange(0, n_samples, batch_size, desc='iPCA:Transform'):
         batch = X[start : start + batch_size]
         chunks.append(ipca.transform(batch))
 
