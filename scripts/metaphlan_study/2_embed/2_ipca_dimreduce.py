@@ -51,20 +51,18 @@ def incremental_pca_on_tensor(
     X_valid = X_all[~np.isnan(X_all).any(axis=-1), :]
     print("Non-NaN vectors: {}".format(X_valid.shape[0]))
 
-    n_total_to_embed = X_valid.shape[0]
-
     # Fit IncrementalPCA
     ipca = IncrementalPCA(n_components=target_dim, batch_size=batch_size)
 
     print("Fitting Incremental-PCA...")
-    for start in trange(0, n_total_to_embed, batch_size, desc='iPCA:Fit'):
+    for start in trange(0, X_valid.shape[0], batch_size, desc='iPCA:Fit'):
         batch = X_valid[start : start + batch_size]
         ipca.partial_fit(batch)
 
     # Transform in batches (avoids materializing full output at once)
     print("Transforming...")
     chunks = []
-    for start in trange(0, n_total_to_embed, batch_size, desc='iPCA:Transform'):
+    for start in trange(0, X_all.shape[0], batch_size, desc='iPCA:Transform'):
         batch = X_all[start : start + batch_size]
         batch_out = np.full((batch.shape[0], target_dim), fill_value=np.nan, dtype=np.float32)
         valid_idxs, = np.where(~np.isnan(batch).any(axis=-1))
