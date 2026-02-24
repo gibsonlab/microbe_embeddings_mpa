@@ -10,6 +10,17 @@ from .dataset import AbstractMetaphlanPreembeddedDataset
 from .. import MetaphlanProfileParser
 
 
+def get_meta_file(fpath: Path) -> Path:
+    tokens = fpath.name.split(".")
+    print(tokens)
+    if tokens[-2].startswith("ipca"):
+        # strip the ipca_<dim> token, if present.
+        basename = ".".join(tokens[:-2])
+    else:
+        basename = ".".join(tokens[:-1])
+    return fpath.parent / f"{basename}.meta"
+
+
 class TorchStackedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedDataset):
     def __init__(
             self,
@@ -22,7 +33,7 @@ class TorchStackedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedDatase
         self.dtype = dtype
 
         print("Target torch embedding array: {}".format(file_path))
-        meta_path = file_path.with_suffix(".meta")
+        meta_path = get_meta_file(file_path)
         assert meta_path.exists(), f"Metadata file for torch embedding file {file_path.name} not found!"
         with open(meta_path, "rt") as f:
             self.sgbs_without_embedding = set()
@@ -37,6 +48,7 @@ class TorchStackedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedDatase
                 self.sgbs_without_embedding.add(s_id)
 
         self.embeddings = torch.load(file_path)
+        print("Loaded embedding tensor of shape: {}".format(self.embeddings.shape))
         self.all_marker_masks = ~(torch.isnan(self.embeddings).any(dim=-1))
         self.embeddings[torch.isnan(self.embeddings)] = 0.0
 

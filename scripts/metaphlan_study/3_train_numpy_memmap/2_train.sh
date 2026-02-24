@@ -34,7 +34,7 @@ pred_model="$4"
 
 
 # point to the proper pretrained model embeddings
-embedding_file="${EMBEDDING_BASE_DIR}/${embed_family}/${embed_model}.pt"
+embedding_file="${EMBEDDING_BASE_DIR}/${embed_family}/${embed_model}.ipca_d200.pt"
 echo "Input embedding file: ${embedding_file}"
 
 analysis_subdir="${ANALYSIS_BASE_DIR}/${analysis_name}"
@@ -51,7 +51,7 @@ if ! [ -f "${model_config}" ]; then
   exit 1
 fi
 
-n_epochs=50
+n_epochs=80
 learning_rate=0.0001
 batch_size=10
 seed=12345
