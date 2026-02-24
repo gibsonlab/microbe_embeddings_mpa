@@ -1,45 +1,13 @@
 #!/bin/bash
 set -e
 
-ANALYSIS_BASE_DIR="/data/bwh-comppath-seq/youn/metaphlan_dset/analyses"
-if [ $# -lt 1 ]; then
-  echo "Error: analysis_name, embed_model_name, pred_model_name are required"
-  echo "Usage: $0 <analysis_name> [--dry-run]"
-  echo "Available analysis names:"
-  for dir in "${ANALYSIS_BASE_DIR}"/*; do
-    echo "-> $(basename "${dir}")"
-  done
-  exit 1
-fi
-analysis_name="$1"
-shift
-
-# Parse options
-DRY_RUN=false
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        --dry-run)
-            DRY_RUN=true
-            shift
-            ;;
-        *)
-            echo "Unknown option: $1"
-            exit 1
-            ;;
-    esac
-done
-
-
-EXCLUDE_NODES=""
-analysis_subdir="${ANALYSIS_BASE_DIR}/${analysis_name}"
+EXCLUDE_NODES="lmd-2,lmd-3,lmd-4"
+SCRIPT_DIR="./slurm"
 
 
 # Get list of currently running/pending jobs for this user
 #running_jobs=$(squeue -u $USER -h -o "%j" 2>/dev/null)
 running_jobs=""
-
-
-SCRIPT_DIR="./slurm"
 
 
 create_job_submission () {
@@ -95,15 +63,15 @@ EOF
   echo "Submitted job ${jobname}"
 }
 
-create_job_submission "pcoa_split" "offline" "pcoa_d100_s1000" "epc_pool"
-create_job_submission "pcoa_split" "offline" "pcoa_d100_s1000" "epc_nopool"
+create_job_submission "pcoa_split" "offline" "pcoa_d100_s1000" "epc_pool" "$running_jobs"
+create_job_submission "pcoa_split" "offline" "pcoa_d100_s1000" "epc_nopool" "$running_jobs"
 
-create_job_submission "pcoa_split" "offline" "umap_d100_s1000" "epc_pool"
-create_job_submission "pcoa_split" "offline" "umap_d100_s1000" "epc_nopool"
+create_job_submission "pcoa_split" "offline" "umap_d100_s1000" "epc_pool" "$running_jobs"
+create_job_submission "pcoa_split" "offline" "umap_d100_s1000" "epc_nopool" "$running_jobs"
 
-create_job_submission "pcoa_split" "phylophlan" "dnabert-s" "epc_pool"
-create_job_submission "pcoa_split" "phylophlan" "dnabert-s" "epc_nopool"
+create_job_submission "pcoa_split" "phylophlan" "dnabert-s" "epc_pool" "$running_jobs"
+create_job_submission "pcoa_split" "phylophlan" "dnabert-s" "epc_nopool" "$running_jobs"
 
-create_job_submission "pcoa_split" "phylophlan" "evo2_7b_hyena10" "epc_pool"
-create_job_submission "pcoa_split" "phylophlan" "evo2_7b_hyena10" "epc_nopool"
+create_job_submission "pcoa_split" "phylophlan" "evo2_7b_hyena10" "epc_pool" "$running_jobs"
+create_job_submission "pcoa_split" "phylophlan" "evo2_7b_hyena10" "epc_nopool" "$running_jobs"
 
