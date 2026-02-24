@@ -34,10 +34,6 @@ create_job_submission () {
       echo "Skipping ${jobname} - job already finished."
       return 0
   fi
-  if $DRY_RUN; then
-      echo "[Dry run] Submit ${jobname}:  sbatch --exclude=\"${EXCLUDE_NODES}\" \"${job_script}\"  -->  bash 2_train.sh \"${analysis_name}\" \"${embed_family}\" \"${embed_model_name}\" \"${pred_model}\""
-      return 0
-  fi
 
   # Write SBATCH headers and job commands
   mkdir -p ${job_subdir}
