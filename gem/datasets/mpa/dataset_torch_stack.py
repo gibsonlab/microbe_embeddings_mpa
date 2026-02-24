@@ -12,7 +12,6 @@ from .. import MetaphlanProfileParser
 
 def get_meta_files(fpath: Path) -> Tuple[Path, Path]:
     tokens = fpath.name.split(".")
-    print(tokens)
     if tokens[-2].startswith("ipca"):
         # strip the ipca_<dim> token, if present.
         basename = ".".join(tokens[:-2])
@@ -84,6 +83,38 @@ class TorchStackedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedDatase
         targets = torch.from_numpy(sample.abundances_ensure_normalized).to(self.dtype)
         return sample.sample_id, features, marker_mask, sgb_mask, targets
 
+    # def __getitems__(self, indices: List[int]) -> Tuple[List[str], Tensor, Tensor, Tensor, Tensor]:
+    #     batch_sz = len(indices)
+    #     samples = [self.samples[i] for i in indices]
+    #     max_sgbs = max(len(sample.taxa_ids) for sample in samples)
+    #     max_markers = self.embeddings.shape[1]
+    #     embed_dim = self.embeddings.shape[2]
+    #
+    #     sample_ids = [s.sample_id for s in samples]
+    #     features = torch.zeros((batch_sz, max_sgbs, max_markers, embed_dim), dtype=self.dtype)
+    #     marker_mask = torch.zeros((batch_sz, max_sgbs, max_markers), dtype=torch.bool)
+    #     sgb_mask = torch.zeros((batch_sz, max_sgbs), dtype=torch.bool)
+    #     targets = torch.zeros((batch_sz, max_sgbs), dtype=self.dtype)
+    #
+    #     # Collect all array indices needed across the whole batch
+    #     needed_arr_indices = set()
+    #     for sample in samples:
+    #         for sgb_id in sample.taxa_ids:
+    #             if sgb_id not in self.sgbs_without_embedding and sgb_id in self.sgb_indices:
+    #                 needed_arr_indices.add(self.sgb_indices[sgb_id])
+    #
+    #     for sample_idx, sample in enumerate(samples):
+    #         for sgb_idx, sgb_id in enumerate(sample.taxa_ids):
+    #             if sgb_id not in self.sgbs_without_embedding and sgb_id in self.sgb_indices:
+    #                 sgb_arr_idx = self.sgb_indices[sgb_id]
+    #                 features[sample_idx, sgb_idx] = self.embeddings[sgb_arr_idx]
+    #                 marker_mask[sample_idx, sgb_idx] = self.all_marker_masks[sgb_arr_idx]
+    #
+    #         sgb_mask[sample_idx, :len(sample.taxa_ids)] = True
+    #         targets[sample_idx, :len(sample.taxa_ids)] = torch.from_numpy(sample.abundances_ensure_normalized).to(self.dtype)
+    #
+    #     return sample_ids, features, marker_mask, sgb_mask, targets
+
     def __getitems__(self, indices: List[int]) -> Tuple[List[str], Tensor, Tensor, Tensor, Tensor]:
         batch_sz = len(indices)
         samples = [self.samples[i] for i in indices]
@@ -97,22 +128,35 @@ class TorchStackedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedDatase
         sgb_mask = torch.zeros((batch_sz, max_sgbs), dtype=torch.bool)
         targets = torch.zeros((batch_sz, max_sgbs), dtype=self.dtype)
 
-        # Collect all array indices needed across the whole batch
-        needed_arr_indices = set()
-        for sample in samples:
-            for sgb_id in sample.taxa_ids:
-                if sgb_id not in self.sgbs_without_embedding and sgb_id in self.sgb_indices:
-                    needed_arr_indices.add(self.sgb_indices[sgb_id])
+        # Build index arrays for a single batched gather
+        sample_positions = []  # which sample in the batch
+        sgb_positions = []  # which sgb slot within that sample
+        arr_indices = []  # which row in self.embeddings
 
         for sample_idx, sample in enumerate(samples):
+            n = len(sample.taxa_ids)
+            sgb_mask[sample_idx, :n] = True
+            targets[sample_idx, :n] = torch.from_numpy(
+                sample.abundances_ensure_normalized
+            ).to(self.dtype)
+
             for sgb_idx, sgb_id in enumerate(sample.taxa_ids):
                 if sgb_id not in self.sgbs_without_embedding and sgb_id in self.sgb_indices:
-                    sgb_arr_idx = self.sgb_indices[sgb_id]
-                    features[sample_idx, sgb_idx] = self.embeddings[sgb_arr_idx]
-                    marker_mask[sample_idx, sgb_idx] = self.all_marker_masks[sgb_arr_idx]
+                    sample_positions.append(sample_idx)
+                    sgb_positions.append(sgb_idx)
+                    arr_indices.append(self.sgb_indices[sgb_id])
 
-            sgb_mask[sample_idx, :len(sample.taxa_ids)] = True
-            targets[sample_idx, :len(sample.taxa_ids)] = torch.from_numpy(sample.abundances_ensure_normalized).to(self.dtype)
+        if arr_indices:
+            arr_idx_t = torch.tensor(arr_indices, dtype=torch.long)
+            sp = torch.tensor(sample_positions, dtype=torch.long)
+            gp = torch.tensor(sgb_positions, dtype=torch.long)
+
+            # Single gather for all needed embeddings + masks
+            gathered_embeddings = self.embeddings[arr_idx_t]  # (N, max_markers, embed_dim)
+            gathered_masks = self.all_marker_masks[arr_idx_t]  # (N, max_markers)
+
+            features[sp, gp] = gathered_embeddings
+            marker_mask[sp, gp] = gathered_masks
 
         return sample_ids, features, marker_mask, sgb_mask, targets
 
