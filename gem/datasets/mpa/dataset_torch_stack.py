@@ -10,7 +10,7 @@ from .dataset import AbstractMetaphlanPreembeddedDataset
 from .. import MetaphlanProfileParser
 
 
-def get_meta_file(fpath: Path) -> Path:
+def get_meta_files(fpath: Path) -> Tuple[Path, Path]:
     tokens = fpath.name.split(".")
     print(tokens)
     if tokens[-2].startswith("ipca"):
@@ -18,7 +18,9 @@ def get_meta_file(fpath: Path) -> Path:
         basename = ".".join(tokens[:-2])
     else:
         basename = ".".join(tokens[:-1])
-    return fpath.parent / f"{basename}.meta"
+    metadata_path = fpath.parent / f"{basename}.meta"
+    sgb_path = fpath.parent / f"{basename}.sgb.txt"
+    return metadata_path, sgb_path
 
 
 class TorchStackedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedDataset):
@@ -33,7 +35,7 @@ class TorchStackedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedDatase
         self.dtype = dtype
 
         print("Target torch embedding array: {}".format(file_path))
-        meta_path = get_meta_file(file_path)
+        meta_path, sgb_id_list_path = get_meta_files(file_path)
         assert meta_path.exists(), f"Metadata file for torch embedding file {file_path.name} not found!"
         with open(meta_path, "rt") as f:
             self.sgbs_without_embedding = set()
@@ -52,7 +54,7 @@ class TorchStackedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedDatase
         self.all_marker_masks = ~(torch.isnan(self.embeddings).any(dim=-1))
         self.embeddings[torch.isnan(self.embeddings)] = 0.0
 
-        with open(file_path.with_suffix(".sgb.txt"), "rt") as f:
+        with open(sgb_id_list_path, "rt") as f:
             self.sgb_order = [l.strip() for l in f if len(l.strip()) > 0]
         assert len(self.sgb_order) == self.embeddings.shape[0], "SGB id length ({}) does not match embeddings shape ({})".format(
             len(self.sgb_order), self.embeddings.shape[0]
