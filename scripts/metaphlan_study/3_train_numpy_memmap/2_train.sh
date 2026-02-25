@@ -34,7 +34,11 @@ pred_model="$4"
 
 
 # point to the proper pretrained model embeddings
-embedding_file="${EMBEDDING_BASE_DIR}/${embed_family}/${embed_model}.ipca_d200.pt"
+if [ $embed_family == "offline" ]; then
+  embedding_file="${EMBEDDING_BASE_DIR}/${embed_family}/${embed_model}.pt"
+else
+  embedding_file="${EMBEDDING_BASE_DIR}/${embed_family}/${embed_model}.ipca_d200.pt"
+fi
 echo "Input embedding file: ${embedding_file}"
 
 analysis_subdir="${ANALYSIS_BASE_DIR}/${analysis_name}"
