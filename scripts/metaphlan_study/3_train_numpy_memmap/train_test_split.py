@@ -223,7 +223,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("-f", "--full-table", dest="full_table", type=str, required=True)
     parser.add_argument("-m", "--metadata", dest="metadata", type=str, required=True)
     parser.add_argument("-o", "--out-dir", dest="out_dir", type=str, required=True)
-    parser.add_argument("-m", "--method", type=str, required=True, help="Either 'pcoa' or 'random'.")
+    parser.add_argument("-h", "--how", type=str, required=True, help="Either 'pcoa' or 'random'.")
     parser.add_argument("-r", "--rng-seed", dest="rng_seed", type=int, required=False, default=1234, help="Required if using random splitting.")
     return parser.parse_args()
 
@@ -238,6 +238,6 @@ if __name__ == "__main__":
         profile_tsv_path=full_profile_tsv,
         metadata_tsv_path=metadata_tsv,
         out_dir=out_dir,
-        how=args.method,
+        how=args.how,
         rng_seed=args.rng_seed,
     )
