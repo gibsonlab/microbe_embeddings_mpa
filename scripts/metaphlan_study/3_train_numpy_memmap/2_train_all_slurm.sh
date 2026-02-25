@@ -74,4 +74,8 @@ EOF
 
 create_job_submission "pcoa_split" "phylophlan" "dnabert-s" "epc_pool" "$running_jobs"
 create_job_submission "pcoa_split" "phylophlan_metaphlan" "dnabert-s" "epc_pool" "$running_jobs"
+create_job_submission "random_split_1001" "phylophlan" "dnabert-s" "epc_pool" "$running_jobs"
+create_job_submission "random_split_1001" "phylophlan_metaphlan" "dnabert-s" "epc_pool" "$running_jobs"
+create_job_submission "random_split_1002" "phylophlan" "dnabert-s" "epc_pool" "$running_jobs"
+create_job_submission "random_split_1002" "phylophlan_metaphlan" "dnabert-s" "epc_pool" "$running_jobs"
 
