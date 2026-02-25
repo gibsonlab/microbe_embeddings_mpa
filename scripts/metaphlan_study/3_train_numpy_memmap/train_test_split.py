@@ -83,8 +83,8 @@ def test_train_split_random(
     train_indices = indices[:n_train_rows]
     test_indices = indices[n_train_rows:n_train_rows + n_test_rows]
 
-    train_metadata_rows = profiles_indexed.iloc[train_indices]
-    test_metadata_rows = profiles_indexed.iloc[test_indices]
+    train_metadata_rows = metadata_subset_df.iloc[train_indices]
+    test_metadata_rows = metadata_subset_df.iloc[test_indices]
 
     training_sample_ids = set(train_metadata_rows['Sample ID'])
     test_sample_ids = set(test_metadata_rows['Sample ID'])
