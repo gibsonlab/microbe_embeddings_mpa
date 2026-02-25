@@ -220,10 +220,10 @@ def calculate_js_distances_numba(samples: np.ndarray) -> np.ndarray:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("-f", "--full-table", dest="full_table", type=str, required=True)
-    parser.add_argument("-m", "--metadata", dest="metadata", type=str, required=True)
+    parser.add_argument("-ft", "--full-table", dest="full_table", type=str, required=True)
+    parser.add_argument("-mt", "--metadata-table", dest="metadata_table", type=str, required=True)
     parser.add_argument("-o", "--out-dir", dest="out_dir", type=str, required=True)
-    parser.add_argument("-h", "--how", type=str, required=True, help="Either 'pcoa' or 'random'.")
+    parser.add_argument("-m", "--method", type=str, required=True, help="Either 'pcoa' or 'random'.")
     parser.add_argument("-r", "--rng-seed", dest="rng_seed", type=int, required=False, default=1234, help="Required if using random splitting.")
     return parser.parse_args()
 
@@ -231,13 +231,13 @@ def parse_args() -> argparse.Namespace:
 if __name__ == "__main__":
     args = parse_args()
     full_profile_tsv = Path(args.full_table)
-    metadata_tsv = Path(args.metadata)
+    metadata_tsv = Path(args.metadata_table)
     out_dir = Path(args.out_dir)
     out_dir.mkdir(exist_ok=True, parents=True)
     main(
         profile_tsv_path=full_profile_tsv,
         metadata_tsv_path=metadata_tsv,
         out_dir=out_dir,
-        how=args.how,
+        how=args.method,
         rng_seed=args.rng_seed,
     )
