@@ -48,7 +48,7 @@ def main(
     elif how == "random":
         print("Performing random splitting.")
         train_df, test_df = test_train_split_random(
-            profiles_indexed,
+            profiles_indexed, metadata_subset,
             train_fraction=0.8,
             test_fraction=0.2,
             rng_seed=rng_seed,
@@ -67,23 +67,31 @@ def main(
 
 def test_train_split_random(
         profiles_indexed: pd.DataFrame,
+        metadata_subset_df: pd.DataFrame,
         rng_seed: int,
         train_fraction: float = 0.8,
         test_fraction: float = 0.2,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    profile_df = select_profiles_in_metadata(metadata_subset_df, profiles_indexed)
     rng = np.random.default_rng(rng_seed)
-    indices = np.arange(profiles_indexed.shape[0])
+    indices = np.arange(metadata_subset_df.shape[0])
     rng.shuffle(indices)
 
     # split the indices.
-    n_train_rows = int(profiles_indexed.shape[0] * train_fraction)
-    n_test_rows = int(profiles_indexed.shape[0] * test_fraction)
+    n_train_rows = int(metadata_subset_df.shape[0] * train_fraction)
+    n_test_rows = int(metadata_subset_df.shape[0] * test_fraction)
     train_indices = indices[:n_train_rows]
     test_indices = indices[n_train_rows:n_train_rows + n_test_rows]
 
+    train_metadata_rows = profiles_indexed.iloc[train_indices]
+    test_metadata_rows = profiles_indexed.iloc[test_indices]
+
+    training_sample_ids = set(train_metadata_rows['Sample ID'])
+    test_sample_ids = set(test_metadata_rows['Sample ID'])
+
     # gather the rows.
-    train_df = profiles_indexed.iloc[train_indices].reset_index(drop=True)
-    test_df = profiles_indexed.iloc[test_indices].reset_index(drop=True)
+    train_df = profile_df[profile_df.index.isin(training_sample_ids)]
+    test_df = profile_df[profile_df.index.isin(test_sample_ids)]
     return train_df, test_df
 
 
