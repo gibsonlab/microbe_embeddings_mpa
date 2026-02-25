@@ -1,3 +1,4 @@
+import argparse
 from typing import *
 from pathlib import Path
 
@@ -13,6 +14,8 @@ def main(
         profile_tsv_path: Path,
         metadata_tsv_path: Path,
         out_dir: Path,
+        how: str,
+        rng_seed: int,
 ):
     profiles = pd.read_csv(profile_tsv_path, sep="\t")
     profiles_indexed = profiles.set_index("clade_name").transpose()
@@ -34,12 +37,22 @@ def main(
     #     raise ValueError(f"Unrecognized edge_weight_strategy option `{edge_weight_strategy}")
     # train_df, test_df = test_train_split_asv_separation(profiles_indexed, metadata_subset, similarity)
     pcoa_plot_path = out_dir / "pcoa_plot.png"
-    train_df, test_df = test_train_split_pcoa_jensenshannon(
-        profiles_indexed, metadata_subset,
-        train_fraction=0.8,
-        test_fraction=0.2,
-        plot_path=pcoa_plot_path, train_is_left=False
-    )
+    if how == "pcoa":
+        print("Performing PCoA coordinate-based splitting.")
+        train_df, test_df = test_train_split_pcoa_jensenshannon(
+            profiles_indexed, metadata_subset,
+            train_fraction=0.8,
+            test_fraction=0.2,
+            plot_path=pcoa_plot_path, train_is_left=False
+        )
+    elif how == "random":
+        print("Performing random splitting.")
+        train_df, test_df = test_train_split_random(
+            profiles_indexed,
+            train_fraction=0.8,
+            test_fraction=0.2,
+            rng_seed=rng_seed,
+        )
 
     train_df.to_csv(out_dir / "train.tsv", sep="\t", index=True)
     test_df.to_csv(out_dir / "test.tsv", sep="\t", index=True)
@@ -50,6 +63,28 @@ def main(
     print("Ratio: {} / {} = {}".format(
         train_df.shape[0], test_df.shape[0], train_df.shape[0] / test_df.shape[0]
     ))
+
+
+def test_train_split_random(
+        profiles_indexed: pd.DataFrame,
+        rng_seed: int,
+        train_fraction: float = 0.8,
+        test_fraction: float = 0.2,
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    rng = np.random.default_rng(rng_seed)
+    indices = np.arange(profiles_indexed.shape[0])
+    rng.shuffle(indices)
+
+    # split the indices.
+    n_train_rows = int(profiles_indexed.shape[0] * train_fraction)
+    n_test_rows = int(profiles_indexed.shape[0] * test_fraction)
+    train_indices = indices[:n_train_rows]
+    test_indices = indices[n_train_rows:n_train_rows + n_test_rows]
+
+    # gather the rows.
+    train_df = profiles_indexed.iloc[train_indices].reset_index(drop=True)
+    test_df = profiles_indexed.iloc[test_indices].reset_index(drop=True)
+    return train_df, test_df
 
 
 # ================================================ HELPER CODE: misc.
@@ -183,18 +218,26 @@ def calculate_js_distances_numba(samples: np.ndarray) -> np.ndarray:
     return distmat
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-f", "--full-table", dest="full_table", type=str, required=True)
+    parser.add_argument("-m", "--metadata", dest="metadata", type=str, required=True)
+    parser.add_argument("-o", "--out-dir", dest="out_dir", type=str, required=True)
+    parser.add_argument("-m", "--method", type=str, required=True, help="Either 'pcoa' or 'random'.")
+    parser.add_argument("-r", "--rng-seed", dest="rng_seed", type=int, required=False, default=1234, help="Required if using random splitting.")
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-    DATA_DIR = Path("/data/bwh-comppath-seq/youn/metaphlan_dset/dataset")
-    OUT_DIR = Path("/data/bwh-comppath-seq/youn/metaphlan_dset/analyses/pcoa_split")
-    print(f"Destination OUT_DIR: {OUT_DIR}")
-
-    full_profile_tsv = DATA_DIR / "BlancoMiguezA_2023_profiles.tsv"
-    metadata_tsv = DATA_DIR / "BlancoMiguezA_2023_metadata.tsv"
-    tree_path = Path("/data/bwh-comppath-seq/youn/metaphlan_dset/metaphlan_database/mpa_vJan21_CHOCOPhlAnSGB_202103.nwk")
-
-    OUT_DIR.mkdir(exist_ok=True, parents=True)
+    args = parse_args()
+    full_profile_tsv = Path(args.full_table)
+    metadata_tsv = Path(args.metadata)
+    out_dir = Path(args.out_dir)
+    out_dir.mkdir(exist_ok=True, parents=True)
     main(
         profile_tsv_path=full_profile_tsv,
         metadata_tsv_path=metadata_tsv,
-        out_dir=OUT_DIR,
+        out_dir=out_dir,
+        how=args.method,
+        rng_seed=args.rng_seed,
     )
