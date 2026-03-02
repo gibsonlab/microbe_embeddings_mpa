@@ -176,9 +176,10 @@ def test_train_split_pcoa_jensenshannon(
             else:
                 test_train_labels.append("Excluded")
 
+        coords_with_labels: pd.DataFrame = coordinates.assign(Label=test_train_labels, SampleId=sample_ids)
         fig, ax = plt.subplots(1, 1, figsize=(8, 6))
         sb.scatterplot(
-            coordinates.assign(Label=test_train_labels),
+            coords_with_labels,
             x='PC1', y='PC2', hue="Label",
             alpha=0.3, linewidth=0., ax=ax
         )
@@ -192,6 +193,7 @@ def test_train_split_pcoa_jensenshannon(
         ax.set_title('PCoA Plot')
         ax.grid(True, alpha=0.3)
         plt.savefig(plot_path, bbox_inches='tight')
+        coords_with_labels.to_csv(plot_path.parent / "pcoa_coords.tsv", sep='\t', index=False)
     return train_df, test_df
 
 
