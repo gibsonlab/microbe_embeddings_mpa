@@ -194,6 +194,7 @@ def test_train_split_pcoa_jensenshannon(
         ax.grid(True, alpha=0.3)
         plt.savefig(plot_path, bbox_inches='tight')
         coords_with_labels.to_csv(plot_path.parent / "pcoa_coords.tsv", sep='\t', index=False)
+        prop_var.to_csv(plot_path.parent / "pcoa_proportion_explained.tsv", sep='\t', index=False)
     return train_df, test_df
 
 
