@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for seed in 1001 1002 1003 1004 1005; do
+for seed in 1001 1002 1003 1004 1005 1006 1007 1008 1009 1010; do
   python train_test_split.py \
     --full-table "/data/bwh-comppath-seq/youn/metaphlan_dset/dataset/BlancoMiguezA_2023_profiles.tsv" \
     --metadata-table "/data/bwh-comppath-seq/youn/metaphlan_dset/dataset/BlancoMiguezA_2023_metadata.tsv" \
