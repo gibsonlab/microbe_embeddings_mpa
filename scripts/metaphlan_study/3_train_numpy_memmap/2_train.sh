@@ -39,7 +39,7 @@ if [ $embed_family == "offline" ]; then
   # deep-learning embeddings are much larger; can't accommodate large batch sizes.
   batch_size=30
 else
-  embedding_file="${EMBEDDING_BASE_DIR}/${embed_family}/${embed_model}.ipca_200.pt"
+  embedding_file="${EMBEDDING_BASE_DIR}/${embed_family}/${embed_model}.ipca_d200.pt"
   batch_size=30
 fi
 echo "Input embedding file: ${embedding_file}"
