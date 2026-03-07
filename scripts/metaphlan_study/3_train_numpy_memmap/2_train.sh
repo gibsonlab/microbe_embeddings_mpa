@@ -70,26 +70,45 @@ echo "epochs=${n_epochs}" | tee $metadata
 echo "LR=${learning_rate}" | tee -a $metadata
 echo "batch_size=${batch_size}" | tee -a $metadata
 echo "seed=${seed}" | tee -a $metadata
-echo "dtype=bfloat16"
 echo "===================="
 
 
-python train_model.py \
---train "$training_set" \
---test "$test_set" \
---model-config "$model_config" \
---out-dir "$outdir" \
---loss "kl" \
---embed-memmap-file "${embedding_file}" \
---epochs "$n_epochs" \
---learning-rate "$learning_rate" \
---batch-size "$batch_size" \
---print-every 5 \
---workers 20 \
---seed "$seed" \
---prefetch-factor 2 \
---cuda-device "cuda" \
---use-bfloat16
+if [ "$embed_family" == "offline" ]; then
+  echo "Using full-precision model for offline embeddings."
+  python train_model.py \
+  --train "$training_set" \
+  --test "$test_set" \
+  --model-config "$model_config" \
+  --out-dir "$outdir" \
+  --loss "kl" \
+  --embed-memmap-file "${embedding_file}" \
+  --epochs "$n_epochs" \
+  --learning-rate "$learning_rate" \
+  --batch-size "$batch_size" \
+  --print-every 5 \
+  --workers 20 \
+  --seed "$seed" \
+  --prefetch-factor 2 \
+  --cuda-device "cuda"
+else
+  echo "Using bfloat16-precision model for deep-learning per-gene embeddings."
+  python train_model.py \
+  --train "$training_set" \
+  --test "$test_set" \
+  --model-config "$model_config" \
+  --out-dir "$outdir" \
+  --loss "kl" \
+  --embed-memmap-file "${embedding_file}" \
+  --epochs "$n_epochs" \
+  --learning-rate "$learning_rate" \
+  --batch-size "$batch_size" \
+  --print-every 5 \
+  --workers 20 \
+  --seed "$seed" \
+  --prefetch-factor 2 \
+  --cuda-device "cuda" \
+  --use-bfloat16
+fi
 
 
 echo "Done."
