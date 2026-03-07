@@ -5,7 +5,8 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 import torch
-from torch import nn, GradScaler, autocast
+from torch import nn
+from torch.amp import autocast
 from torch.utils.data import DataLoader
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LRScheduler
@@ -105,6 +106,7 @@ def main_training_loop(
         checkpoint_every: int = 25,
         loss_plot_path: Optional[Path] = None,
         rng_seed: int = 314159,
+        train_in_bfloat16: bool = False,
         timer_profile: bool = False,
 ):
     """
@@ -152,6 +154,9 @@ def main_training_loop(
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(rng_seed + 1)
 
+    # specify whether to train in bfloat16
+    amp_enabled = train_in_bfloat16
+
     """ Training loop -- Optimize using batches. """
     print("NOTE: the first iteration of model evaluation may take considerably longer, due to compilation overhead.")
     def _compute_test_loss(show_pbar: bool = False) -> float:
@@ -163,11 +168,12 @@ def main_training_loop(
             else:
                 collection = test_dloader
             for batch_idx, (test_sample_ids, test_batch_features, test_marker_mask, test_taxa_mask, test_y) in enumerate(collection):
-                test_y_hat = model(
-                    test_batch_features.to(model_device, non_blocking=True),
-                    test_marker_mask.to(model_device, non_blocking=True),
-                    test_taxa_mask.to(model_device, non_blocking=True)
-                )
+                with autocast(device_type='cuda', dtype=torch.bfloat16, enabled=amp_enabled):
+                    test_y_hat = model(
+                        test_batch_features.to(model_device, non_blocking=True),
+                        test_marker_mask.to(model_device, non_blocking=True),
+                        test_taxa_mask.to(model_device, non_blocking=True)
+                    )
 
                 # assert test_y_hat.shape == test_y.shape, f"Neural Network output and ground truth have different shapes: {test_y_hat.shape} (NN) vs {test_y.shape} (truth)"
                 batch_loss = loss_fn(
@@ -235,11 +241,12 @@ def main_training_loop(
             optimizer.zero_grad()
 
             with timer("Model-With-Grad ({}/{})".format(batch_idx+1, len(train_dloader)), enabled=timer_profile):
-                training_y_hat = model(
-                    training_batch_features.to(model_device, non_blocking=True),
-                    training_marker_mask.to(model_device, non_blocking=True),
-                    training_taxa_mask.to(model_device, non_blocking=True),
-                )
+                with autocast(device_type='cuda', dtype=torch.bfloat16, enabled=amp_enabled):
+                    training_y_hat = model(
+                        training_batch_features.to(model_device, non_blocking=True),
+                        training_marker_mask.to(model_device, non_blocking=True),
+                        training_taxa_mask.to(model_device, non_blocking=True),
+                    )
 
             # assert training_y_hat.shape == training_y.shape, f"Neural Network output and ground truth have different shapes: {training_y_hat.shape} (NN) vs {training_y.shape} (truth)"
             with timer("Loss-With-Grad ({}/{})".format(batch_idx+1, len(train_dloader)), enabled=timer_profile):

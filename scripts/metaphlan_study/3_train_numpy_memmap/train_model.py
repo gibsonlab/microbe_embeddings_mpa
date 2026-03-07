@@ -44,7 +44,7 @@ def train_and_save_model(
         train_dloader: DataLoader,
         test_dloader: DataLoader,
         n_epochs: int,
-        model_dtype: torch.dtype,
+        train_in_bfloat16: bool,
         lr: float = 0.0001,
         print_every: int = 5,
         train_rng_seed: int = 314159,
@@ -92,7 +92,7 @@ def train_and_save_model(
     """ Create model. """
     ## ======== Model & Optimizer instantiation. ========
     print("Using target cuda device: {}".format(cuda_device_name))
-    torch_embedding_model = SGBEmbedPoolConcatPredictionModel(**model_cfg).to(dtype=model_dtype, device=cuda_device_name)
+    torch_embedding_model = SGBEmbedPoolConcatPredictionModel(**model_cfg).to(device=cuda_device_name)
 
     print("Using model class: {}".format(
         torch_embedding_model.__class__.__name__
@@ -136,6 +136,7 @@ def train_and_save_model(
         loss_plot_path=loss_plot_path,
         rng_seed=train_rng_seed,
         timer_profile=timer_profile,
+        train_in_bfloat16=train_in_bfloat16,
     )
 
     """ save model to file. """
@@ -208,12 +209,10 @@ def main(
         # half-precision
         train_dset = TorchStackedMetaphlanPreembeddedDataset(train_df, embed_memmap_file, dtype=torch.bfloat16)
         test_dset = TorchStackedMetaphlanPreembeddedDataset(test_df, embed_memmap_file, dtype=torch.bfloat16)
-        model_dtype = torch.bfloat16
     else:
         # full precision
         train_dset = TorchStackedMetaphlanPreembeddedDataset(train_df, embed_memmap_file, dtype=torch.float32)
         test_dset = TorchStackedMetaphlanPreembeddedDataset(test_df, embed_memmap_file, dtype=torch.float32)
-        model_dtype = torch.float32
         torch.set_float32_matmul_precision('high')
 
     """ Create dataloaders. """
@@ -246,9 +245,9 @@ def main(
         loss_name=loss_name,
         train_dloader=train_dloader,
         test_dloader=test_dloader,
-        model_dtype=model_dtype,
         n_epochs=n_epochs,
         lr=lr,
+        train_in_bfloat16=use_bfloat16,
         print_every=print_every,
         train_rng_seed=seed + 2,
         cuda_device_name=cuda_device_name,
