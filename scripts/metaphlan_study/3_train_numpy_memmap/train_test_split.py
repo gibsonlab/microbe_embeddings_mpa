@@ -40,9 +40,11 @@ def main(
         sample_id: n_sgb
         for sample_id, n_sgb in zip(extractor.sgb_profile_df.index, num_sgbs_per_sample)
     }
-    print(num_sgbs_dict)
+
+    sgb_lb = 5
     metadata_subset = metadata_subset.assign(NumSGB=metadata['Sample ID'].map(num_sgbs_dict))
-    raise Exception("DEBUG stop here")
+    metadata_subset = metadata_subset.loc[metadata_subset['NumSGB'] >= sgb_lb]
+    print("Number of samples with SGB >= {}: {}".format(sgb_lb, metadata_subset.shape[0]))
 
     # if edge_weight_strategy == "jaccard":
     #     similarity = JaccardSimilarityOracle()
