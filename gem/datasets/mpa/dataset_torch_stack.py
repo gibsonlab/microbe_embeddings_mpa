@@ -34,6 +34,7 @@ class TorchStackedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedDatase
         self.dtype = dtype
 
         print("Target torch embedding array: {}".format(file_path))
+        print(f"Data will be loaded using dtype = {dtype}")
         meta_path, sgb_id_list_path = get_meta_files(file_path)
         assert meta_path.exists(), f"Metadata file for torch embedding file {file_path.name} not found!"
         with open(meta_path, "rt") as f:
