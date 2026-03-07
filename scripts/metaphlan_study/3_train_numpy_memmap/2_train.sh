@@ -70,6 +70,7 @@ echo "epochs=${n_epochs}" | tee $metadata
 echo "LR=${learning_rate}" | tee -a $metadata
 echo "batch_size=${batch_size}" | tee -a $metadata
 echo "seed=${seed}" | tee -a $metadata
+echo "dtype=bfloat16"
 echo "===================="
 
 
@@ -87,7 +88,8 @@ python train_model.py \
 --workers 20 \
 --seed "$seed" \
 --prefetch-factor 2 \
---cuda-device "cuda"
+--cuda-device "cuda" \
+--use-bfloat16
 
 
 echo "Done."

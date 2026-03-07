@@ -73,7 +73,6 @@ def train_and_save_model(
         lr: float = 0.0001,
         print_every: int = 5,
         train_rng_seed: int = 314159,
-        auto_mixed_precision: bool = False,
         checkpoint_every: int = 50,
         load_checkpoint_file: Optional[Path] = None,
 ):
@@ -91,7 +90,6 @@ def train_and_save_model(
     :param train_rng_seed:
     :param checkpoint_every:
     :param load_checkpoint_file:
-    :param auto_mixed_precision:
     """
 
     """ loss function """
@@ -161,7 +159,7 @@ def train_and_save_model(
         print_progress=True, print_every=print_every,
         checkpoint_every=checkpoint_every, checkpoint_dir=checkpoint_dir,
         resume_from_checkpoint=load_checkpoint_file, loss_plot_path=loss_plot_path,
-        auto_mixed_precision=auto_mixed_precision, rng_seed=train_rng_seed, timer_profile=False,
+        rng_seed=train_rng_seed, timer_profile=False,
     )
 
     """ save model config file. """
@@ -204,10 +202,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("-resume", "--resume-from", dest="resume_from_path", required=False, type=str, default=None)
     parser.add_argument("-checkpoint", "--checkpoint-every", dest="checkpoint_every", required=False, type=int, default=20)
     parser.add_argument("-mb", "--minibatch-embed-size", dest="embed_minibatch_size", required=False, type=int, default=32)
-    parser.add_argument(
-        "-amp", "--use-auto-mixed-precision", dest="use_auto_mixed_precision",
-        action="store_true", default=False
-    )
     parser.add_argument(
         "-cd", "--cuda-devices", dest="cuda_device_ids", type=str, required=True,
         help="A comma-separated list of CUDA devices to use during training. "
@@ -364,7 +358,6 @@ def main():
         lr=args.lr,
         print_every=args.print_every,
         train_rng_seed=train_rng_seed,
-        auto_mixed_precision=args.use_auto_mixed_precision,
         checkpoint_every=args.checkpoint_every,
         load_checkpoint_file=resume_from_checkpoint_path,
     )

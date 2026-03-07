@@ -104,7 +104,6 @@ def main_training_loop(
         resume_from_checkpoint: Optional[Path] = None,
         checkpoint_every: int = 25,
         loss_plot_path: Optional[Path] = None,
-        auto_mixed_precision: bool = False,
         rng_seed: int = 314159,
         timer_profile: bool = False,
 ):
@@ -125,7 +124,6 @@ def main_training_loop(
     :param print_every: Indicate how often to print progress as a debug message to stdout. Only relevant if `print_progress` is set to true.
     :param loss_plot_path: If provided, plots the training loss/test loss history. Test loss is only plotted if test_df is provided.
     :param rng_seed: The random generator seed to use for training. Specify for reproducibility. (default: 314159)
-    :param auto_mixed_precision: Indicate whether to use torch's built-in auto-mixed precision mode.
     """
 
     """ Initialization. """
@@ -165,43 +163,41 @@ def main_training_loop(
             else:
                 collection = test_dloader
             for batch_idx, (test_sample_ids, test_batch_features, test_marker_mask, test_taxa_mask, test_y) in enumerate(collection):
-                with autocast(device_type='cuda', enabled=auto_mixed_precision, dtype=torch.bfloat16):
-                    # note: bfloat16 historically has had better numerical stability, causing fewer NaN issues.
-                    test_y_hat = model(
-                        test_batch_features.to(model_device, non_blocking=True),
-                        test_marker_mask.to(model_device, non_blocking=True),
-                        test_taxa_mask.to(model_device, non_blocking=True)
-                    )
+                test_y_hat = model(
+                    test_batch_features.to(model_device, non_blocking=True),
+                    test_marker_mask.to(model_device, non_blocking=True),
+                    test_taxa_mask.to(model_device, non_blocking=True)
+                )
 
-                    # assert test_y_hat.shape == test_y.shape, f"Neural Network output and ground truth have different shapes: {test_y_hat.shape} (NN) vs {test_y.shape} (truth)"
-                    batch_loss = loss_fn(
-                        nn.functional.log_softmax(test_y_hat, dim=-1),  # log pred probabilities
-                        torch.log(test_y.to(model_device, dtype=test_y_hat.dtype, non_blocking=True))  # log target probabilities
-                    )
-                    if torch.isnan(batch_loss).item():
-                        # ========== Found NaN batch loss. Try to report current status and terminate training loop.
-                        for i in range(0, len(test_sample_ids)):
-                            print(f"Batch {batch_idx}, sample {i}")
-                            sample_id = test_sample_ids[i]
-                            feat_i = test_batch_features[i]
-                            taxa_mask_i = test_taxa_mask[i]
-                            marker_mask_i = test_marker_mask[i]
-                            y_hat_i = nn.functional.log_softmax(test_y_hat[i], dim=-1)
-                            yi = torch.log(test_y[i].to(model_device, dtype=test_y_hat.dtype, non_blocking=True),)
-                            loss_i = loss_fn(
-                                torch.unsqueeze(y_hat_i, dim=0),
-                                torch.unsqueeze(yi, dim=0)
-                            )
-                            if torch.any(torch.isnan(loss_i)):
-                                print("Found NaN loss (i = {}, sample = {})".format(i, sample_id))
-                                print("feat:", feat_i)
-                                print("taxa mask:", taxa_mask_i)
-                                print("marker mask:", marker_mask_i)
-                                print("y_hat_i (before log_softmax):", test_y_hat[i])
-                                print("y_hat_i:", y_hat_i)
-                                print("yi:", yi)
-                                print("Features -- any nan?", torch.any(torch.isnan(feat_i)))
-                                raise Exception("NaN error!")
+                # assert test_y_hat.shape == test_y.shape, f"Neural Network output and ground truth have different shapes: {test_y_hat.shape} (NN) vs {test_y.shape} (truth)"
+                batch_loss = loss_fn(
+                    nn.functional.log_softmax(test_y_hat, dim=-1),  # log pred probabilities
+                    torch.log(test_y.to(model_device, dtype=test_y_hat.dtype, non_blocking=True))  # log target probabilities
+                )
+                if torch.isnan(batch_loss).item():
+                    # ========== Found NaN batch loss. Try to report current status and terminate training loop.
+                    for i in range(0, len(test_sample_ids)):
+                        print(f"Batch {batch_idx}, sample {i}")
+                        sample_id = test_sample_ids[i]
+                        feat_i = test_batch_features[i]
+                        taxa_mask_i = test_taxa_mask[i]
+                        marker_mask_i = test_marker_mask[i]
+                        y_hat_i = nn.functional.log_softmax(test_y_hat[i], dim=-1)
+                        yi = torch.log(test_y[i].to(model_device, dtype=test_y_hat.dtype, non_blocking=True),)
+                        loss_i = loss_fn(
+                            torch.unsqueeze(y_hat_i, dim=0),
+                            torch.unsqueeze(yi, dim=0)
+                        )
+                        if torch.any(torch.isnan(loss_i)):
+                            print("Found NaN loss (i = {}, sample = {})".format(i, sample_id))
+                            print("feat:", feat_i)
+                            print("taxa mask:", taxa_mask_i)
+                            print("marker mask:", marker_mask_i)
+                            print("y_hat_i (before log_softmax):", test_y_hat[i])
+                            print("y_hat_i:", y_hat_i)
+                            print("yi:", yi)
+                            print("Features -- any nan?", torch.any(torch.isnan(feat_i)))
+                            raise Exception("NaN error!")
 
                 # divide by total dataset size, to contribute to the overall average estimate.
                 total_test_loss += batch_loss.item() * test_y.shape[0] / n_test_examples
@@ -238,20 +234,19 @@ def main_training_loop(
         for batch_idx, (_, training_batch_features, training_marker_mask, training_taxa_mask, training_y) in enumerate(train_dloader):
             optimizer.zero_grad()
 
-            with autocast(device_type='cuda', enabled=auto_mixed_precision, dtype=torch.bfloat16):
-                with timer("Model-With-Grad ({}/{})".format(batch_idx+1, len(train_dloader)), enabled=timer_profile):
-                    training_y_hat = model(
-                        training_batch_features.to(model_device, non_blocking=True),
-                        training_marker_mask.to(model_device, non_blocking=True),
-                        training_taxa_mask.to(model_device, non_blocking=True),
-                    )
+            with timer("Model-With-Grad ({}/{})".format(batch_idx+1, len(train_dloader)), enabled=timer_profile):
+                training_y_hat = model(
+                    training_batch_features.to(model_device, non_blocking=True),
+                    training_marker_mask.to(model_device, non_blocking=True),
+                    training_taxa_mask.to(model_device, non_blocking=True),
+                )
 
-                # assert training_y_hat.shape == training_y.shape, f"Neural Network output and ground truth have different shapes: {training_y_hat.shape} (NN) vs {training_y.shape} (truth)"
-                with timer("Loss-With-Grad ({}/{})".format(batch_idx+1, len(train_dloader)), enabled=timer_profile):
-                    training_loss = loss_fn(
-                        nn.functional.log_softmax(training_y_hat, dim=-1),  # log pred probabilities
-                        torch.log(training_y.to(model_device, dtype=training_y_hat.dtype, non_blocking=True))  # log target probabilities
-                    )
+            # assert training_y_hat.shape == training_y.shape, f"Neural Network output and ground truth have different shapes: {training_y_hat.shape} (NN) vs {training_y.shape} (truth)"
+            with timer("Loss-With-Grad ({}/{})".format(batch_idx+1, len(train_dloader)), enabled=timer_profile):
+                training_loss = loss_fn(
+                    nn.functional.log_softmax(training_y_hat, dim=-1),  # log pred probabilities
+                    torch.log(training_y.to(model_device, dtype=training_y_hat.dtype, non_blocking=True))  # log target probabilities
+                )
 
             with timer("Backward-Update", enabled=timer_profile):
                 # scaler.scale(training_loss).backward()
@@ -321,7 +316,6 @@ def save_checkpoint(
     model: nn.Module,
     optimizer: Optimizer,
     scheduler: LRScheduler,
-    scaler: GradScaler,
     data_rng: torch.Generator,
     epoch_history: List[int],
     training_history: List[float],
@@ -334,7 +328,6 @@ def save_checkpoint(
         'model_state_dict': model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
         'scheduler_state_dict': scheduler.state_dict(),
-        'scaler_state_dict': scaler.state_dict(),
         'data_rng_state': data_rng.get_state(),
         'epoch_history': epoch_history,
         'training_history': training_history,
