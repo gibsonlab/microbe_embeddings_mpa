@@ -47,7 +47,6 @@ def main(
         np.quantile(num_sgbs_per_sample, 0.05),
         np.quantile(num_sgbs_per_sample, 0.95),
     ))
-    np.save("num_sgbs.npy", num_sgbs_per_sample)
     metadata_subset = metadata_subset.assign(NumSGB=metadata['Sample ID'].map(num_sgbs_dict))
     metadata_subset = metadata_subset.loc[metadata_subset['NumSGB'] >= sgb_lb]
     print("Number of samples with SGB >= {}: {}".format(sgb_lb, metadata_subset.shape[0]))
