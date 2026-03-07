@@ -36,8 +36,11 @@ pred_model="$4"
 # point to the proper pretrained model embeddings
 if [ $embed_family == "offline" ]; then
   embedding_file="${EMBEDDING_BASE_DIR}/${embed_family}/${embed_model}.pt"
+  # deep-learning embeddings are much larger; can't accommodate large batch sizes.
+  batch_size=10
 else
-  embedding_file="${EMBEDDING_BASE_DIR}/${embed_family}/${embed_model}.pt"
+  embedding_file="${EMBEDDING_BASE_DIR}/${embed_family}/${embed_model}.ipca_200.pt"
+  batch_size=10
 fi
 echo "Input embedding file: ${embedding_file}"
 
@@ -57,7 +60,6 @@ fi
 
 n_epochs=80
 learning_rate=0.0001
-batch_size=5
 seed=12345
 
 outdir="${analysis_subdir}/trained_model/${embed_family}/${embed_model}/${pred_model}"
