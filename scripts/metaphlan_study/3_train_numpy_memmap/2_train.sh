@@ -37,7 +37,7 @@ pred_model="$4"
 if [ $embed_family == "offline" ]; then
   embedding_file="${EMBEDDING_BASE_DIR}/${embed_family}/${embed_model}.pt"
 else
-  embedding_file="${EMBEDDING_BASE_DIR}/${embed_family}/${embed_model}.ipca_d200.pt"
+  embedding_file="${EMBEDDING_BASE_DIR}/${embed_family}/${embed_model}.pt"
 fi
 echo "Input embedding file: ${embedding_file}"
 
@@ -57,7 +57,7 @@ fi
 
 n_epochs=80
 learning_rate=0.0001
-batch_size=50
+batch_size=10
 seed=12345
 
 outdir="${analysis_subdir}/trained_model/${embed_family}/${embed_model}/${pred_model}"
