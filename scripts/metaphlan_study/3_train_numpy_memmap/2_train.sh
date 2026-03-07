@@ -86,7 +86,7 @@ if [ "$embed_family" == "offline" ]; then
   --learning-rate "$learning_rate" \
   --batch-size "$batch_size" \
   --print-every 5 \
-  --workers 20 \
+  --workers 4 \
   --seed "$seed" \
   --prefetch-factor 2 \
   --cuda-device "cuda"
@@ -103,7 +103,7 @@ else
   --learning-rate "$learning_rate" \
   --batch-size "$batch_size" \
   --print-every 5 \
-  --workers 20 \
+  --workers 4 \
   --seed "$seed" \
   --prefetch-factor 2 \
   --cuda-device "cuda" \
