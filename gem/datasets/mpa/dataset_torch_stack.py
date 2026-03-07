@@ -48,7 +48,7 @@ class TorchStackedMetaphlanPreembeddedDataset(AbstractMetaphlanPreembeddedDatase
                 assert s_id.startswith("SGB")
                 self.sgbs_without_embedding.add(s_id)
 
-        self.embeddings = torch.load(file_path)
+        self.embeddings = torch.load(file_path).to(dtype=dtype)
         print("Loaded embedding tensor of shape: {}".format(self.embeddings.shape))
         self.all_marker_masks = ~(torch.isnan(self.embeddings).any(dim=-1))
         self.embeddings[torch.isnan(self.embeddings)] = 0.0
