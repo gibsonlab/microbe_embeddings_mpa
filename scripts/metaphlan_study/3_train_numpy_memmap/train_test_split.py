@@ -29,6 +29,21 @@ def main(
     ]
     print("Number of samples (Adult & Healthy): {}".format(metadata_subset.shape[0]))
 
+    # extract the number of SGBs.
+    profile_subset_df = select_profiles_in_metadata(metadata_subset, profiles_indexed)
+    extractor = MetaphlanProfileParser(profile_subset_df)
+    abund_table = extractor.sgb_profile_df.to_numpy()
+    num_sgbs_per_sample = np.sum(abund_table > 0, axis=-1)
+    assert len(num_sgbs_per_sample.shape) == 1
+    assert num_sgbs_per_sample.shape[0] == metadata_subset.shape[0], "The number of samples in the profile DF and metadata DF don't match!"
+    num_sgbs_dict = {
+        sample_id: n_sgb
+        for sample_id, n_sgb in zip(extractor.sgb_profile_df.index, num_sgbs_per_sample)
+    }
+    print(num_sgbs_dict)
+    metadata_subset = metadata_subset.assign(NumSGB=metadata['Sample ID'].map(num_sgbs_dict))
+    raise Exception("DEBUG stop here")
+
     # if edge_weight_strategy == "jaccard":
     #     similarity = JaccardSimilarityOracle()
     # elif edge_weight_strategy == "phylogenetic":
