@@ -41,7 +41,7 @@ def main(
         for sample_id, n_sgb in zip(extractor.sgb_profile_df.index, num_sgbs_per_sample)
     }
 
-    sgb_lb = 5
+    sgb_lb = 50
     print("NumSGB statistic: median={}, 0.05={}, 0.95={}".format(
         np.median(num_sgbs_per_sample),
         np.quantile(num_sgbs_per_sample, 0.05),
