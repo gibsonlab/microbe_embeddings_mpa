@@ -291,4 +291,5 @@ if __name__ == "__main__":
         checkpoint_every=_args.checkpoint_every,
         print_every=_args.print_every,
         cuda_device_name=_args.cuda_device_name,
+        use_bfloat16=_args.use_bfloat16,
     )
