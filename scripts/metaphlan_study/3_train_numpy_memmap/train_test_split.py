@@ -42,6 +42,11 @@ def main(
     }
 
     sgb_lb = 5
+    print("NumSGB statistic: median={}, 0.05={}, 0.95={}".format(
+        np.median(num_sgbs_per_sample),
+        np.quantile(num_sgbs_per_sample, 0.05),
+        np.quantile(num_sgbs_per_sample, 0.95),
+    ))
     metadata_subset = metadata_subset.assign(NumSGB=metadata['Sample ID'].map(num_sgbs_dict))
     metadata_subset = metadata_subset.loc[metadata_subset['NumSGB'] >= sgb_lb]
     print("Number of samples with SGB >= {}: {}".format(sgb_lb, metadata_subset.shape[0]))
