@@ -87,7 +87,8 @@ python train_model.py \
 --workers 20 \
 --seed "$seed" \
 --prefetch-factor 2 \
---cuda-device "cuda"
+--cuda-device "cuda" \
+--use-bfloat16
 
 
 echo "Done."

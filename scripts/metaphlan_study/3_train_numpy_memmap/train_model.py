@@ -113,7 +113,6 @@ def train_and_save_model(
         T_max=n_epochs,
         eta_min=1e-6  # Very small final LR
     )
-    torch.set_float32_matmul_precision('high')
 
     """ output files -- preparation """
     loss_plot_path = model_save_dir / "loss_history.pdf"
@@ -180,6 +179,10 @@ def parse_args() -> argparse.Namespace:
         "-cd", "--cuda-device", dest="cuda_device_name", type=str, default="cuda",
         help="Specify which CUDA device name to use. (Example: cuda, cuda:0, cuda:1)",
     )
+    parser.add_argument(
+        "--use-bfloat16", dest="use_bfloat16", action="store_true", default=False,
+        help="Use bfloat16 inputs (may help with many-gene representations)."
+    )
     return parser.parse_args()
 
 
@@ -199,11 +202,19 @@ def main(
         resume_from_checkpoint_path: Union[Path, None],
         checkpoint_every: int,
         print_every: int,
+        use_bfloat16: bool,
         cuda_device_name: str = "cuda"
 ):
     """ Create datasets. """
-    train_dset = TorchStackedMetaphlanPreembeddedDataset(train_df, embed_memmap_file, dtype=torch.float32)
-    test_dset = TorchStackedMetaphlanPreembeddedDataset(test_df, embed_memmap_file, dtype=torch.float32)
+    if use_bfloat16:
+        # half-precision
+        train_dset = TorchStackedMetaphlanPreembeddedDataset(train_df, embed_memmap_file, dtype=torch.bfloat16)
+        test_dset = TorchStackedMetaphlanPreembeddedDataset(test_df, embed_memmap_file, dtype=torch.bfloat16)
+    else:
+        # full precision
+        train_dset = TorchStackedMetaphlanPreembeddedDataset(train_df, embed_memmap_file, dtype=torch.float32)
+        test_dset = TorchStackedMetaphlanPreembeddedDataset(test_df, embed_memmap_file, dtype=torch.float32)
+        torch.set_float32_matmul_precision('high')
 
     """ Create dataloaders. """
     train_rng = torch.Generator()

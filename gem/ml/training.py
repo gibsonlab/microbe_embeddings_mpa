@@ -130,7 +130,7 @@ def main_training_loop(
 
     """ Initialization. """
     model_device = get_model_device(model)
-    scaler = GradScaler(str(model_device), enabled=auto_mixed_precision)
+    # scaler = GradScaler(str(model_device), enabled=auto_mixed_precision)
 
     print(f"Checkpoints saved to {checkpoint_dir} --> every {checkpoint_every} epochs")
     checkpoint_dir.mkdir(exist_ok=True, parents=True)
@@ -168,7 +168,7 @@ def main_training_loop(
                 with autocast(device_type='cuda', enabled=auto_mixed_precision, dtype=torch.bfloat16):
                     # note: bfloat16 historically has had better numerical stability, causing fewer NaN issues.
                     test_y_hat = model(
-                        test_batch_features.to(model_device, dtype=torch.float32, non_blocking=True),
+                        test_batch_features.to(model_device, non_blocking=True),
                         test_marker_mask.to(model_device, non_blocking=True),
                         test_taxa_mask.to(model_device, non_blocking=True)
                     )
@@ -176,7 +176,7 @@ def main_training_loop(
                     # assert test_y_hat.shape == test_y.shape, f"Neural Network output and ground truth have different shapes: {test_y_hat.shape} (NN) vs {test_y.shape} (truth)"
                     batch_loss = loss_fn(
                         nn.functional.log_softmax(test_y_hat, dim=-1),  # log pred probabilities
-                        torch.log(test_y.to(model_device, dtype=torch.float32, non_blocking=True))  # log target probabilities
+                        torch.log(test_y.to(model_device, dtype=test_y_hat.dtype, non_blocking=True))  # log target probabilities
                     )
                     if torch.isnan(batch_loss).item():
                         # ========== Found NaN batch loss. Try to report current status and terminate training loop.
@@ -187,7 +187,7 @@ def main_training_loop(
                             taxa_mask_i = test_taxa_mask[i]
                             marker_mask_i = test_marker_mask[i]
                             y_hat_i = nn.functional.log_softmax(test_y_hat[i], dim=-1)
-                            yi = torch.log(test_y[i].to(model_device, dtype=torch.float32, non_blocking=True),)
+                            yi = torch.log(test_y[i].to(model_device, dtype=test_y_hat.dtype, non_blocking=True),)
                             loss_i = loss_fn(
                                 torch.unsqueeze(y_hat_i, dim=0),
                                 torch.unsqueeze(yi, dim=0)
@@ -212,7 +212,7 @@ def main_training_loop(
         print(f"Resuming from: {resume_from_checkpoint}")
         last_epoch, epoch_history, training_loss_history, test_loss_history = load_checkpoint(
             resume_from_checkpoint,
-            model, optimizer, lr_scheduler, scaler, training_data_rng
+            model, optimizer, lr_scheduler, training_data_rng
         )
         print(f"Last completed epoch = {last_epoch}")
         start_epoch = last_epoch + 1
@@ -241,7 +241,7 @@ def main_training_loop(
             with autocast(device_type='cuda', enabled=auto_mixed_precision, dtype=torch.bfloat16):
                 with timer("Model-With-Grad ({}/{})".format(batch_idx+1, len(train_dloader)), enabled=timer_profile):
                     training_y_hat = model(
-                        training_batch_features.to(model_device, dtype=torch.float32, non_blocking=True),
+                        training_batch_features.to(model_device, non_blocking=True),
                         training_marker_mask.to(model_device, non_blocking=True),
                         training_taxa_mask.to(model_device, non_blocking=True),
                     )
@@ -250,15 +250,17 @@ def main_training_loop(
                 with timer("Loss-With-Grad ({}/{})".format(batch_idx+1, len(train_dloader)), enabled=timer_profile):
                     training_loss = loss_fn(
                         nn.functional.log_softmax(training_y_hat, dim=-1),  # log pred probabilities
-                        torch.log(training_y.to(model_device, dtype=torch.float32, non_blocking=True))  # log target probabilities
+                        torch.log(training_y.to(model_device, dtype=training_y_hat.dtype, non_blocking=True))  # log target probabilities
                     )
 
             with timer("Backward-Update", enabled=timer_profile):
-                scaler.scale(training_loss).backward()
+                # scaler.scale(training_loss).backward()
+                training_loss.backward()
                 if clip_gradient_norm_ub is not None and clip_gradient_norm_ub > 0:
                     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=clip_gradient_norm_ub)
-                scaler.step(optimizer)
-                scaler.update()
+                optimizer.step()
+                # scaler.step(optimizer)
+                # scaler.update()
 
             # print("cleaning up.")
             epoch_training_loss += training_loss.item() * training_y.shape[0] / n_training_examples
@@ -288,7 +290,7 @@ def main_training_loop(
             """ Save the model and optimizer states. """
             filepath = checkpoint_dir / f"checkpoint_{epoch}.pt"
             save_checkpoint(
-                epoch, model, optimizer, lr_scheduler, scaler, training_data_rng,
+                epoch, model, optimizer, lr_scheduler, training_data_rng,
                 epoch_history, training_loss_history, test_loss_history,
                 filepath,
             )
@@ -308,7 +310,7 @@ def main_training_loop(
         model.eval()
         filepath = checkpoint_dir / f"checkpoint_{epoch}.pt"
         save_checkpoint(
-            epoch, model, optimizer, lr_scheduler, scaler, training_data_rng,
+            epoch, model, optimizer, lr_scheduler, training_data_rng,
             epoch_history, training_loss_history, test_loss_history,
             filepath,
         )
@@ -347,7 +349,6 @@ def load_checkpoint(
         model: nn.Module,
         optimizer: Optimizer,
         scheduler: LRScheduler,
-        scaler: GradScaler,
         data_rng: torch.Generator
 ) -> Tuple[int, List[int], List[float], List[float]]:
     """
@@ -359,7 +360,6 @@ def load_checkpoint(
     model.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-    scaler.load_state_dict(checkpoint['scaler_state_dict'])
     data_rng.set_state(checkpoint['data_rng_state'])
 
     last_epoch: int = checkpoint['epoch']
