@@ -48,6 +48,7 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
         self.marker_transform_layer = nn.Sequential(*marker_transform_mlp_layers)
 
         self.use_sgb_pooling = use_sgb_pooling
+        self.sgb_pool_dim = sgb_pool_dim
         if use_sgb_pooling:
             assert sgb_pool_dim > 0, "If pooling is turned on, sgb_pool_dim must be specified and greater than 0."
             species_transform_mlp_layers = [nn.Linear(sgb_model_dim, hidden_dim), nn.LayerNorm(normalized_shape=hidden_dim), nn.GELU()]
@@ -78,11 +79,12 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
 
         self.init_weights(init_rng, weight_decay_compatible)
 
-    def forward(self, g: Tensor, marker_padding_mask: Tensor, sgb_padding_mask: Tensor) -> Tensor:
+    def forward(self, g: Tensor, marker_padding_mask: Tensor, sgb_padding_mask: Tensor, disable_sgb_pooling: bool = False) -> Tensor:
         """
         :param g: Tensor of shape (n_batch, S, M, E).
         :param marker_padding_mask: Boolean tensor of shape (n_batch, S, M). The (i,j,k) entry should be "True" if batch i, SGB j, marker k should be included in computation, "False" otherwise.
         :param sgb_padding_mask: Boolean tensor of shape (n_batch, S). the (i,j) entry should be "True" if batch_i, SGB j should be included in computation.
+        :param disable_sgb_pooling: If the model has SGB pooling weights, force-concatenate zeroes for that internal representation. Used for ablation study.
         """
         x = self.marker_transform_layer(g)                                         # shape (*, S, M, sgb_model_dim)
         # ========== mean-pooling (nanmean)
@@ -94,17 +96,21 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
         x = x / num_markers                                                        # shape (*, S, sgb_model_dim)
 
         if self.use_sgb_pooling:
-            y = self.species_transform_layer(x)                                    # shape (*, S, sgb_pool_dim)
-            # ========== mean-pooling (nanmean)
-            y = torch.sum(
-                y * sgb_padding_mask.unsqueeze(-1),
-                dim=-2, keepdim=False
-            )                                                                      # shape (*, sgb_pool_dim)
-            num_species = sgb_padding_mask.sum(dim=-1, keepdim=True).clamp(min=1)  # shape (*, 1)
-            y = y / num_species                                                    # shape (*, sgb_pool_dim)
+            if disable_sgb_pooling:
+                # For model ablation study
+                y = torch.zeros(*x.shape[:-1], self.sgb_pool_dim, dtype=x.dtype, device=x.device)
+            else:
+                y = self.species_transform_layer(x)                                    # shape (*, S, sgb_pool_dim)
+                # ========== mean-pooling (nanmean)
+                y = torch.sum(
+                    y * sgb_padding_mask.unsqueeze(-1),
+                    dim=-2, keepdim=False
+                )                                                                      # shape (*, sgb_pool_dim)
+                num_species = sgb_padding_mask.sum(dim=-1, keepdim=True).clamp(min=1)  # shape (*, 1)
+                y = y / num_species                                                    # shape (*, sgb_pool_dim)
 
-            y = y.unsqueeze(-2)                                                    # shape (*, 1, sgb_pool_dim)
-            y = y.expand(*x.shape[:-1], y.shape[-1])                                        # shape (*, S, sgb_pool_dim), broadcasted along dim=-2
+                y = y.unsqueeze(-2)                                                    # shape (*, 1, sgb_pool_dim)
+                y = y.expand(*x.shape[:-1], y.shape[-1])                                        # shape (*, S, sgb_pool_dim), broadcasted along dim=-2
 
             xy = torch.concatenate([x, y], dim=-1)                          # shape (*, S, sgb_pool_dim + sgb_model_dim)
             logits = self.prediction_layer(xy)                                    # shape (*, S)
