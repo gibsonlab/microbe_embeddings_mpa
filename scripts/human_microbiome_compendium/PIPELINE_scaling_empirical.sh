@@ -4,7 +4,7 @@ set -e
 
 dset_name="american_gut"
 analysis_name="pcoa_split"
-embed_name="evo-1-8k-base_hyena10"
+embed_name="evo-1-8k-base_hyena5"
 
 
 # Generate all model config files for empirical results.
