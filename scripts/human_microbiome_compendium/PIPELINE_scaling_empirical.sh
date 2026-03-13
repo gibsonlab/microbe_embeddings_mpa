@@ -59,5 +59,5 @@ for model_cfg in model_names_all; do
     echo "Trying model: ${model_cfg}"
     bash 3_train_model.sh "$dset_name" "$analysis_name" "$embed_name" "$model_cfg"
     touch "${breadcrumb_file}"
-  done
+  fi
 done
