@@ -25,6 +25,7 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
             mlp_hidden_layers: int = 1,
             sgb_pool_dim: Optional[int] = 0,
             dropout_rate: float = 0.0,
+            exclude_mlp_reprs: bool = False,
             weight_decay_compatible: bool = True,
             init_rng: Optional[torch.Generator] = None,
     ):
@@ -33,32 +34,42 @@ class SGBEmbedPoolConcatPredictionModel(LinearInitializedModule):
         :param init_rng:
         """
         assert mlp_hidden_layers > 0, "mlp_hidden_layers must be greater than 0."
+        if exclude_mlp_reprs:
+            print("Defining MLP-free model. sgb_model_dim and sgb_pool_dim are both set to marker_embed_dim!")
+            sgb_model_dim = marker_embed_dim
+            sgb_pool_dim = marker_embed_dim
 
         super().__init__()
         print(f"Initializing model with dropout_rate = {dropout_rate}")
-        marker_transform_mlp_layers = [nn.Linear(marker_embed_dim, hidden_dim), nn.LayerNorm(normalized_shape=hidden_dim), nn.GELU()]
-        print("Constructing {} extra hidden layers.".format(mlp_hidden_layers - 1))
-        for i in range(mlp_hidden_layers - 1):
-            # Add extra hidden layers.
-            marker_transform_mlp_layers += [nn.Linear(hidden_dim, hidden_dim), nn.LayerNorm(normalized_shape=hidden_dim), nn.GELU()]
-        if dropout_rate > 0.0:
-            # Add dropout after final hidden layer.
-            marker_transform_mlp_layers += [ChannelwiseDropout(dropout_rate)]
-        marker_transform_mlp_layers += [nn.Linear(hidden_dim, sgb_model_dim), nn.LayerNorm(normalized_shape=sgb_model_dim), nn.GELU()]
+        if exclude_mlp_reprs:
+            marker_transform_mlp_layers = [torch.nn.Identity()]
+        else:
+            marker_transform_mlp_layers = [nn.Linear(marker_embed_dim, hidden_dim), nn.LayerNorm(normalized_shape=hidden_dim), nn.GELU()]
+            print("Constructing {} extra hidden layers.".format(mlp_hidden_layers - 1))
+            for i in range(mlp_hidden_layers - 1):
+                # Add extra hidden layers.
+                marker_transform_mlp_layers += [nn.Linear(hidden_dim, hidden_dim), nn.LayerNorm(normalized_shape=hidden_dim), nn.GELU()]
+            if dropout_rate > 0.0:
+                # Add dropout after final hidden layer.
+                marker_transform_mlp_layers += [ChannelwiseDropout(dropout_rate)]
+            marker_transform_mlp_layers += [nn.Linear(hidden_dim, sgb_model_dim), nn.LayerNorm(normalized_shape=sgb_model_dim), nn.GELU()]
         self.marker_transform_layer = nn.Sequential(*marker_transform_mlp_layers)
 
         self.use_sgb_pooling = use_sgb_pooling
         self.sgb_pool_dim = sgb_pool_dim
         if use_sgb_pooling:
-            assert sgb_pool_dim > 0, "If pooling is turned on, sgb_pool_dim must be specified and greater than 0."
-            species_transform_mlp_layers = [nn.Linear(sgb_model_dim, hidden_dim), nn.LayerNorm(normalized_shape=hidden_dim), nn.GELU()]
-            for i in range(mlp_hidden_layers - 1):
-                # Add extra hidden layers.
-                species_transform_mlp_layers += [nn.Linear(hidden_dim, hidden_dim), nn.LayerNorm(normalized_shape=hidden_dim), nn.GELU()]
-            if dropout_rate > 0.0:
-            # Add dropout after final hidden layer.
-                species_transform_mlp_layers += [ChannelwiseDropout(dropout_rate)]
-            species_transform_mlp_layers += [nn.Linear(hidden_dim, sgb_pool_dim), nn.LayerNorm(normalized_shape=sgb_pool_dim), nn.GELU()]
+            if exclude_mlp_reprs:
+                species_transform_mlp_layers = [torch.nn.Identity()]
+            else:
+                assert sgb_pool_dim > 0, "If pooling is turned on, sgb_pool_dim must be specified and greater than 0."
+                species_transform_mlp_layers = [nn.Linear(sgb_model_dim, hidden_dim), nn.LayerNorm(normalized_shape=hidden_dim), nn.GELU()]
+                for i in range(mlp_hidden_layers - 1):
+                    # Add extra hidden layers.
+                    species_transform_mlp_layers += [nn.Linear(hidden_dim, hidden_dim), nn.LayerNorm(normalized_shape=hidden_dim), nn.GELU()]
+                if dropout_rate > 0.0:
+                # Add dropout after final hidden layer.
+                    species_transform_mlp_layers += [ChannelwiseDropout(dropout_rate)]
+                species_transform_mlp_layers += [nn.Linear(hidden_dim, sgb_pool_dim), nn.LayerNorm(normalized_shape=sgb_pool_dim), nn.GELU()]
             self.species_transform_layer = nn.Sequential(*species_transform_mlp_layers)
 
         # define final layer.
