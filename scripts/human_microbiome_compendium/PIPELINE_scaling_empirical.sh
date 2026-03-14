@@ -51,7 +51,7 @@ done
 breadcrumb_dir="./scaling_empirical_progress/${dset_name}/${analysis_name}/${embed_name}"
 mkdir -p ${breadcrumb_dir}
 
-for model_cfg in model_names_all; do
+for model_cfg in "${embed_names_all[@]}"; do
   breadcrumb_file="${breadcrumb_dir}/${model_cfg}.DONE"
   if [ -f ${breadcrumb_file} ]; then
     echo "Model ${model_cfg} already done!"
