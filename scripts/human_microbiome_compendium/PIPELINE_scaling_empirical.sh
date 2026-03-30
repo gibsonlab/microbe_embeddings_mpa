@@ -4,14 +4,15 @@ set -e
 
 dset_name="american_gut"
 analysis_name="pcoa_split"
-embed_names=("evo-1-8k-base_hyena5" "evo2_7b_hyena10" "dnabert-s")
-
+#embed_names=("evo-1-8k-base_hyena5" "evo2_7b_hyena10" "dnabert-s")
+embed_names=("evo-1-8k-base_hyena5")
 
 # Generate all model config files for empirical results.
 inference_names_all=()
 
 # ===== Models with MLP
-for hidden_dim in $(seq 4 4 64); do
+#for hidden_dim in $(seq 4 4 64); do
+for hidden_dim in $(seq 4 4 256); do    # dnabert only
   model_cfg="epc_pool_scaling${hidden_dim}"
   inference_names_all+=("${model_cfg}")
 
@@ -29,7 +30,8 @@ done
 
 
 # ===== Models without MLP
-for hidden_dim in $(seq 4 2 32); do
+#for hidden_dim in $(seq 4 2 32); do
+for hidden_dim in $(seq 4 2 128); do  # dnabert only
   model_cfg="epc_pool_scaling${hidden_dim}_NO_MLP"
   inference_names_all+=("${model_cfg}")
 
