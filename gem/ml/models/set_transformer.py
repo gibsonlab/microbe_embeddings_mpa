@@ -280,10 +280,12 @@ class HierarchicalSetTransformer(LinearInitializedModule):
         self.inner_encoder = nn.ModuleList([
             ISAB(marker_embed_dim, dim_hidden, num_heads, num_inds, ln=ln, init_rng=init_rng),
             ISAB(dim_hidden,       dim_hidden, num_heads, num_inds, ln=ln, init_rng=init_rng),
+            ISAB(dim_hidden,       dim_hidden, num_heads, num_inds, ln=ln, init_rng=init_rng),
         ])
         self.inner_pool = PMA(dim_hidden, num_heads, num_seeds=1, ln=ln, init_rng=init_rng)
 
         self.outer_encoder = nn.ModuleList([
+            ISAB(dim_hidden, dim_hidden, num_heads, num_inds, ln=ln, init_rng=init_rng),
             ISAB(dim_hidden, dim_hidden, num_heads, num_inds, ln=ln, init_rng=init_rng),
             ISAB(dim_hidden, dim_hidden, num_heads, num_inds, ln=ln, init_rng=init_rng),
         ])
