@@ -67,26 +67,24 @@ class MAB(LinearInitializedModule):
         h, d = self.num_heads, self.dim_V // self.num_heads
 
         def split_heads(t: torch.Tensor) -> torch.Tensor:
-            B, s, _ = t.shape
-            return t.view(B, s, h, d).transpose(1, 2).reshape(B * h, s, d)
+            nb, s, _ = t.shape
+            return t.view(nb, s, h, d).transpose(1, 2)  # (B, h, s, d)
 
         Q_ = split_heads(self.fc_q(Q))  # (B, h, n, d)
         K_ = split_heads(self.fc_k(X))  # (B, h, m, d)
         V_ = split_heads(self.fc_v(X))  # (B, h, m, d)
 
         if mask is not None:
-            # scaled_dot_product_attention expects an additive attention mask
-            # of shape (B, h, n, m) or broadcastable; False positions get -inf
-            attn_mask = mask[:, None, None, :].expand(B, h, n, -1)  # (B, h, n, m)
-            attn_mask = torch.zeros_like(attn_mask, dtype=Q.dtype).masked_fill(~attn_mask, float('-inf'))
+            # Additive mask: real positions stay 0, padding positions become -inf
+            attn_mask = torch.zeros(B, h, n, mask.size(1), dtype=Q.dtype, device=Q.device)
+            attn_mask = attn_mask.masked_fill(
+                ~mask[:, None, None, :].expand(B, h, n, -1), float('-inf')
+            )
         else:
             attn_mask = None
 
-        # Fused kernel handles scaling, masking, and softmax internally.
-        # No need for nan_to_num: all-masked rows produce zero output naturally.
         out = F.scaled_dot_product_attention(Q_, K_, V_, attn_mask=attn_mask)  # (B, h, n, d)
-
-        out = out.transpose(1, 2).reshape(B, n, self.dim_V)  # (B, n, dim_V)
+        out = out.transpose(1, 2).contiguous().reshape(B, n, self.dim_V)  # (B, n, dim_V)
         out = self.fc_o(out)
 
         H = self.ln0(self.fc_q(Q) + out)
