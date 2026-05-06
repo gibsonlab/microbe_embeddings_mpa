@@ -82,7 +82,11 @@ class MAB(LinearInitializedModule):
             mask_expanded = mask_expanded.reshape(B * h, n, -1)      # (B*h, n, m)
             scores = scores.masked_fill(~mask_expanded, float('-inf'))
 
-        out = torch.bmm(F.softmax(scores, dim=-1), V_)
+        attn = F.softmax(scores, dim=-1)
+        # Guard against all-masked rows: softmax(-inf, ..., -inf) = nan -> 0
+        attn = torch.nan_to_num(attn, nan=0.0)
+
+        out = torch.bmm(attn, V_)
         out = out.view(B, h, n, d).transpose(1, 2).reshape(B, n, self.dim_V)
         out = self.fc_o(out)
 
@@ -185,7 +189,10 @@ class PMA(LinearInitializedModule):
         out = MAB(S, rFF(Z))
 
     Supports a key padding mask so that padding positions in Z do not
-    contribute to the pooled output.
+    contribute to the pooled output. Padding positions are zeroed before
+    being passed through rFF to prevent large arbitrary activations from
+    destabilising LayerNorm, even though the MAB mask would otherwise
+    suppress their contribution to the attention output.
 
     :param dim: Feature dimension for both input and output.
     :param num_heads: Number of attention heads. Must divide dim evenly.
@@ -224,6 +231,13 @@ class PMA(LinearInitializedModule):
         :return: Pooled output tensor of shape (B, num_seeds, dim).
         """
         B = Z.size(0)
+
+        # Zero out padding positions before rFF to prevent large activations
+        # from propagating into the attention values, even though they would
+        # be masked in MAB. This is a purely defensive measure.
+        if mask is not None:
+            Z = Z * mask.unsqueeze(-1).float()
+
         return self.mab(self.S.expand(B, -1, -1), self.ff(Z), mask=mask)
 
 
@@ -244,7 +258,7 @@ class HierarchicalSetTransformer(LinearInitializedModule):
     positions are set to -inf in the output so they become zero probability
     after an external softmax.
 
-    :param dim_input: Input feature dimension D.
+    :param marker_embed_dim: Input feature dimension D.
     :param dim_hidden: Internal feature dimension used throughout. Default 128.
     :param num_inds: Number of inducing points in each ISAB block. Default 16.
     :param num_heads: Number of attention heads. Must divide dim_hidden evenly.
@@ -267,8 +281,8 @@ class HierarchicalSetTransformer(LinearInitializedModule):
         super().__init__()
 
         self.inner_encoder = nn.ModuleList([
-            ISAB(marker_embed_dim,  dim_hidden, num_heads, num_inds, ln=ln, init_rng=init_rng),
-            ISAB(dim_hidden, dim_hidden, num_heads, num_inds, ln=ln, init_rng=init_rng),
+            ISAB(marker_embed_dim, dim_hidden, num_heads, num_inds, ln=ln, init_rng=init_rng),
+            ISAB(dim_hidden,       dim_hidden, num_heads, num_inds, ln=ln, init_rng=init_rng),
         ])
         self.inner_pool = PMA(dim_hidden, num_heads, num_seeds=1, ln=ln, init_rng=init_rng)
 
