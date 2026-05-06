@@ -70,24 +70,23 @@ class MAB(LinearInitializedModule):
             B, s, _ = t.shape
             return t.view(B, s, h, d).transpose(1, 2).reshape(B * h, s, d)
 
-        Q_ = split_heads(self.fc_q(Q))
-        K_ = split_heads(self.fc_k(X))
-        V_ = split_heads(self.fc_v(X))
-
-        scores = torch.bmm(Q_, K_.transpose(1, 2)) / math.sqrt(d)  # (B*h, n, m)
+        Q_ = split_heads(self.fc_q(Q))  # (B, h, n, d)
+        K_ = split_heads(self.fc_k(X))  # (B, h, m, d)
+        V_ = split_heads(self.fc_v(X))  # (B, h, m, d)
 
         if mask is not None:
-            mask_expanded = mask.unsqueeze(1).unsqueeze(2)           # (B, 1, 1, m)
-            mask_expanded = mask_expanded.expand(B, h, n, -1)        # (B, h, n, m)
-            mask_expanded = mask_expanded.reshape(B * h, n, -1)      # (B*h, n, m)
-            scores = scores.masked_fill(~mask_expanded, float('-inf'))
+            # scaled_dot_product_attention expects an additive attention mask
+            # of shape (B, h, n, m) or broadcastable; False positions get -inf
+            attn_mask = mask[:, None, None, :].expand(B, h, n, -1)  # (B, h, n, m)
+            attn_mask = torch.zeros_like(attn_mask, dtype=Q.dtype).masked_fill(~attn_mask, float('-inf'))
+        else:
+            attn_mask = None
 
-        attn = F.softmax(scores, dim=-1)
-        # Guard against all-masked rows: softmax(-inf, ..., -inf) = nan -> 0
-        attn = torch.nan_to_num(attn, nan=0.0)
+        # Fused kernel handles scaling, masking, and softmax internally.
+        # No need for nan_to_num: all-masked rows produce zero output naturally.
+        out = F.scaled_dot_product_attention(Q_, K_, V_, attn_mask=attn_mask)  # (B, h, n, d)
 
-        out = torch.bmm(attn, V_)
-        out = out.view(B, h, n, d).transpose(1, 2).reshape(B, n, self.dim_V)
+        out = out.transpose(1, 2).reshape(B, n, self.dim_V)  # (B, n, dim_V)
         out = self.fc_o(out)
 
         H = self.ln0(self.fc_q(Q) + out)
