@@ -246,7 +246,7 @@ def main():
     print(f"Target output directory: {model_save_dir}")
 
     model_version = args.model_version
-    model_supported_versions = {"V1", "V2", "EPC"}
+    model_supported_versions = {"V1", "V2", "EPC", "SetTransformer"}
     if model_version not in model_supported_versions:
         raise ValueError(
             f"Unsupported model version string {model_version}. "
