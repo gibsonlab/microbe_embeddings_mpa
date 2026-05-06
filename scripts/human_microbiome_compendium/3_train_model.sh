@@ -47,7 +47,7 @@ fi
 
 
 abundance_dir="/data/cctm/youn/human_microbiome_compendium/asv"
-model_config="./model_${pred_model_name}.yaml"
+model_config="./model_${pred_model_cfg_name}.yaml"
 n_epochs=80
 learning_rate=0.0001
 batch_size=30
