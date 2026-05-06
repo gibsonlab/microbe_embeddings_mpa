@@ -54,7 +54,7 @@ batch_size=30
 seed=12345
 
 
-outdir="${ANALYSIS_DIR}/trained_models/${embed_model_name}/${pred_model_name}_kl"
+outdir="${ANALYSIS_DIR}/trained_models/${embed_model_name}/${pred_model_cfg_name}_kl"
 echo "Model output dir: ${outdir}"
 mkdir -p "${outdir}"
 
