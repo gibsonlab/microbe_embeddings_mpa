@@ -99,6 +99,8 @@ def train_and_save_model(
         torch_embedding_model = SGBAbundanceLayeredPredictionModel(**model_cfg).to(cuda_device_name)
     elif model_version == "EPC":
         torch_embedding_model = SGBEmbedPoolConcatPredictionModel(**model_cfg).to(cuda_device_name)
+    elif model_version == "SetTransformer":
+        torch_embedding_model = HierarchicalSetTransformer(**model_cfg).to(cuda_device_name)
     else:
         raise ValueError(f"Unsupported model_version `{model_version}`")
 

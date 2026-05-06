@@ -74,10 +74,11 @@ embed_names_all+=("pcoa_d100_s1000")
 
 for embed_name in "${embed_names_all[@]}"; do
   bash 2_embed.sh "$embed_name" "$dset_name"
-  bash 3_train_model.sh "$dset_name" "$analysis_name" "$embed_name" "epc_pool"
-  bash 3_train_model.sh "$dset_name" "$analysis_name" "$embed_name" "epc_pool_1"
-  bash 3_train_model.sh "$dset_name" "$analysis_name" "$embed_name" "epc_pool_2"
-  bash 3_train_model.sh "$dset_name" "$analysis_name" "$embed_name" "epc_pool_3"
-  bash 3_train_model.sh "$dset_name" "$analysis_name" "$embed_name" "epc_nopool"
+  bash 3_train_model.sh "$dset_name" "$analysis_name" "$embed_name" "epc_pool" "EPC"
+  bash 3_train_model.sh "$dset_name" "$analysis_name" "$embed_name" "epc_pool_1" "EPC"
+  bash 3_train_model.sh "$dset_name" "$analysis_name" "$embed_name" "epc_pool_2" "EPC"
+  bash 3_train_model.sh "$dset_name" "$analysis_name" "$embed_name" "epc_pool_3" "EPC"
+  bash 3_train_model.sh "$dset_name" "$analysis_name" "$embed_name" "epc_nopool" "EPC"
+  bash 3_train_model.sh "$dset_name" "$analysis_name" "$embed_name" "set_transformer" "SetTransformer"
 done
 

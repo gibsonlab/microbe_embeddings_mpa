@@ -1,3 +1,4 @@
 from .abundance_pred import SGBAbundancePredictionModel
 from .v2 import SGBAbundanceLayeredPredictionModel
 from .embed_pool_concat import SGBEmbedPoolConcatPredictionModel
+from .set_transformer import HierarchicalSetTransformer

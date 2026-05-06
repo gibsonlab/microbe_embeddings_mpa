@@ -11,17 +11,18 @@
 # Note: this is a Slurm script, meant to be run on ErisXDL compute nodes with GPUs.
 set -e
 
-if ! [ $# -eq 4 ]; then
-  echo "Error: embed_model_name, pred_model_name, dataset, analysis_name are required"
-  echo "Usage: $0 <dataset> <analysis_name> <embed_model_name> <pred_model_name>"
+if ! [ $# -eq 5 ]; then
+  echo "Error: embed_model_name, pred_model_cfg, pred_model_name, dataset, analysis_name are required"
+  echo "Usage: $0 <dataset> <analysis_name> <embed_model_name> <pred_model_cfg> <pred_model_name>"
   exit 1
 fi
 dataset_name="$1"
 analysis_name="$2"
 embed_model_name="$3"
-pred_model_name="$4"
+pred_model_cfg_name="$4"
+pred_model_name="$5"
 
-echo "Performing prediction model training for ${embed_model_name} on dataset ${dataset_name} (${pred_model_name})"
+echo "Performing prediction model training for ${embed_model_name} on dataset ${dataset_name} (${pred_model_name}: ${pred_model_cfg_name})"
 
 # point to the proper pretrained model embeddings
 BASEDIR="/data/bwh-comppath-seq/youn/human_microbiome_compendium"
@@ -82,6 +83,6 @@ python train_model.py \
   --seed "$seed" \
   --prefetch-factor 2 \
   --cuda-device "cuda" \
-  --model-version "EPC"
+  --model-version "$pred_model_name"
 
 echo "Done."
