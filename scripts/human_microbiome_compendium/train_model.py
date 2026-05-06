@@ -246,12 +246,6 @@ def main():
     print(f"Target output directory: {model_save_dir}")
 
     model_version = args.model_version
-    model_supported_versions = {"V1", "V2", "EPC", "SetTransformer"}
-    if model_version not in model_supported_versions:
-        raise ValueError(
-            f"Unsupported model version string {model_version}. "
-            f"Must be one of: {list(model_supported_versions)}"
-        )
 
     if args.resume_from_path is not None:
         resume_from_checkpoint_path = Path(args.resume_from_path)

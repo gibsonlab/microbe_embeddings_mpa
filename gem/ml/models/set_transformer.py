@@ -1,10 +1,14 @@
+import math
+from typing import Optional
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import math
+
+from .base import LinearInitializedModule
 
 
-class MAB(nn.Module):
+class MAB(LinearInitializedModule):
     """
     Multihead Attention Block (MAB) from Lee et al. 2019.
 
@@ -19,9 +23,18 @@ class MAB(nn.Module):
     :param dim_V: Output dimension (also the internal attention dimension).
     :param num_heads: Number of attention heads. Must divide dim_V evenly.
     :param ln: Whether to apply LayerNorm. Default True.
+    :param init_rng: Optional RNG for reproducible parameter initialisation.
     """
 
-    def __init__(self, dim_Q, dim_K, dim_V, num_heads, ln=True):
+    def __init__(
+        self,
+        dim_Q: int,
+        dim_K: int,
+        dim_V: int,
+        num_heads: int,
+        ln: bool = True,
+        init_rng: Optional[torch.Generator] = None,
+    ):
         super().__init__()
         self.num_heads = num_heads
         self.dim_V = dim_V
@@ -38,7 +51,10 @@ class MAB(nn.Module):
             nn.Linear(dim_V, dim_V), nn.ReLU(), nn.Linear(dim_V, dim_V)
         )
 
-    def forward(self, Q, X, mask=None):
+        if init_rng is not None:
+            self.init_weights(init_rng)
+
+    def forward(self, Q: torch.Tensor, X: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         """
         :param Q: Query tensor of shape (B, n, dim_Q).
         :param X: Key/value tensor of shape (B, m, dim_K).
@@ -50,7 +66,7 @@ class MAB(nn.Module):
         B, n, _ = Q.shape
         h, d = self.num_heads, self.dim_V // self.num_heads
 
-        def split_heads(t):
+        def split_heads(t: torch.Tensor) -> torch.Tensor:
             B, s, _ = t.shape
             return t.view(B, s, h, d).transpose(1, 2).reshape(B * h, s, d)
 
@@ -61,8 +77,6 @@ class MAB(nn.Module):
         scores = torch.bmm(Q_, K_.transpose(1, 2)) / math.sqrt(d)  # (B*h, n, m)
 
         if mask is not None:
-            # mask: (B, m) -> (B, 1, 1, m) -> (B*h, 1, m) after repeat
-            # False (padding) positions become -inf so softmax zeroes them out
             mask_expanded = mask.unsqueeze(1).unsqueeze(2)           # (B, 1, 1, m)
             mask_expanded = mask_expanded.expand(B, h, n, -1)        # (B, h, n, m)
             mask_expanded = mask_expanded.reshape(B * h, n, -1)      # (B*h, n, m)
@@ -87,13 +101,22 @@ class SAB(nn.Module):
     :param dim_out: Output feature dimension.
     :param num_heads: Number of attention heads. Must divide dim_out evenly.
     :param ln: Whether to apply LayerNorm inside MAB. Default True.
+    :param init_rng: Optional RNG for reproducible parameter initialisation.
+        Passed through to the internal MAB.
     """
 
-    def __init__(self, dim_in, dim_out, num_heads, ln=True):
+    def __init__(
+        self,
+        dim_in: int,
+        dim_out: int,
+        num_heads: int,
+        ln: bool = True,
+        init_rng: Optional[torch.Generator] = None,
+    ):
         super().__init__()
-        self.mab = MAB(dim_in, dim_in, dim_out, num_heads, ln=ln)
+        self.mab = MAB(dim_in, dim_in, dim_out, num_heads, ln=ln, init_rng=init_rng)
 
-    def forward(self, X, mask=None):
+    def forward(self, X: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         """
         :param X: Input set tensor of shape (B, n, dim_in).
         :param mask: Boolean tensor of shape (B, n), True for real positions.
@@ -121,16 +144,28 @@ class ISAB(nn.Module):
     :param num_heads: Number of attention heads. Must divide dim_out evenly.
     :param num_inds: Number of inducing points m. Typically m << n.
     :param ln: Whether to apply LayerNorm inside MAB. Default True.
+    :param init_rng: Optional RNG for reproducible parameter initialisation.
+        Used to initialise the inducing point tensor I and passed through to
+        both internal MAB modules.
     """
 
-    def __init__(self, dim_in, dim_out, num_heads, num_inds, ln=True):
+    def __init__(
+        self,
+        dim_in: int,
+        dim_out: int,
+        num_heads: int,
+        num_inds: int,
+        ln: bool = True,
+        init_rng: Optional[torch.Generator] = None,
+    ):
         super().__init__()
-        self.I = nn.Parameter(torch.Tensor(1, num_inds, dim_out))
-        nn.init.xavier_uniform_(self.I)
-        self.mab0 = MAB(dim_out, dim_in,  dim_out, num_heads, ln=ln)
-        self.mab1 = MAB(dim_in,  dim_out, dim_out, num_heads, ln=ln)
+        self.I = nn.Parameter(torch.empty(1, num_inds, dim_out))
+        nn.init.xavier_uniform_(self.I.data, generator=init_rng)
 
-    def forward(self, X, mask=None):
+        self.mab0 = MAB(dim_out, dim_in,  dim_out, num_heads, ln=ln, init_rng=init_rng)
+        self.mab1 = MAB(dim_in,  dim_out, dim_out, num_heads, ln=ln, init_rng=init_rng)
+
+    def forward(self, X: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         """
         :param X: Input set tensor of shape (B, n, dim_in).
         :param mask: Boolean tensor of shape (B, n), True for real positions.
@@ -138,13 +173,11 @@ class ISAB(nn.Module):
         :return: Output tensor of shape (B, n, dim_out).
         """
         B = X.size(0)
-        # mask applied here: inducing points must not attend to padding in X
         H = self.mab0(self.I.expand(B, -1, -1), X, mask=mask)
-        # no mask here: H has no padding (it has fixed shape num_inds)
         return self.mab1(X, H)
 
 
-class PMA(nn.Module):
+class PMA(LinearInitializedModule):
     """
     Pooling by Multihead Attention (PMA) from Lee et al. 2019.
 
@@ -158,18 +191,32 @@ class PMA(nn.Module):
     :param num_heads: Number of attention heads. Must divide dim evenly.
     :param num_seeds: Number of seed vectors k to pool into.
     :param ln: Whether to apply LayerNorm inside MAB. Default True.
+    :param init_rng: Optional RNG for reproducible parameter initialisation.
+        Used to initialise the seed vector tensor S and the direct ff layers,
+        and passed through to the internal MAB.
     """
 
-    def __init__(self, dim, num_heads, num_seeds, ln=True):
+    def __init__(
+        self,
+        dim: int,
+        num_heads: int,
+        num_seeds: int,
+        ln: bool = True,
+        init_rng: Optional[torch.Generator] = None,
+    ):
         super().__init__()
-        self.S = nn.Parameter(torch.Tensor(1, num_seeds, dim))
-        nn.init.xavier_uniform_(self.S)
-        self.mab = MAB(dim, dim, dim, num_heads, ln=ln)
+        self.S = nn.Parameter(torch.empty(1, num_seeds, dim))
+        nn.init.xavier_uniform_(self.S.data, generator=init_rng)
+
+        self.mab = MAB(dim, dim, dim, num_heads, ln=ln, init_rng=init_rng)
         self.ff = nn.Sequential(
             nn.Linear(dim, dim), nn.ReLU(), nn.Linear(dim, dim)
         )
 
-    def forward(self, Z, mask=None):
+        if init_rng is not None:
+            self.init_weights(init_rng)
+
+    def forward(self, Z: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         """
         :param Z: Input set tensor of shape (B, n, dim).
         :param mask: Boolean tensor of shape (B, n), True for real positions.
@@ -180,7 +227,7 @@ class PMA(nn.Module):
         return self.mab(self.S.expand(B, -1, -1), self.ff(Z), mask=mask)
 
 
-class HierarchicalSetTransformer(nn.Module):
+class HierarchicalSetTransformer(LinearInitializedModule):
     """
     Hierarchical Set Transformer for inputs of shape (B, N, G, D),
     producing one logit per N element. Apply softmax outside the model.
@@ -197,43 +244,52 @@ class HierarchicalSetTransformer(nn.Module):
     positions are set to -inf in the output so they become zero probability
     after an external softmax.
 
-    See __init__ for architecture details.
-
-    :param marker_embed_dim: Input feature dimension D.
+    :param dim_input: Input feature dimension D.
     :param dim_hidden: Internal feature dimension used throughout. Default 128.
     :param num_inds: Number of inducing points in each ISAB block. Default 16.
     :param num_heads: Number of attention heads. Must divide dim_hidden evenly.
         Default 4.
     :param ln: Whether to apply LayerNorm inside all attention blocks.
         Default True.
+    :param init_rng: Optional RNG for reproducible parameter initialisation.
+        Passed down to all child modules.
     """
 
     def __init__(
         self,
-        marker_embed_dim,
-        dim_hidden=128,
-        num_inds=16,
-        num_heads=4,
-        ln=True,
+        marker_embed_dim: int,
+        dim_hidden: int = 128,
+        num_inds: int = 16,
+        num_heads: int = 4,
+        ln: bool = True,
+        init_rng: Optional[torch.Generator] = None,
     ):
         super().__init__()
 
-        self.inner_encoder = nn.Sequential(
-            ISAB(marker_embed_dim,  dim_hidden, num_heads, num_inds, ln=ln),
-            ISAB(dim_hidden, dim_hidden, num_heads, num_inds, ln=ln),
-        )
-        self.inner_pool = PMA(dim_hidden, num_heads, num_seeds=1, ln=ln)
+        self.inner_encoder = nn.ModuleList([
+            ISAB(marker_embed_dim,  dim_hidden, num_heads, num_inds, ln=ln, init_rng=init_rng),
+            ISAB(dim_hidden, dim_hidden, num_heads, num_inds, ln=ln, init_rng=init_rng),
+        ])
+        self.inner_pool = PMA(dim_hidden, num_heads, num_seeds=1, ln=ln, init_rng=init_rng)
 
-        self.outer_encoder = nn.Sequential(
-            ISAB(dim_hidden, dim_hidden, num_heads, num_inds, ln=ln),
-            ISAB(dim_hidden, dim_hidden, num_heads, num_inds, ln=ln),
-        )
-        self.outer_pool = PMA(dim_hidden, num_heads, num_seeds=1, ln=ln)
+        self.outer_encoder = nn.ModuleList([
+            ISAB(dim_hidden, dim_hidden, num_heads, num_inds, ln=ln, init_rng=init_rng),
+            ISAB(dim_hidden, dim_hidden, num_heads, num_inds, ln=ln, init_rng=init_rng),
+        ])
+        self.outer_pool = PMA(dim_hidden, num_heads, num_seeds=1, ln=ln, init_rng=init_rng)
 
-        self.decoder_mab = MAB(dim_hidden, dim_hidden, dim_hidden, num_heads, ln=ln)
+        self.decoder_mab = MAB(dim_hidden, dim_hidden, dim_hidden, num_heads, ln=ln, init_rng=init_rng)
         self.output_head = nn.Linear(dim_hidden, 1)
 
-    def forward(self, X, mask_G=None, mask_N=None):
+        if init_rng is not None:
+            self.init_weights(init_rng)
+
+    def forward(
+        self,
+        X: torch.Tensor,
+        mask_G: Optional[torch.Tensor] = None,
+        mask_N: Optional[torch.Tensor] = None,
+    ) -> torch.Tensor:
         """
         :param X: Input tensor of shape (B, N, G, D).
         :param mask_G: Boolean tensor of shape (B, N, G), True for real G
@@ -247,27 +303,24 @@ class HierarchicalSetTransformer(nn.Module):
 
         # ── Stage 1: aggregate over G ─────────────────────────────────────
         X_inner = X.view(B * N, G, D)
-
-        # Flatten mask_G from (B, N, G) to (B*N, G) to match the merged batch dim
         mask_G_flat = mask_G.view(B * N, G) if mask_G is not None else None
 
         for layer in self.inner_encoder:
             X_inner = layer(X_inner, mask=mask_G_flat)
 
-        X_inner = self.inner_pool(X_inner, mask=mask_G_flat)  # (B*N, 1, dim_hidden)
-        N_summaries = X_inner.squeeze(1).view(B, N, -1)       # (B, N, dim_hidden)
+        X_inner = self.inner_pool(X_inner, mask=mask_G_flat)         # (B*N, 1, dim_hidden)
+        N_summaries = X_inner.squeeze(1).view(B, N, -1)              # (B, N, dim_hidden)
 
         # ── Stage 2: aggregate over N -> global context ───────────────────
         for layer in self.outer_encoder:
             N_summaries = layer(N_summaries, mask=mask_N)
 
-        global_ctx = self.outer_pool(N_summaries, mask=mask_N)  # (B, 1, dim_hidden)
+        global_ctx = self.outer_pool(N_summaries, mask=mask_N)       # (B, 1, dim_hidden)
 
         # ── Decoder: per-N prediction conditioned on global context ───────
-        out = self.decoder_mab(N_summaries, global_ctx)   # (B, N, dim_hidden)
-        logits = self.output_head(out).squeeze(-1)        # (B, N)
+        out = self.decoder_mab(N_summaries, global_ctx)              # (B, N, dim_hidden)
+        logits = self.output_head(out).squeeze(-1)                   # (B, N)
 
-        # Mask padded N positions to -inf so they vanish under external softmax
         if mask_N is not None:
             logits = logits.masked_fill(~mask_N, float('-inf'))
 
