@@ -87,7 +87,6 @@ dim_hidden: ${hidden_dim}
 num_inds: 8
 num_heads: 4
 ln: True
-use_set_transformer: True
 EOF
 done
 
