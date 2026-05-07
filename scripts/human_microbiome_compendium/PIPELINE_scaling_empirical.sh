@@ -4,8 +4,8 @@ set -e
 
 dset_name="american_gut"
 analysis_name="pcoa_split"
-#embed_names=("evo-1-8k-base_hyena5" "evo2_7b_hyena10" "dnabert-s")
-embed_names=("dnabert-s")
+embed_names=("evo-1-8k-base_hyena5" "evo2_7b_hyena10" "dnabert-s")
+#embed_names=("dnabert-s")
 
 
 

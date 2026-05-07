@@ -75,6 +75,18 @@ echo "seed=${seed}" | tee -a $metadata
 echo "===================="
 
 
+if [[ "$my_string" == *"_epc_"* ]]; then
+    echo "Using EPC model type"
+    model_type="EPC"
+elif [[ "$my_string" == *"_set_transformer"* ]]; then
+    echo "Using Set Transformer model type"
+    model_type="SetTransformer"
+else
+    echo "Model type unknown!!!"
+    exit 1
+fi
+
+
 if [ "$embed_family" == "offline" ]; then
   echo "Using full-precision model for offline embeddings."
   python train_model.py \
@@ -91,6 +103,7 @@ if [ "$embed_family" == "offline" ]; then
   --workers 8 \
   --seed "$seed" \
   --prefetch-factor 2 \
+  --model-type "${model_type}" \
   --cuda-device "cuda"
 else
   echo "Using bfloat16-precision model for deep-learning per-gene embeddings."
@@ -109,6 +122,7 @@ else
   --seed "$seed" \
   --prefetch-factor 2 \
   --cuda-device "cuda" \
+  --model-type "${model_type}" \
   --use-bfloat16
 fi
 
