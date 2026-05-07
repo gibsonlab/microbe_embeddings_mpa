@@ -16,7 +16,7 @@ embed_names=("evo-1-8k-base_hyena5" "evo2_7b_hyena10" "dnabert-s")
 inference_names_all=()
 # ===== Models with MLP
 #for hidden_dim in $(seq 4 4 256); do
-for hidden_dim in $(seq 4 4 384); do    # dnabert only
+for hidden_dim in $(seq 4 8 512); do    # dnabert only
   model_cfg="epc_pool_scaling${hidden_dim}"
   inference_names_all+=("${model_cfg}")
 
@@ -34,8 +34,8 @@ done
 
 
 # ===== Models without MLP
-#for hidden_dim in $(seq 4 2 32); do
-for hidden_dim in $(seq 4 2 192); do  # dnabert only
+#for hidden_dim in $(seq 4 2 128); do
+for hidden_dim in $(seq 4 4 256); do  # dnabert only
   model_cfg="epc_pool_scaling${hidden_dim}_NO_MLP"
   inference_names_all+=("${model_cfg}")
 
