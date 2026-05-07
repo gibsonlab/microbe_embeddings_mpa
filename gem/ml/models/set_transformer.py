@@ -66,16 +66,17 @@ class MAB(LinearInitializedModule):
         B, n, _ = Q.shape
         h, d = self.num_heads, self.dim_V // self.num_heads
 
+        Q_proj = self.fc_q(Q)  # compute once
+
         def split_heads(t: torch.Tensor) -> torch.Tensor:
             nb, s, _ = t.shape
-            return t.view(nb, s, h, d).transpose(1, 2)  # (B, h, s, d)
+            return t.view(nb, s, h, d).transpose(1, 2)
 
-        Q_ = split_heads(self.fc_q(Q))  # (B, h, n, d)
-        K_ = split_heads(self.fc_k(X))  # (B, h, m, d)
-        V_ = split_heads(self.fc_v(X))  # (B, h, m, d)
+        Q_ = split_heads(Q_proj)  # reuse for attention
+        K_ = split_heads(self.fc_k(X))
+        V_ = split_heads(self.fc_v(X))
 
         if mask is not None:
-            # Additive mask: real positions stay 0, padding positions become -inf
             attn_mask = torch.zeros(B, h, n, mask.size(1), dtype=Q.dtype, device=Q.device)
             attn_mask = attn_mask.masked_fill(
                 ~mask[:, None, None, :].expand(B, h, n, -1), float('-inf')
@@ -83,11 +84,11 @@ class MAB(LinearInitializedModule):
         else:
             attn_mask = None
 
-        out = F.scaled_dot_product_attention(Q_, K_, V_, attn_mask=attn_mask)  # (B, h, n, d)
-        out = out.transpose(1, 2).contiguous().reshape(B, n, self.dim_V)  # (B, n, dim_V)
+        out = F.scaled_dot_product_attention(Q_, K_, V_, attn_mask=attn_mask)
+        out = out.transpose(1, 2).contiguous().reshape(B, n, self.dim_V)
         out = self.fc_o(out)
 
-        H = self.ln0(self.fc_q(Q) + out)
+        H = self.ln0(Q_proj + out)  # reuse cached projection
         return self.ln1(H + self.ff(H))
 
 
