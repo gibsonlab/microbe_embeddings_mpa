@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-EXCLUDE_NODES="lmd-2,lmd-3,lmd-4"
+EXCLUDE_NODES="lmd-2,lmd-3"
 SCRIPT_DIR="./slurm"
 
 
