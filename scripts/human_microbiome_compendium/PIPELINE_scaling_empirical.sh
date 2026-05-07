@@ -76,7 +76,7 @@ embed_names=("dnabert-s")
 # ============================ START model type 2: SetTransformer models.
 set_transformer_names=()
 
-for hidden_dim in 16 28 32 48 64 96 128; do  # multiples of 4 (num_heads=4)
+for hidden_dim in $(seq 4 4 56); do
   model_cfg="set_transformer_d${hidden_dim}"
   set_transformer_names+=("${model_cfg}")
 
