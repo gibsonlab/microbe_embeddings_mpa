@@ -75,10 +75,10 @@ echo "seed=${seed}" | tee -a $metadata
 echo "===================="
 
 
-if [[ "$pred_model" == *"_epc_"* ]]; then
+if [[ "$pred_model" == "epc_"* ]]; then
     echo "Using EPC model type"
     model_type="EPC"
-elif [[ "$pred_model" == *"_set_transformer"* ]]; then
+elif [[ "$pred_model" == "set_transformer" ]]; then
     echo "Using Set Transformer model type"
     model_type="SetTransformer"
 else
