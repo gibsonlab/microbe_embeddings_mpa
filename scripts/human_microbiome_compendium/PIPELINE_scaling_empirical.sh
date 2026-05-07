@@ -1,5 +1,7 @@
 #!/bin/bash
 set -e
+set -o pipefail
+export PYTHONUNBUFFERED=1
 
 
 dset_name="american_gut"
