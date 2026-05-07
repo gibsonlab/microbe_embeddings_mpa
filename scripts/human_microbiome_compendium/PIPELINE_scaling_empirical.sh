@@ -60,11 +60,12 @@ for embed_name in "${embed_names[@]}"; do
 
   for model_cfg in "${inference_names_all[@]}"; do
     breadcrumb_file="${breadcrumb_dir}/${model_cfg}.DONE"
+    log_file="${breadcrumb_dir}/${model_cfg}.log"
     if [ -f ${breadcrumb_file} ]; then
       echo "Model ${model_cfg} already done!"
     else
       echo "Trying model: ${model_cfg}"
-      bash 3_train_model.sh "$dset_name" "$analysis_name" "$embed_name" "$model_cfg" "EPC"
+      bash 3_train_model.sh "$dset_name" "$analysis_name" "$embed_name" "$model_cfg" "EPC" 2>&1 | tee "${log_file}"
       touch "${breadcrumb_file}"
     fi
   done
@@ -98,11 +99,12 @@ for embed_name in "${embed_names[@]}"; do
 
   for model_cfg in "${set_transformer_names[@]}"; do
     breadcrumb_file="${breadcrumb_dir}/${model_cfg}.DONE"
+    log_file="${breadcrumb_dir}/${model_cfg}.log"
     if [ -f "${breadcrumb_file}" ]; then
       echo "Model ${model_cfg} already done!"
     else
       echo "Trying model: ${model_cfg}"
-      bash 3_train_model.sh "$dset_name" "$analysis_name" "$embed_name" "$model_cfg" "SetTransformer"
+      bash 3_train_model.sh "$dset_name" "$analysis_name" "$embed_name" "$model_cfg" "SetTransformer" 2>&1 | tee "${log_file}"
       touch "${breadcrumb_file}"
     fi
   done
