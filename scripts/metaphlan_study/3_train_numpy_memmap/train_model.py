@@ -161,7 +161,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("-train", "--train", dest="train", required=True, type=str)
     parser.add_argument("-test", "--test", dest="test", required=True, type=str)
-    parser.add_argument("-model" "--model-type", dest="model_type", required=True, type=str)
+    parser.add_argument("-model", "--model-type", dest="model_type", required=True, type=str)
     parser.add_argument("-c", "--model-config", dest="model_cfg_path", required=True, type=str)
     parser.add_argument("-o", "--out-dir", dest="model_save_dir", required=True, type=str)
     parser.add_argument("-loss", "--loss", dest="loss_name", required=True, type=str,
