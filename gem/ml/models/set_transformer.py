@@ -55,40 +55,29 @@ class MAB(LinearInitializedModule):
             self.init_weights(init_rng)
 
     def forward(self, Q: torch.Tensor, X: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
-        """
-        :param Q: Query tensor of shape (B, n, dim_Q).
-        :param X: Key/value tensor of shape (B, m, dim_K).
-        :param mask: Boolean tensor of shape (B, m), where True indicates a
-            real (non-padding) position. Padding positions are masked out of
-            the softmax. Default None (no masking).
-        :return: Output tensor of shape (B, n, dim_V).
-        """
         B, n, _ = Q.shape
         h, d = self.num_heads, self.dim_V // self.num_heads
 
-        Q_proj = self.fc_q(Q)  # compute once
+        Q_proj = self.fc_q(Q)
 
         def split_heads(t: torch.Tensor) -> torch.Tensor:
             nb, s, _ = t.shape
             return t.view(nb, s, h, d).transpose(1, 2)
 
-        Q_ = split_heads(Q_proj)  # reuse for attention
+        Q_ = split_heads(Q_proj)
         K_ = split_heads(self.fc_k(X))
         V_ = split_heads(self.fc_v(X))
 
-        if mask is not None:
-            attn_mask = torch.zeros(B, h, n, mask.size(1), dtype=Q.dtype, device=Q.device)
-            attn_mask = attn_mask.masked_fill(
-                ~mask[:, None, None, :].expand(B, h, n, -1), float('-inf')
-            )
-        else:
-            attn_mask = None
+        # Boolean mask: shape (B, 1, 1, m), True = real position (attend to it).
+        # SDPA with a bool mask keeps the reduction fused under torch.compile,
+        # avoiding the "online softmax disabled" warning from float mask tiling.
+        attn_mask = mask[:, None, None, :] if mask is not None else None
 
         out = F.scaled_dot_product_attention(Q_, K_, V_, attn_mask=attn_mask)
         out = out.transpose(1, 2).contiguous().reshape(B, n, self.dim_V)
         out = self.fc_o(out)
 
-        H = self.ln0(Q_proj + out)  # reuse cached projection
+        H = self.ln0(Q_proj + out)
         return self.ln1(H + self.ff(H))
 
 
@@ -243,6 +232,25 @@ class HierarchicalSetTransformer(LinearInitializedModule):
     """
     Hierarchical Set Transformer for inputs of shape (B, N, G, D),
     producing one logit per N element. Apply softmax outside the model.
+
+    The forward pass has two encoder stages followed by a cross-attention decoder:
+
+    - Stage 1 (aggregate over G): each of the N elements has G sub-elements.
+      These are encoded independently via an ISAB stack and pooled with PMA
+      (num_seeds=1) to produce one summary vector per (sample, N-element).
+      Shape: (B*N, G, D) -> (B, N, dim_hidden).
+
+    - Stage 2 (aggregate over N): the N summary vectors are encoded via a
+      second ISAB stack and pooled with PMA (num_seeds=1) into a single
+      global context vector per sample.
+      Shape: (B, N, dim_hidden) -> (B, 1, dim_hidden).
+
+    - Decoder: each N summary vector cross-attends to the global context via
+      MAB, so that every per-element prediction is informed by the full set.
+      A linear head maps each attended vector to a scalar logit.
+      Shape: (B, N, dim_hidden) -> (B, N).
+
+    The model is permutation-invariant over G and permutation-equivariant over N.
 
     Accepts two padding masks:
         - mask_G of shape (B, N, G): True for real G elements, False for padding.
