@@ -293,14 +293,13 @@ class HierarchicalSetTransformer(LinearInitializedModule):
         ])
         self.inner_pool = PMA(dim_hidden, num_heads, num_seeds=1, ln=ln, init_rng=init_rng)
 
-        self.outer_encoder = nn.ModuleList([
+        self.decoder = nn.ModuleList([
             ISAB(dim_hidden, dim_hidden, num_heads, num_inds, ln=ln, init_rng=init_rng),
             ISAB(dim_hidden, dim_hidden, num_heads, num_inds, ln=ln, init_rng=init_rng),
             ISAB(dim_hidden, dim_hidden, num_heads, num_inds, ln=ln, init_rng=init_rng),
         ])
 
         # Final self-attention decoder: each N element attends over all N elements.
-        self.decoder_isab = ISAB(dim_hidden, dim_hidden, num_heads, num_inds, ln=ln, init_rng=init_rng)
         self.output_head = nn.Linear(dim_hidden, 1)
 
         if init_rng is not None:
@@ -333,13 +332,13 @@ class HierarchicalSetTransformer(LinearInitializedModule):
         X_inner = self.inner_pool(X_inner, mask=mask_G_flat)         # (B*N, 1, dim_hidden)
         N_summaries = X_inner.squeeze(1).view(B, N, -1)              # (B, N, dim_hidden)
 
-        # ── Stage 2: encode over N ────────────────────────────────────────
-        for layer in self.outer_encoder:
+        # ── Stage 2: decode over N ────────────────────────────────────────
+        for layer in self.decoder:
             N_summaries = layer(N_summaries, mask=mask_N)            # (B, N, dim_hidden)
 
         # ── Decoder: per-N self-attention ─────────────────────────────────
-        out = self.decoder_isab(N_summaries, mask=mask_N)             # (B, N, dim_hidden)
-        logits = self.output_head(out).squeeze(-1)                   # (B, N)
+        # out = self.decoder_isab(N_summaries, mask=mask_N)             # (B, N, dim_hidden)
+        logits = self.output_head(N_summaries).squeeze(-1)                   # (B, N)
 
         if mask_N is not None:
             logits = logits.masked_fill(~mask_N, float('-inf'))
