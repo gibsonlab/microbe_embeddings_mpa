@@ -233,21 +233,22 @@ class HierarchicalSetTransformer(LinearInitializedModule):
     Hierarchical Set Transformer for inputs of shape (B, N, G, D),
     producing one logit per N element. Apply softmax outside the model.
 
-    The forward pass has two encoder stages followed by a cross-attention decoder:
+    The forward pass has two encoder stages followed by a self-attention decoder:
 
     - Stage 1 (aggregate over G): each of the N elements has G sub-elements.
       These are encoded independently via an ISAB stack and pooled with PMA
       (num_seeds=1) to produce one summary vector per (sample, N-element).
       Shape: (B*N, G, D) -> (B, N, dim_hidden).
 
-    - Stage 2 (aggregate over N): the N summary vectors are encoded via a
-      second ISAB stack and pooled with PMA (num_seeds=1) into a single
-      global context vector per sample.
-      Shape: (B, N, dim_hidden) -> (B, 1, dim_hidden).
+    - Stage 2 (encode over N): the N summary vectors are encoded via a
+      second ISAB stack so that each summary absorbs information about the
+      rest of the set.
+      Shape: (B, N, dim_hidden) -> (B, N, dim_hidden).
 
-    - Decoder: each N summary vector cross-attends to the global context via
-      MAB, so that every per-element prediction is informed by the full set.
-      A linear head maps each attended vector to a scalar logit.
+    - Decoder: a final self-attention block (MAB(X, X)) lets each N summary
+      attend over the full set of N summaries, producing per-element
+      representations that are conditioned on every other element. A linear
+      head maps each attended vector to a scalar logit.
       Shape: (B, N, dim_hidden) -> (B, N).
 
     The model is permutation-invariant over G and permutation-equivariant over N.
@@ -259,10 +260,9 @@ class HierarchicalSetTransformer(LinearInitializedModule):
     mask_G is used during stage 1 so that padded G positions are ignored
     when encoding and pooling each (G, D) set.
 
-    mask_N is used during stage 2 so that padded N positions are ignored
-    when encoding and pooling the N summary vectors. Logits at padded N
-    positions are set to -inf in the output so they become zero probability
-    after an external softmax.
+    mask_N is used during stage 2 and in the decoder so that padded N
+    positions are ignored. Logits at padded N positions are set to -inf in
+    the output so they become zero probability after an external softmax.
 
     :param marker_embed_dim: Input feature dimension D.
     :param dim_hidden: Internal feature dimension used throughout. Default 128.
@@ -298,9 +298,9 @@ class HierarchicalSetTransformer(LinearInitializedModule):
             ISAB(dim_hidden, dim_hidden, num_heads, num_inds, ln=ln, init_rng=init_rng),
             ISAB(dim_hidden, dim_hidden, num_heads, num_inds, ln=ln, init_rng=init_rng),
         ])
-        self.outer_pool = PMA(dim_hidden, num_heads, num_seeds=1, ln=ln, init_rng=init_rng)
 
-        self.decoder_mab = MAB(dim_hidden, dim_hidden, dim_hidden, num_heads, ln=ln, init_rng=init_rng)
+        # Final self-attention decoder: each N element attends over all N elements.
+        self.decoder_sab = SAB(dim_hidden, dim_hidden, num_heads, ln=ln, init_rng=init_rng)
         self.output_head = nn.Linear(dim_hidden, 1)
 
         if init_rng is not None:
@@ -333,14 +333,12 @@ class HierarchicalSetTransformer(LinearInitializedModule):
         X_inner = self.inner_pool(X_inner, mask=mask_G_flat)         # (B*N, 1, dim_hidden)
         N_summaries = X_inner.squeeze(1).view(B, N, -1)              # (B, N, dim_hidden)
 
-        # ── Stage 2: aggregate over N -> global context ───────────────────
+        # ── Stage 2: encode over N ────────────────────────────────────────
         for layer in self.outer_encoder:
-            N_summaries = layer(N_summaries, mask=mask_N)
+            N_summaries = layer(N_summaries, mask=mask_N)            # (B, N, dim_hidden)
 
-        global_ctx = self.outer_pool(N_summaries, mask=mask_N)       # (B, 1, dim_hidden)
-
-        # ── Decoder: per-N prediction conditioned on global context ───────
-        out = self.decoder_mab(N_summaries, global_ctx)              # (B, N, dim_hidden)
+        # ── Decoder: per-N self-attention ─────────────────────────────────
+        out = self.decoder_sab(N_summaries, mask=mask_N)             # (B, N, dim_hidden)
         logits = self.output_head(out).squeeze(-1)                   # (B, N)
 
         if mask_N is not None:
