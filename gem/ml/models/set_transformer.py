@@ -300,7 +300,7 @@ class HierarchicalSetTransformer(LinearInitializedModule):
         ])
         self.outer_pool = PMA(dim_hidden, num_heads, num_seeds=1, ln=ln, init_rng=init_rng)
 
-        self.decoder_mab = MAB(dim_hidden, dim_hidden, dim_hidden, num_heads, ln=ln, init_rng=init_rng)
+        self.decoder_sab = SAB(dim_hidden * 2, dim_hidden, num_heads, ln=ln, init_rng=init_rng)
         self.output_head = nn.Linear(dim_hidden, 1)
 
         if init_rng is not None:
@@ -340,8 +340,13 @@ class HierarchicalSetTransformer(LinearInitializedModule):
         global_ctx = self.outer_pool(N_summaries, mask=mask_N)       # (B, 1, dim_hidden)
 
         # ── Decoder: per-N prediction conditioned on global context ───────
-        out = self.decoder_mab(N_summaries, global_ctx)              # (B, N, dim_hidden)
-        logits = self.output_head(out).squeeze(-1)                   # (B, N)
+        global_ctx_expanded = global_ctx.expand(B, N, -1)  # (B, N, dim_hidden)
+        dec_input = torch.cat([N_summaries, global_ctx_expanded], dim=-1)  # (B, N, dim_hidden * 2)
+        out = self.decoder_sab(dec_input, mask=mask_N)  # (B, N, dim_hidden)
+        logits = self.output_head(out).squeeze(-1)  # (B, N)
+
+        # out = self.decoder_mab(N_summaries, global_ctx)              # (B, N, dim_hidden)
+        # logits = self.output_head(out).squeeze(-1)                   # (B, N)
 
         if mask_N is not None:
             logits = logits.masked_fill(~mask_N, float('-inf'))
