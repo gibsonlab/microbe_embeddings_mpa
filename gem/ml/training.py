@@ -203,6 +203,19 @@ def main_training_loop(
                             print("y_hat_i:", y_hat_i)
                             print("yi:", yi)
                             print("Features -- any nan?", torch.any(torch.isnan(feat_i)))
+
+                            # Save input tensor to file.
+                            from datetime import datetime
+                            current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+                            torch.save({
+                                'sample': sample_id,
+                                'feat': feat_i,
+                                'taxa_mask': taxa_mask_i,
+                                'marker_mask': marker_mask_i,
+                                'target': yi,
+                            }, checkpoint_dir / f"crash_input_dump_{current_time}.pt")
+
                             raise Exception("NaN error!")
 
                 # divide by total dataset size, to contribute to the overall average estimate.
