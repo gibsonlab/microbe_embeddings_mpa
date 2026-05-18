@@ -106,7 +106,7 @@ if [ "$embed_family" == "offline" ]; then
   --model-type "${model_type}" \
   --cuda-device "cuda"
 else
-  echo "Using bfloat16-precision model for deep-learning per-gene embeddings."
+#  echo "Using bfloat16-precision model for deep-learning per-gene embeddings."
   python train_model.py \
   --train "$training_set" \
   --test "$test_set" \
@@ -122,8 +122,7 @@ else
   --seed "$seed" \
   --prefetch-factor 2 \
   --cuda-device "cuda" \
-  --model-type "${model_type}" \
-  --use-bfloat16
+  --model-type "${model_type}"
 fi
 
 
