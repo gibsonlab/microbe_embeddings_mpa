@@ -55,10 +55,10 @@ done
 
 for embed_name in "${embed_names[@]}"; do
   echo "================== Embedding: ${embed_name} (Sum-Pool EPC model) ===================="
-  for seed in 12345 12346 12347 12348 12349; do
+  for seed in 12345 12346 12347; do
 
     # Train all models.
-    breadcrumb_dir="./scaling_empirical_progress/${dset_name}/${analysis_name}/${embed_name}/${seed}"
+    breadcrumb_dir="./scaling_empirical_progress/${embed_name}/${seed}"
     mkdir -p ${breadcrumb_dir}
 
     for model_cfg in "${inference_names_all[@]}"; do
@@ -96,9 +96,9 @@ done
 
 for embed_name in "${embed_names[@]}"; do
   echo "================== Embedding: ${embed_name} (SetTransformer) ===================="
-  for seed in 12345 12346 12347 12348 12349; do
+  for seed in 12345 12346 12347; do
 
-    breadcrumb_dir="./scaling_empirical_progress/${dset_name}/${analysis_name}/${embed_name}/${seed}"
+    breadcrumb_dir="./scaling_empirical_progress/${embed_name}/${seed}"
     mkdir -p "${breadcrumb_dir}"
 
     for model_cfg in "${set_transformer_names[@]}"; do
