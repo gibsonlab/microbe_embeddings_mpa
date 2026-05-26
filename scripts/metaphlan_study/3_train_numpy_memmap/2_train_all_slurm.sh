@@ -15,7 +15,8 @@ create_job_submission () {
   embed_family=$2
   embed_model_name=$3
   pred_model=$4
-  cur_running_jobs=$5
+  seed=$5
+  cur_running_jobs=$6
 
   jobname="${analysis_name}:${embed_family}:${embed_model_name}:${pred_model}"
 
@@ -50,7 +51,7 @@ create_job_submission () {
 set -e
 
 # Run the pipeline
-bash 2_train.sh "${analysis_name}" "${embed_family}" "${embed_model_name}" "${pred_model}"
+bash 2_train.sh "${analysis_name}" "${embed_family}" "${embed_model_name}" "${pred_model}" "${seed}"
 touch "${breadcrumb}"
 EOF
 
@@ -64,7 +65,10 @@ for analysis_name in "pcoa_split" "random_split_1001" "random_split_1002" "rando
     for embed_name in "dnabert-s" "evo-1-8k-base_hyena5" "evo2_7b_hyena10"; do
 #      for pred_model in "epc_pool" "epc_nopool" "set_transformer"; do
       for pred_model in "set_transformer"; do
-        create_job_submission "$analysis_name" "$embed_type" "$embed_name" "$pred_model" "$running_jobs"
+        for seed in 12345; do
+        #for seed in 12345 12346 12347; do
+          create_job_submission "$analysis_name" "$embed_type" "$embed_name" "$pred_model" "$seed" "$running_jobs"
+        done
       done
     done
   done
@@ -73,31 +77,11 @@ for analysis_name in "pcoa_split" "random_split_1001" "random_split_1002" "rando
     for embed_name in "pcoa_d100_s1000" "umap_d100_s1000"; do
 #      for pred_model in "epc_pool" "epc_nopool" "set_transformer"; do
       for pred_model in "set_transformer"; do
-        create_job_submission "$analysis_name" "$embed_type" "$embed_name" "$pred_model" "$running_jobs"
+        for seed in 12345; do
+        #for seed in 12345 12346 12347; do
+          create_job_submission "$analysis_name" "$embed_type" "$embed_name" "$pred_model" "$seed" "$running_jobs"
+        done
       done
     done
   done
 done
-
-
-# =========== old code below
-
-#create_job_submission "pcoa_split" "phylophlan" "dnabert-s" "epc_pool" "$running_jobs"
-#create_job_submission "pcoa_split" "phylophlan_metaphlan" "dnabert-s" "epc_pool" "$running_jobs"
-#create_job_submission "random_split_1001" "phylophlan" "dnabert-s" "epc_pool" "$running_jobs"
-#create_job_submission "random_split_1001" "phylophlan_metaphlan" "dnabert-s" "epc_pool" "$running_jobs"
-#create_job_submission "random_split_1002" "phylophlan" "dnabert-s" "epc_pool" "$running_jobs"
-#create_job_submission "random_split_1002" "phylophlan_metaphlan" "dnabert-s" "epc_pool" "$running_jobs"
-
-#create_job_submission "pcoa_split" "offline" "pcoa_d100_s1000" "epc_pool" "$running_jobs"
-#create_job_submission "pcoa_split" "offline" "pcoa_d100_s1000" "epc_nopool" "$running_jobs"
-#
-#create_job_submission "pcoa_split" "offline" "umap_d100_s1000" "epc_pool" "$running_jobs"
-#create_job_submission "pcoa_split" "offline" "umap_d100_s1000" "epc_nopool" "$running_jobs"
-#
-#create_job_submission "pcoa_split" "phylophlan" "dnabert-s" "epc_pool" "$running_jobs"
-#create_job_submission "pcoa_split" "phylophlan" "dnabert-s" "epc_nopool" "$running_jobs"
-#
-#create_job_submission "pcoa_split" "phylophlan" "evo2_7b_hyena10" "epc_pool" "$running_jobs"
-#create_job_submission "pcoa_split" "phylophlan" "evo2_7b_hyena10" "epc_nopool" "$running_jobs"
-

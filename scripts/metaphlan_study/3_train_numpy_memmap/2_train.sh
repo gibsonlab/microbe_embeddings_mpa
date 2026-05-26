@@ -14,9 +14,9 @@ set -e
 
 EMBEDDING_BASE_DIR="/data/bwh-comppath-seq/youn/metaphlan_dset/embeddings"
 ANALYSIS_BASE_DIR="/data/bwh-comppath-seq/youn/metaphlan_dset/analyses"
-if ! [ $# -eq 4 ]; then
-  echo "Error: analysis_name, embed_model_name, pred_model_name are required"
-  echo "Usage: $0 <analysis_name> <embed_family> <embed_model_name> <pred_model_name>"
+if ! [ $# -eq 5 ]; then
+  echo "Error: analysis_name, embed_family, embed_model_name, pred_model_name, seed are required"
+  echo "Usage: $0 <analysis_name> <embed_family> <embed_model_name> <pred_model_name> <seed>"
   echo "Available analysis names:"
   for dir in "${ANALYSIS_BASE_DIR}"/*; do
     echo "-> $(basename "${dir}")"
@@ -31,6 +31,7 @@ analysis_name="$1"
 embed_family="$2"
 embed_model="$3"
 pred_model="$4"
+seed="$5"
 
 
 # point to the proper pretrained model embeddings
@@ -60,9 +61,8 @@ fi
 
 n_epochs=80
 learning_rate=0.0001
-seed=12345
 
-outdir="${analysis_subdir}/trained_model/${embed_family}/${embed_model}/${pred_model}"
+outdir="${analysis_subdir}/trained_model/${embed_family}/${embed_model}/${pred_model}/seed_${seed}"
 echo "Target outdir: ${outdir}"
 mkdir -p ${outdir}
 

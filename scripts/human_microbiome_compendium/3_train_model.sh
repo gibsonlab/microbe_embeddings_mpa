@@ -11,9 +11,9 @@
 # Note: this is a Slurm script, meant to be run on ErisXDL compute nodes with GPUs.
 set -e
 
-if ! [ $# -eq 5 ]; then
-  echo "Error: embed_model_name, pred_model_cfg, pred_model_name, dataset, analysis_name are required"
-  echo "Usage: $0 <dataset> <analysis_name> <embed_model_name> <pred_model_cfg> <pred_model_name>"
+if ! [ $# -eq 6 ]; then
+  echo "Error: dataset, analysis_name, embed_model_name, pred_model_cfg, pred_model_name, seed are required"
+  echo "Usage: $0 <dataset> <analysis_name> <embed_model_name> <pred_model_cfg> <pred_model_name> <seed>"
   exit 1
 fi
 dataset_name="$1"
@@ -21,6 +21,7 @@ analysis_name="$2"
 embed_model_name="$3"
 pred_model_cfg_name="$4"
 pred_model_name="$5"
+seed="$6"
 
 echo "Performing prediction model training for ${embed_model_name} on dataset ${dataset_name} (${pred_model_name}: ${pred_model_cfg_name})"
 
@@ -51,10 +52,10 @@ model_config="./model_${pred_model_cfg_name}.yaml"
 n_epochs=80
 learning_rate=0.0001
 batch_size=30
-seed=12345
 
 
-outdir="${ANALYSIS_DIR}/trained_models/${embed_model_name}/${pred_model_cfg_name}_kl"
+
+outdir="${ANALYSIS_DIR}/trained_models/${embed_model_name}/${pred_model_cfg_name}_kl/seed_${seed}"
 echo "Model output dir: ${outdir}"
 mkdir -p "${outdir}"
 
