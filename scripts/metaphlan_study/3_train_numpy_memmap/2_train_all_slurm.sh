@@ -18,9 +18,9 @@ create_job_submission () {
   seed=$5
   cur_running_jobs=$6
 
-  jobname="${analysis_name}:${embed_family}:${embed_model_name}:${pred_model}"
+  jobname="MPA:${analysis_name}:${embed_family}:${embed_model_name}:${pred_model}:${seed}"
 
-  job_subdir="${SCRIPT_DIR}/${analysis_name}/${embed_family}/${embed_model_name}/${pred_model}"
+  job_subdir="${SCRIPT_DIR}/${analysis_name}/${embed_family}/${embed_model_name}/${pred_model}/${seed}"
 
   logfile="${job_subdir}/%j.out"
   errfile="${job_subdir}/%j.err"
