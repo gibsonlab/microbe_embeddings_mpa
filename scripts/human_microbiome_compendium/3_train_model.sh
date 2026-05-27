@@ -59,13 +59,14 @@ outdir="${ANALYSIS_DIR}/trained_models/${embed_model_name}/${pred_model_cfg_name
 echo "Model output dir: ${outdir}"
 mkdir -p "${outdir}"
 
-# Skip training if a recent model_config.json already exists (newer than 12 hours)
+# Skip training if model_config.json exists and was modified after May 6 2026, 11:00 PM
 existing_config="${outdir}/model_config.json"
-if [ -f "${existing_config}" ] && [ -z "$(find "${existing_config}" -mmin +720 -print)" ]; then
-  echo "Found recent model_config.json (newer than 12 hours) at ${existing_config}. Skipping training."
+cutoff="2026-05-06 23:00:00"
+if [ -f "${existing_config}" ] && [ -n "$(find "${existing_config}" -newermt "${cutoff}" -print)" ]; then
+  echo "Found model_config.json modified after ${cutoff} at ${existing_config}. Skipping training."
   exit 0
 else
-  echo "No recent model_config.json found. Proceeding with training."
+  echo "No sufficiently recent model_config.json found. Proceeding with training."
 fi
 
 metadata="$outdir/metadata.txt"

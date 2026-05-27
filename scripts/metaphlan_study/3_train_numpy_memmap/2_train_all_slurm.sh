@@ -42,7 +42,7 @@ create_job_submission () {
 #!/bin/bash
 #SBATCH --partition=bwh_comppath_all
 #SBATCH --gpus=1
-#SBATCH --mem=80G
+#SBATCH --mem=256G
 #SBATCH --cpus-per-task=8
 #SBATCH --time=24:00:00
 #SBATCH --job-name=${jobname}
