@@ -36,7 +36,7 @@ done
 # ======================= Script body starts here ====================
 
 dset_dir="${BASEDIR}/${dset_name}"
-EXCLUDE_NODES=""
+EXCLUDE_NODES="lmd-2,lmd-4"
 
 # Get list of currently running/pending jobs for this user
 running_jobs=$(squeue -u $USER -h -o "%j" 2>/dev/null)
