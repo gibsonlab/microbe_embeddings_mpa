@@ -1,5 +1,5 @@
 # marker_embed_dim are determined by the dataset.
-dim_hidden: 56
-num_inds: 8
+dim_hidden: 64
+num_inds: 16
 num_heads: 4
 ln: True
