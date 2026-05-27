@@ -74,7 +74,7 @@ for analysis_name in "pcoa_split" "random_split_1001" "random_split_1002" "rando
   done
 
   for embed_type in "offline"; do
-    for embed_name in "pcoa_d100_s1000" "umap_d100_s1000"; do
+    for embed_name in "umap_d100_s1000"; do
 #      for pred_model in "epc_pool" "epc_nopool" "set_transformer"; do
       for pred_model in "set_transformer"; do
         for seed in 12345; do
