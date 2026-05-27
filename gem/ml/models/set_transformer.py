@@ -286,24 +286,24 @@ class HierarchicalSetTransformer(LinearInitializedModule):
     ):
         super().__init__()
 
-        print("Ignoring `num_inds` argument; using SAB instead of ISAB.")
+        # print("Ignoring `num_inds` argument; using SAB instead of ISAB.")
         self.inner_encoder = nn.ModuleList([
-            SAB(marker_embed_dim, dim_hidden, num_heads, ln=ln, init_rng=init_rng),
-            SAB(dim_hidden,       dim_hidden, num_heads, ln=ln, init_rng=init_rng),
-            SAB(dim_hidden,       dim_hidden, num_heads, ln=ln, init_rng=init_rng),
-            # ISAB(marker_embed_dim, dim_hidden, num_heads, num_inds, ln=ln, init_rng=init_rng),
-            # ISAB(dim_hidden,       dim_hidden, num_heads, num_inds, ln=ln, init_rng=init_rng),
-            # ISAB(dim_hidden,       dim_hidden, num_heads, num_inds, ln=ln, init_rng=init_rng),
+            # SAB(marker_embed_dim, dim_hidden, num_heads, ln=ln, init_rng=init_rng),
+            # SAB(dim_hidden,       dim_hidden, num_heads, ln=ln, init_rng=init_rng),
+            # SAB(dim_hidden,       dim_hidden, num_heads, ln=ln, init_rng=init_rng),
+            ISAB(marker_embed_dim, dim_hidden, num_heads, num_inds, ln=ln, init_rng=init_rng),
+            ISAB(dim_hidden,       dim_hidden, num_heads, num_inds, ln=ln, init_rng=init_rng),
+            ISAB(dim_hidden,       dim_hidden, num_heads, num_inds, ln=ln, init_rng=init_rng),
         ])
         self.inner_pool = PMA(dim_hidden, num_heads, num_seeds=1, ln=ln, init_rng=init_rng)
 
         self.decoder = nn.ModuleList([
-            SAB(dim_hidden, dim_hidden, num_heads, ln=ln, init_rng=init_rng),
-            SAB(dim_hidden, dim_hidden, num_heads, ln=ln, init_rng=init_rng),
-            SAB(dim_hidden, dim_hidden, num_heads, ln=ln, init_rng=init_rng),
-            # ISAB(dim_hidden, dim_hidden, num_heads, num_inds, ln=ln, init_rng=init_rng),
-            # ISAB(dim_hidden, dim_hidden, num_heads, num_inds, ln=ln, init_rng=init_rng),
-            # ISAB(dim_hidden, dim_hidden, num_heads, num_inds, ln=ln, init_rng=init_rng),
+            # SAB(dim_hidden, dim_hidden, num_heads, ln=ln, init_rng=init_rng),
+            # SAB(dim_hidden, dim_hidden, num_heads, ln=ln, init_rng=init_rng),
+            # SAB(dim_hidden, dim_hidden, num_heads, ln=ln, init_rng=init_rng),
+            ISAB(dim_hidden, dim_hidden, num_heads, num_inds, ln=ln, init_rng=init_rng),
+            ISAB(dim_hidden, dim_hidden, num_heads, num_inds, ln=ln, init_rng=init_rng),
+            ISAB(dim_hidden, dim_hidden, num_heads, num_inds, ln=ln, init_rng=init_rng),
         ])
 
         # Final self-attention decoder: each N element attends over all N elements.

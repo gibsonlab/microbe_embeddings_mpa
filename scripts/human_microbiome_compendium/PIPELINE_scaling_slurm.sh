@@ -117,7 +117,7 @@ for hidden_dim in $(seq 4 4 64); do
   cfg_file="./model_${model_cfg}.yaml"
   cat > "${cfg_file}" <<EOF
 dim_hidden: ${hidden_dim}
-num_inds: 8
+num_inds: 16
 num_heads: 4
 ln: True
 EOF
