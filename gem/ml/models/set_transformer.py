@@ -286,7 +286,7 @@ class HierarchicalSetTransformer(LinearInitializedModule):
     ):
         super().__init__()
 
-        print("Ignoring `num_inds` argument; using SAB instead of ISAB.")
+        # print("Ignoring `num_inds` argument; using SAB instead of ISAB.")
         self.inner_encoder = nn.ModuleList([
             # SAB(marker_embed_dim, dim_hidden, num_heads, ln=ln, init_rng=init_rng),
             # SAB(dim_hidden,       dim_hidden, num_heads, ln=ln, init_rng=init_rng),
