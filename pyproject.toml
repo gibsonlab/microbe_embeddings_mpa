@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "gem"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    # Core ML / deep learning
+    "torch==2.7.0",
+    "tensordict",
+    "transformers",
+    # Scientific computing
+    "numpy",
+    "scipy",
+    "pandas",
+    "pyarrow",
+    "scikit-learn",
+    "numba",
+    "joblib",
+    # Bioinformatics
+    "biopython",
+    "pyfaidx",
+    "scikit-bio",
+    "dendropy",
+    "phylodm",
+    # Dimensionality reduction / visualization
+    "umap-learn",
+    "matplotlib",
+    "seaborn",
+    "statsmodels",
+    # Data I/O
+    "h5py",
+    "zstandard",
+    "pyyaml",
+    # Graphs
+    "networkx",
+    # Utilities
+    "tqdm",
+    "psutil",
+]
+
+[project.optional-dependencies]
+# pip install -e ".[notebooks]"
+notebooks = [
+    "geopandas",
+    "pycountry",
+]
+# pip install -e ".[evo]"
+# Note: flash-attn requires a CUDA-enabled build environment.
+# Note: evo2 must be installed from source: pip install git+https://github.com/ArcInstitute/evo2.git
+evo = [
+    "evo-model",
+    "flash-attn==2.7.4.post1",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["gem*"]

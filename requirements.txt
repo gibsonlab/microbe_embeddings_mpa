@@ -1,24 +1,48 @@
+# Core ML / deep learning
 torch==2.7.0
 flash-attn==2.7.4.post1
-evo-model
 tensordict
 transformers
-psutil
+
+# Genomic language models (optional: only needed if using evo/evo2 embeddings)
+evo-model
+# evo2 must be installed separately from Arc Institute:
+#   pip install git+https://github.com/ArcInstitute/evo2.git
+
+# Scientific computing
 numpy
-pandas
-scikit-learn
-pyarrow
 scipy
+pandas
+pyarrow
+scikit-learn
+numba
+joblib
+
+# Bioinformatics
+biopython
+pyfaidx
+scikit-bio
+dendropy
+phylodm
+
+# Dimensionality reduction / visualization
+umap-learn
 matplotlib
 seaborn
 statsmodels
+
+# Data I/O
 h5py
-tqdm
-biopython
-pyfaidx
 zstandard
-joblib
-numba
-scikit-bio
-umap-learn
-dendropy
+pyyaml
+
+# Graphs
+networkx
+
+# Utilities
+tqdm
+psutil
+
+# Notebook visualization (optional)
+geopandas
+pycountry
