@@ -73,7 +73,7 @@ for embed_name in "${embed_names_all[@]}"; do
     bash 3_train_model.sh "$dset_name" "$analysis_name" "$embed_name" "epc_pool_1" "EPC" "$seed"
     bash 3_train_model.sh "$dset_name" "$analysis_name" "$embed_name" "epc_pool_2" "EPC" "$seed"
     bash 3_train_model.sh "$dset_name" "$analysis_name" "$embed_name" "epc_pool_3" "EPC" "$seed"
-    bash 3_train_model.sh "$dset_name" "$analysis_name" "$embed_name" "epc_nopool" "EPC" "$seed"
+    bash 3_train_model.sh "$dset_name" "$analysis_name" "$embed_name" "epc_nopool_2" "EPC" "$seed"
     bash 3_train_model.sh "$dset_name" "$analysis_name" "$embed_name" "set_transformer" "SetTransformer" "$seed"
   done
 done
