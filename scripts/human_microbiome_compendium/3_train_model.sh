@@ -60,13 +60,26 @@ echo "Model output dir: ${outdir}"
 mkdir -p "${outdir}"
 
 # Skip training if model_config.json exists and was modified after May 6 2026, 11:00 PM
+#existing_config="${outdir}/model_config.json"
+#cutoff="2026-05-06 23:00:00"
+#if [ -f "${existing_config}" ] && [ -n "$(find "${existing_config}" -newermt "${cutoff}" -print)" ]; then
+#  echo "Found model_config.json modified after ${cutoff} at ${existing_config}. Skipping training."
+#  exit 0
+#else
+#  echo "No sufficiently recent model_config.json found. Proceeding with training."
+#fi
+
+# Skip analysis if model_config.json exists and was modified after May 6 2026, 11:00 PM,
+# UNLESS it contains "num_inds": 8 (indicating a stale run that needs re-analysis)
 existing_config="${outdir}/model_config.json"
 cutoff="2026-05-06 23:00:00"
-if [ -f "${existing_config}" ] && [ -n "$(find "${existing_config}" -newermt "${cutoff}" -print)" ]; then
-  echo "Found model_config.json modified after ${cutoff} at ${existing_config}. Skipping training."
+if [ -f "${existing_config}" ] && \
+   [ -n "$(find "${existing_config}" -newermt "${cutoff}" -print)" ] && \
+   ! grep -qF '"num_inds": 8' "${existing_config}"; then
+  echo "Found model_config.json modified after ${cutoff} without num_inds=8 at ${existing_config}. Skipping analysis."
   exit 0
 else
-  echo "No sufficiently recent model_config.json found. Proceeding with training."
+  echo "No sufficiently recent model_config.json found, or num_inds=8 detected. Proceeding with analysis."
 fi
 
 metadata="$outdir/metadata.txt"
