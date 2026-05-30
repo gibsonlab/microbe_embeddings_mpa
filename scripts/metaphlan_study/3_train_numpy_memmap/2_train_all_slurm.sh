@@ -1,13 +1,13 @@
 #!/bin/bash
 set -e
 
-EXCLUDE_NODES="lmd-1,lmd-2,lmd-4"
+EXCLUDE_NODES="lmd-1"
 SCRIPT_DIR="./slurm"
 
 
 # Get list of currently running/pending jobs for this user
-#running_jobs=$(squeue -u $USER -h -o "%j" 2>/dev/null)
-running_jobs=""
+running_jobs=$(squeue -u $USER -h -o "%j" 2>/dev/null)
+#running_jobs=""
 
 
 create_job_submission () {
@@ -60,13 +60,12 @@ EOF
   echo "Submitted job ${jobname}"
 }
 
-for analysis_name in "pcoa_split" "random_split_1001" "random_split_1002" "random_split_1003" "random_split_1004" "random_split_1005" "random_split_1006" "random_split_1007" "random_split_1008" "random_split_1009" "random_split_1010"; do
-  for embed_type in "phylophlan" "phylophlan_metaphlan"; do
+#for analysis_name in "pcoa_split" "random_split_1001" "random_split_1002" "random_split_1003" "random_split_1004" "random_split_1005" "random_split_1006" "random_split_1007" "random_split_1008" "random_split_1009" "random_split_1010"; do
+for analysis_name in "pcoa_split" "random_split_1001" "random_split_1002" "random_split_1003" "random_split_1004"; do
+  for embed_type in "phylophlan"; do
     for embed_name in "dnabert-s" "evo-1-8k-base_hyena5" "evo2_7b_hyena10"; do
-#      for pred_model in "epc_pool" "epc_nopool" "set_transformer"; do
-      for pred_model in "set_transformer"; do
-        for seed in 12345; do
-        #for seed in 12345 12346 12347; do
+      for pred_model in "epc_pool" "set_transformer"; do
+        for seed in 12345 12346 12347; do
           create_job_submission "$analysis_name" "$embed_type" "$embed_name" "$pred_model" "$seed" "$running_jobs"
         done
       done
@@ -75,10 +74,21 @@ for analysis_name in "pcoa_split" "random_split_1001" "random_split_1002" "rando
 
   for embed_type in "offline"; do
     for embed_name in "umap_d100_s1000"; do
-#      for pred_model in "epc_pool" "epc_nopool" "set_transformer"; do
-      for pred_model in "set_transformer"; do
-        for seed in 12345; do
-        #for seed in 12345 12346 12347; do
+      for pred_model in "epc_pool" "set_transformer"; do
+        for seed in 12345 12346 12347; do
+          create_job_submission "$analysis_name" "$embed_type" "$embed_name" "$pred_model" "$seed" "$running_jobs"
+        done
+      done
+    done
+  done
+done
+
+
+for analysis_name in "pcoa_split"; do
+  for embed_type in "phylophlan_metaphlan"; do
+    for embed_name in "dnabert-s" "evo-1-8k-base_hyena5" "evo2_7b_hyena10"; do
+      for pred_model in "epc_pool"; do
+        for seed in 12345 12346 12347; do
           create_job_submission "$analysis_name" "$embed_type" "$embed_name" "$pred_model" "$seed" "$running_jobs"
         done
       done
